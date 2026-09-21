@@ -161,3 +161,19 @@ A range can only ever catch non-determinism in the act; it can never establish i
 ★ **Pre-registering the C2 expectation is what forces the check.** With the prediction written
 down first (`tools/prereg_0920c_3.73.txt`), "+312 on one demo" had to be explained or disproved
 rather than shrugged at. See [[project-single-session-soak]] and notes 3.74.
+
+## ★★★ Pre-register a STATISTIC, not a single cell (2026-09-21)
+
+3.77 added one full-res render target. I pre-registered "the fresh gate's worst-case demo rises
+~8 MB". It FELL 1.0 MB - and the change was real: across all 19 demos the median rose +15.5 MB.
+★ Nominating a number before the run is right; nominating a **single cell of a noisy table** is
+not, because one cell cannot resolve an 8 MB effect.
+
+★★ **And when a number is disputed, ask the NAMED census rather than arguing.** `DUMP_VRAM`
+reported `5505024 ... R32_FLOAT "rtCustomDepth"` - **5.25 MiB at 1536x801**, not the 7.91 MiB at
+1920x1080 I had assumed (internal resolution is the 3D viewport, not the window). The census also
+proves the feature is LIVE by name, which no screenshot can.
+
+⚠ The +15.5 MB median was NOT the texture - 3x too big. The logs named the cause: **the machine
+was rebooted between runs** (26.9 h uptime -> 2.0 h), which also leapt FPS (Trapped 282 -> 405).
+**Check `### machine: Nh since boot` in the sweep log before comparing ANY column across runs.**

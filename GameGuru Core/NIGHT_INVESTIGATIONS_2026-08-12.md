@@ -12895,3 +12895,64 @@ Fixed and stable, not merely reduced.
 
 **A control is not a formality; it is the thing that tells you your metric can see the effect at
 all.** The clouds-off pair is what turned a confounded 8.48% into a clean 507x.
+
+
+## 3.78 - THE THREE SWEEPS ON 3.75/3.76/3.77, AND A PREDICTION THAT FAILED TWICE (2026-09-21)
+
+Game `3254ae87`, engine `5e6ac8f7`. Pre-registered in `tools/prereg_0921_3.77.txt` before the first
+run, because this was the first change to alter a RENDER PASS rather than just shader maths.
+
+### Results
+
+| | fresh gate | soak A | soak B |
+|---|---|---|---|
+| C1 LOAD | PASS 19/19 | PASS 19/19 | PASS 19/19 |
+| C2 GEOMETRY | **PASS** (18 bit-identical, Z Island IN_RANGE) | **0 demos moved** | **0 demos moved** |
+| C3 VRAM | PASS, worst **3782.7 MB**, **313.3 MB headroom** | peak 4382.5 MB | peak 4386.6 MB |
+| C4 GAME | PASS 19/19 | PASS 19/19 | PASS 19/19 |
+
+Soak peaks across five runs now: **4394.9 (3.69) / 4365.9 / 4386.0 (3.73) / 4382.5 / 4386.6 (3.77)**
+- a 29 MB band across three builds. Per-demo peak 0920c B -> 0921 B: median **-0.3 MB**, mean -5.3,
+range -80.2..+48.1. Adding a full-res render target did not move the soak.
+
+### ★★★ The VRAM prediction was wrong TWICE, and both errors are worth keeping
+
+I predicted the fresh gate's worst-case demo would rise ~8 MB (3783.7 -> ~3792). **It fell 1.0 MB.**
+
+**Error 1 - I tested the wrong statistic.** A single worst-case cell is exactly what the measuring
+rules warn about. Across all 19 demos the median rose **+15.5 MB** (range -21.6..+58.8): the effect
+was measurable, just not in the one cell I had nominated in advance. ★ Nominating a statistic
+before the run is right; nominating a SINGLE CELL of a noisy table is not.
+
+**Error 2 - I guessed the resolution.** So I stopped arguing and asked the named census:
+
+    T 5505024 1536 801 1 1 1 1 R32_FLOAT 0x18 0x0 0 0 "rtCustomDepth"
+    T 5505024 1536 801 1 1 1 1 R32_UINT  0x18 0x400 0 0 "rtPrimitiveID"
+
+**5,505,024 bytes = 5.25 MiB at 1536x801**, not 7.91 MiB at 1920x1080. Internal resolution is the 3D
+viewport, not the window. The new RT is byte-for-byte the size of `rtPrimitiveID`, which is exactly
+what a same-dimension 32-bit target should be - and its presence BY NAME is also independent proof
+that 3.77 is live, rather than inferring it from a screenshot.
+
+**And the +15.5 MB median is NOT this texture** - it is 3x too large for it. The logs name the real
+cause: **the machine was rebooted between the two runs** (26.9 h uptime -> 2.0 h). That is also why
+FPS leapt (Trapped 282 -> 405). Per `demo_fps_sweep.sh`'s own header, cross-run FPS is not evidence
+across a machine-state change; neither is a 15 MB VRAM median.
+
+★ **The defensible claim is the narrow one:** C3 passes with 313.3 MB of headroom, and the feature
+costs **5.25 MB, measured by name**. Everything else in that column is machine state.
+
+### C2 is now clean in the strongest sense available
+
+Zero demos moved POLYS in either soak against the 0920c soaks - including Aztec Game Kit Teaser,
+which sat at the same value this time. On the fresh gate, 18 were bit-identical and Z Island was
+IN_RANGE of its known 320304-321464 spread. Adding a render target and rewriting two prepass pixel
+shaders changed which triangles are drawn: not one.
+
+### ⚠ Standing: the soak always exceeds 4096 MB, and that is the GATE, not the build
+
+C3's 4096 MB is the FRESH-LAUNCH min-spec limit, and it models a player loading a level. The soak
+deliberately loads 19 demos in ONE process to expose accumulation, so it has exceeded that limit in
+every run ever recorded, including the one that validated the pre-alpha candidate. `sweepgate.sh`
+marks C2 advisory in soak mode but NOT C3, so a soak can only ever print `NOT CLEAN`. Still left
+alone deliberately - changing a criterion after seeing data is the move the script warns against.

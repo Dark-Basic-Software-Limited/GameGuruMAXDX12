@@ -1,0 +1,34 @@
+PRE-REGISTERED BEFORE THE 2026-09-21 POST-3.77 SWEEPS (written before any run started)
+
+Build: game 3254ae87 (3.75 + 3.76 + 3.77), engine 5e6ac8f7. Reference for C2: sweep 0825.
+Previous full run for comparison: 0920c (game d3bdb0ed), fresh gate worst VRAM 3783.7 MB.
+
+C2 (POLYS identity) is NOT amended. Reasoning, before the numbers exist:
+
+  3.75/3.77 change the prepass PIXEL SHADER OUTPUTS and the PSO write masks of two GG draws, and
+  add a second RENDER TARGET to the prepass render pass. None of that changes which primitives are
+  submitted or which survive culling. POLYS counts drawn triangles. It cannot move.
+
+  3.76 is pixel colour maths in a post-process. It cannot move POLYS.
+
+  ⚠ EXCEPTION, known and pre-declared: Aztec Game Kit Teaser is NON-DETERMINISTIC (notes 3.74) and
+  oscillates by exactly 312 triangles. It may legitimately read 1413604 OR 1413916 in any run.
+  Foggy Forest and The Mystery of Z Island are the other two known non-deterministic demos.
+  A POLYS move on ANY OTHER demo is a real finding and must be investigated, NOT rationalised.
+
+C3 (VRAM) — this is the criterion the change can actually move, so predict it numerically:
+
+  3.77 adds rtCustomDepth, one R32_FLOAT texture at internal resolution. At 1920x1080 that is
+  1920*1080*4 = 8,294,400 bytes = 7.91 MiB. It is recreated on resize like its siblings and is
+  NOT in rtPrimitiveID's aliasing group, so it is genuinely additive.
+
+  PREDICTION: the fresh gate's worst-case demo rises by roughly 8 MB, from 3783.7 MB to about
+  3792 MB, leaving ~304 MB of headroom against the 4096 MB min-spec limit. C3 PASSES.
+  If the rise is materially larger than ~10 MB, something else is allocating and I must find it.
+
+FPS: an extra render target in the prepass is a plausible small cost. Not a criterion, and this
+machine has not been rebooted, so cross-run FPS is not evidence. Recorded only.
+
+PREDICTION SUMMARY: C1 19/19, C2 PASS (Aztec may sit at either of its two values),
+C3 PASS at ~3792 MB worst case, C4 19/19. Soaks: 19/19 both, restarts 0, peak within ~10 MB of
+the 0920c soaks (4365.9 / 4386.0).
