@@ -88,8 +88,18 @@ particles and volumetric clouds - and worse, with `ColorWrite::ENABLE_ALL` + `GR
 ★ The shaders are byte-faithful to DX11. Nothing broke; a render target's MEANING moved. Same
 shape as [[project-tree-sway-and-paths]] and [[project-fog-two-paths]].
 
-3.75 mitigates it game-side (`ColorWrite::DISABLE` on the two live GG prepass PSOs - far-tree
-billboards and baked terrain - so at least the geometry behind survives). ⚠ **A GG draw still
-cannot occlude for itself.** The real fix is emitting a valid PrimitiveID, and that is NOT cheap:
-`PrimitiveID::unpack` calls `load_meshlet` BEFORE validating, so a synthetic ID reads out of
-bounds rather than failing clean.
+**SOLVED 3.77 — prepass RT1.** 3.75 first masked the GG prepass colour writes off RT0 so they stop
+ERASING the id behind them; enough against a hill, useless against sky. 3.77 adds engine
+**`rtCustomDepth`** (R32_FLOAT) as a SECOND render target of the same prepass render pass, and the
+GG prepass shaders write `IN.position.z` to `SV_TARGET1` - a slot they had already declared since
+DX11. `visibility_resolveCS` consults it where the id is 0.
+
+★ **Chosen for its synchronisation, not its elegance:** same pass, same CLEAR, same
+`SHADER_RESOURCE_COMPUTE` end state as `rtPrimitiveID`, so the existing prepass->compute fence
+covers it - no new barrier, no queue interaction. 7.9 MB at 1080p; only GG pixels pay a write.
+
+⚠ **A synthetic PrimitiveID is NOT an option** - `pack()` has no free bit (25-bit meshlet +
+7-bit primitive, `MESHLET_TRIANGLE_COUNT` 124 so bit 31 is used) and `unpack` calls
+`load_meshlet` BEFORE validating, so a fake id reads out of bounds rather than failing clean.
+⚠ **`independent_blend_enable` must be TRUE** on those PSOs, or D3D12 applies RT0's write mask to
+every bound target and the new depth write is silently masked off with it.

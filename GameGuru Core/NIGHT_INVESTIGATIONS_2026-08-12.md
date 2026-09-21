@@ -12817,3 +12817,81 @@ the harness can reach (Lee's shot was of a MODIFIED copy - note the `*` in his t
 Customize Sky panel open at Density 68 / Coverage 138 / Height 1524 m), and there is no harness verb
 for cloud density. `tools/cloudtree_repro.sh` captures paired clouds-on/off frames at a fixed camera
 and has a full "before" set; the A/B runs the moment Lee's test level exists.
+
+
+## 3.77 - GIVE THE ID-LESS DRAWS A DEPTH TARGET (2026-09-21)
+
+Lee on 3.75: *"a worthy attempt but it looks too bad on the silhouette of the hills when the
+billboard trees poke out ... Looks like we will need those billboards to write into the depth buffer
+so clouds cannot render in front of them."* He was right, and 3.75's own note had said so: it
+restored the hill BEHIND a billboard, and against open sky there is nothing behind.
+
+### Why they cannot just emit a PrimitiveID
+
+`PrimitiveID::pack` (`globals.hlsli:614`) uses all 32 bits - **25-bit meshlet index, 7-bit primitive
+index** - and `MESHLET_TRIANGLE_COUNT` is **124**, so the primitive index genuinely reaches 64+ and
+bit 31 is in use. There is no free flag bit. (The one unreachable encoding is *low 25 bits == 0 with
+a non-zero top 7*, because `pack()` always does `meshletIndex += 1`; that is 7 bits of payload, far
+too few for a depth.) And a synthetic id does not fail clean: `unpack` calls `load_meshlet`
+**before** any validation, and `preload_internal` validates only `instanceIndex`.
+
+### The fix: prepass RT1 carries real depth
+
+- ENGINE `rtCustomDepth`, R32_FLOAT, created beside `rtPrimitiveID` and bound as a **second render
+  target of the same prepass render pass**, same `CLEAR`, same `SHADER_RESOURCE_COMPUTE` end state.
+  ★ **That is the whole reason this shape was chosen: it needs NO new synchronisation** - the
+  existing prepass->compute fence that already covers `rtPrimitiveID` covers it unchanged.
+- `Visibility_Prepare` takes it and binds it at `t1`; `visibility_resolveCS` reads it in what used
+  to be the unconditional `// sky: depth = 0` branch. Reversed Z means the cleared 0 still reads as
+  "nobody wrote here", so true sky is bit-identical to before.
+- GAME: `GGTreesPrepassPS` and `GGTerrainBakePrepassPS` write `IN.position.z` to `SV_TARGET1` - a
+  slot they had **already declared** since DX11 (as the VT readback). RT0 stays masked off by 3.75.
+
+Cost: **7.9 MB at 1080p** and a write on GG pixels only - the engine's own prepass PS declares no
+`SV_TARGET1` and never touches it.
+
+⚠ **Rejected: an SRV on `depthBuffer_Main`.** It would fix every consumer at once and needs no new
+texture, but the depth buffer is bound `DEPTH_STENCIL` again for the opaque pass, so it means a
+`DEPTH_WRITE -> SHADER_RESOURCE -> DEPTH_WRITE` round trip on the hot depth path every frame, and
+that typically costs depth compression on AMD. Unmeasured, on the target GPU, on the pass whose
+8.4 ms is already the most expensive in the frame. Revisit only with an interleaved A/B.
+
+### Two things the compiler and D3D12 semantics caught
+
+- ★ **`independent_blend_enable` must be TRUE.** With it false, D3D12 applies `render_target[0]`'s
+  write mask to **every** bound target - so 3.75's `ColorWrite::DISABLE` on RT0 would have silently
+  masked off the depth RT1 now writes, and the fix would have measured as a no-op.
+- The billboard prepass's **debug branch** wrote the old `readback` member too. It is
+  coverage-identical to the real branch by design (3.04/3.05), so it carries the depth as well -
+  otherwise `SET_TREEDEBUGSOLID` would quietly stop occluding clouds.
+
+### Measured, and the first metric was WRONG
+
+A naive before/after pixel diff read **8.48% changed** - and the control killed it: **two frames of
+the SAME build, same camera, 4 s apart, differ by 29%**, because the clouds animate (Cloud Speed 3).
+★ **An A/B on a non-static scene is not an A/B.** The before/after difference was *smaller than the
+frame-to-frame noise*, which would have read as "no effect" just as easily as "fixed".
+
+The measurement that works ignores the sky entirely: build a mask of hill/tree pixels from a
+**clouds-OFF** frame (static - before vs after differ by 0.37%, which is what makes the mask
+trustworthy), then count **bright, colourless** pixels on those same coordinates with clouds on.
+Foliage is never white; a white pixel there is cloud drawn over geometry.
+
+| frame | cloud-white pixels on hill/tree (of 97,612) | |
+|---|---|---|
+| before 3.77, t1 | **2028** | 2.078% |
+| before 3.77, t2 | 1425 | 1.460% |
+| before 3.77, t3 | 1463 | 1.499% |
+| **after 3.77, t1** | **4** | 0.004% |
+| after 3.77, t2 | **0** | 0.000% |
+| after 3.77, t3 | **0** | 0.000% |
+| either build, clouds OFF | 0 | 0.000% (the metric only fires on cloud-over-geometry) |
+
+★★★ The before column also **quantifies the flicker Lee ranked first**: 2028 / 1425 / 1463 on three
+frames of one static camera - ~600 pixels appearing and disappearing per frame. After: 4 / 0 / 0.
+Fixed and stable, not merely reduced.
+
+### ★ The lesson
+
+**A control is not a formality; it is the thing that tells you your metric can see the effect at
+all.** The clouds-off pair is what turned a confounded 8.48% into a clean 507x.

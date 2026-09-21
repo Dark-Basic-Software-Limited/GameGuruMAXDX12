@@ -295,8 +295,15 @@ void GGTerrainBake_Init()
 	// terrain stopped occluding anything that consumes texture_depth, volumetric clouds most
 	// visibly. Nothing here needs the colour output: the bake prepass has no alpha cutout.
 	g_bsStore[0] = bs;   // (CreatePSO copies bs per slot; set the mask on the prepass only)
+	// ⚠ 3.77: independent blend, or RT1 inherits RT0's mask (D3D12 applies render_target[0]
+	// to every bound target when independent_blend_enable is false) and the depth we now
+	// write to SV_TARGET1 would be masked off with it.
+	bs.independent_blend_enable = true;
 	bs.render_target[0].render_target_write_mask = ColorWrite::DISABLE;
+	bs.render_target[1] = bs.render_target[0];
+	bs.render_target[1].render_target_write_mask = ColorWrite::ENABLE_ALL;
 	CreatePSO( &g_psoPrepass, &g_prepassPS, DepthWriteMask::ALL,  ComparisonFunc::GREATER_EQUAL );
+	bs.independent_blend_enable = false;
 	bs.render_target[0].render_target_write_mask = ColorWrite::ENABLE_ALL;
 	CreatePSO( &g_psoOpaque,  &g_ps,        DepthWriteMask::ZERO, ComparisonFunc::GREATER_EQUAL );
 

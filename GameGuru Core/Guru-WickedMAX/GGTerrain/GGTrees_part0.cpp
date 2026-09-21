@@ -1629,7 +1629,13 @@ void GGTrees_Init()
 	// occluder - its pixels against open SKY still read as sky, because nothing writes an ID
 	// there. Giving GG draws a real PrimitiveID is the full fix and is NOT cheap: unpack()
 	// calls load_meshlet BEFORE validating, so a synthetic ID reads out of bounds.
+	// ⚠ 3.77: independent blend, or RT1 inherits RT0's mask. In D3D12 a BlendState with
+	// independent_blend_enable false applies render_target[0] to EVERY bound target, so
+	// masking RT0 off would silently mask off the depth we now write to RT1.
+	blendStateOpaque.independent_blend_enable = true;
 	blendStateOpaque.render_target[0].render_target_write_mask = ColorWrite::DISABLE;
+	blendStateOpaque.render_target[1] = blendStateOpaque.render_target[0];
+	blendStateOpaque.render_target[1].render_target_write_mask = ColorWrite::ENABLE_ALL;
 	GGTreeCreatePSO( &psoTreesPrepass );
 
 	// GGMAX 3.06: same PSO with depth writes OFF, for debug mode 4. Lee's test: draw every quad
@@ -1639,7 +1645,8 @@ void GGTrees_Init()
 	depthStateOpaque.depth_write_mask = DepthWriteMask::ZERO;
 	GGTreeCreatePSO( &psoTreesPrepassNoDepth );
 	depthStateOpaque.depth_write_mask = DepthWriteMask::ALL;
-	// 3.75: hand the shared blend state back before the HIGH prepass PSOs are built from it.
+	// 3.75/3.77: hand the shared blend state back before the HIGH prepass PSOs are built.
+	blendStateOpaque.independent_blend_enable = false;
 	blendStateOpaque.render_target[0].render_target_write_mask = ColorWrite::ENABLE_ALL;
 
 	rastState.cull_mode = CullMode::BACK;
