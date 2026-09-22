@@ -12956,3 +12956,94 @@ deliberately loads 19 demos in ONE process to expose accumulation, so it has exc
 every run ever recorded, including the one that validated the pre-alpha candidate. `sweepgate.sh`
 marks C2 advisory in soak mode but NOT C3, so a soak can only ever print `NOT CLEAN`. Still left
 alone deliberately - changing a criterion after seeing data is the move the script warns against.
+
+
+## 3.80 - PLANAR REFLECTION MISALIGNED: A DX11 FIX THE PORT DROPPED (2026-09-22)
+
+Lee, with TESTPRO2 / testpro2level and two annotated lines A and B: the crate's strut does not meet
+its own reflection in the puddle. His steer: *"alignment issues like this are the result of the
+transforms used to render the main scene being different from the transforms used to render the
+reflection scene."* And crucially: **DX11 aligns perfectly.**
+
+### The instrument came first, and it exonerated the transforms
+
+New harness verb **`DUMP_REFLECTION`** (`AutomationHarness.cpp`, in a HELPER - the main ladder is at
+the MSVC C1061 limit) prints both cameras side by side plus every planar-reflection requester:
+
+    plane  n=(0,1,0) w=-5.7767
+    main   eye=(-95.94, 31.32,-50.06)  w=1536 h=801  aspect=1.917603  jitter=(0,0)
+    refl   eye=(-95.94,-19.77,-50.06)  w=384  h=200  aspect=1.920000  jitter=(0,0)
+    DELTA  aspect=0.002397  fov=0.000000  near=0  far=0  mainJitter=0
+    mainVP r1=(-0.00000, 1.68182,...)   reflVP r1=(-0.00000,-1.68182,...)
+
+★ The mirrored eye is EXACT: 2*5.7767 - 31.32 = -19.7666. FOV, near, far identical; no jitter; the
+VP matrices differ only by the expected sign flips, same magnitudes. **So the transforms were not
+the cause** - Lee's hypothesis, tested directly and refuted in one dump rather than argued about.
+
+The requester scan killed the other obvious suspect too: all four reflective planes report
+`thickness=0.0000, centre-to-top=0.0000`, so `object.center` (what `wiRenderer.cpp:4787` builds the
+plane from) IS the surface. The plane is right.
+
+The one real difference: **aspect 1.9176 vs 1.9200**, because the reflection buffer is 384x200 and
+801/4 truncates to 200. Genuine, but 0.125% - about 2 px at the screen edge, not the 20-40 px drawn.
+
+### The cause: DX11 fixed this years ago and the port carried the line but not the fix
+
+`WickedRepo/WickedEngine/shaders/objectHF.hlsli:673` (the DX11 reference):
+
+    return texture_reflection.SampleLevel(sampler_linear_clamp,
+        reflectionUV.xy/* + bumpColor*GetMaterial().normalMapStrength*/, 0).rgb;
+        // bumpColor is causing an incorrect shift in the reflection
+
+`WickedEngineDX12/WickedEngine/shaders/shadingHF.hlsli:35` (ours, before 3.80):
+
+    ...SampleLevel(sampler_linear_clamp, reflectionUV.xy + bumpColor, 0).rgb;
+
+The reprojection immediately above it is exact - it maps the pixel's WORLD position through the
+reflection camera, so the reflection lands precisely under the object that casts it. Adding
+`bumpColor` then displaces it again, and a normal map whose average is not exactly flat carries a
+DC bias, so part of that displacement is CONSTANT: the whole reflection slides.
+
+★★★ **The comment is the finding.** Somebody hit this in DX11, diagnosed it, and commented the term
+out. The DX12 port brought the line across in its stock upstream form and the fix was lost with it.
+**Sixth instance of the shape** - nothing broke, something was *converted*, and the conversion
+dropped a local change. ⚠ The WATER path (`objectHF.hlsli`, `#ifdef WATER`) still adds its own
+distortion deliberately, exactly as DX11 does; ripples on an ocean SHOULD break the reflection up.
+This is the flat `PLANARREFLECTION` path only.
+
+### ★★★ I called it a no-op. My metric was wrong, not the fix.
+
+First measurement of the A/B: "2.43% of pixels differ by >8, **0.00% by >40**" - and I reported that
+the fix had almost no effect. Lee then confirmed from the running editor that it was fixed.
+
+He was right and the metric was nonsense:
+
+| lower-half luminance | p10 **19** | median **24** | p90 **30** |
+|---|---|---|---|
+
+**A delta of >40 is arithmetically impossible on a surface whose values are ~24.** The threshold was
+wider than the signal's entire dynamic range. Re-measured per region:
+
+| region | changed >8 | max delta |
+|---|---|---|
+| top (crate, walls) | **0.00%** | 1 |
+| middle (contact line) | **3.26%** | 22 |
+| bottom (open puddle) | **4.08%** | 20 |
+
+Confined to the reflective surface, nothing else touched - the exact signature of a reflection-UV
+change - and max 22 against a median of 24 is a ~90% RELATIVE change.
+
+★★★ **Scale the threshold to the signal, not to the bit depth.** An absolute 8-bit threshold is
+meaningless on dark content; the same 40 that is conservative on a bright sky is larger than
+everything that exists in a night-time puddle. And ★ **a region breakdown is worth more than a
+global percentage** - "0% in the top third, 3-4% in the reflection" identifies the change as well as
+measuring it.
+
+### Still open, from Lee's same report
+
+1. **The Reflections checkbox is TICKED in DX11's level settings and OFF in DX12** for the same
+   level - `t.visuals.bReflectionsEnabled` (`M-GridEditB_part23.cpp:1716`) is not surviving the
+   load. A level whose author enabled reflections ships without them.
+2. **The default load camera differs** between DX11 and DX12 - DX11 faces the crate, DX12 points off
+   to the left. Possibly the same family as the puddle sitting at y=5.7767 while the floor is at
+   y=-0.1 (measured with `PICK_AT`), i.e. a load-time placement difference worth one look.

@@ -177,3 +177,23 @@ proves the feature is LIVE by name, which no screenshot can.
 ⚠ The +15.5 MB median was NOT the texture - 3x too big. The logs named the cause: **the machine
 was rebooted between runs** (26.9 h uptime -> 2.0 h), which also leapt FPS (Trapped 282 -> 405).
 **Check `### machine: Nh since boot` in the sweep log before comparing ANY column across runs.**
+
+## ★★★ Scale the threshold to the SIGNAL, not to the bit depth (2026-09-22)
+
+I A/B'd a planar-reflection fix and reported "2.43% of pixels differ by >8, **0.00% by >40**",
+i.e. no effect. Lee confirmed from the running editor that it WAS fixed. He was right.
+
+The puddle's lower-half luminance was p10 **19**, median **24**, p90 **30**. **A delta of >40 is
+arithmetically impossible on a surface whose values are ~24** - the threshold was wider than the
+signal's entire dynamic range. The same 40 that is conservative on a bright sky is larger than
+everything that exists in a night-time puddle. ★ Sample the content's luminance FIRST and set the
+threshold from it.
+
+★★ **A region breakdown beats a global percentage.** Re-measured by thirds: top (crate, walls)
+0.00% changed max delta 1; contact line 3.26% max 22; open puddle 4.08% max 20. That both
+MEASURES the change and IDENTIFIES it - confined to the reflective surface, nothing else touched,
+which is the signature of a reflection-UV fix. A single global number said neither.
+
+⚠ Related and already recorded above: a pixel diff is also invalid when the scene ANIMATES
+(volumetric clouds, 3.77) - there the control was two frames of the same build. Between them:
+**a pixel diff needs both a static scene AND a threshold inside the content's range.**

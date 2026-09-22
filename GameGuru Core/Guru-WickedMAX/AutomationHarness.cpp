@@ -3995,6 +3995,122 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 	return false;
 }
 
+// GGMAX 3.80: DUMP_REFLECTION - the planar reflection's two transforms, side by side.
+//
+// Lee: the crate's base does not line up with its reflection in the Puddle, and "alignment issues
+// like this are the result of the transforms used to render the main scene being different from
+// the transforms used to render the reflection scene". This prints both so the comparison is a
+// subtraction rather than a judgement about a dark screenshot.
+//
+// What to read:
+//   plane          the mirror plane (xyz = normal, w = -distance). Its height must equal the
+//                  RENDERED water surface, not the object's bounding-box centre.
+//   main / refl    Eye/At/Up, fov, width/height (these drive the PROJECTION aspect), near/far,
+//                  and jitter. ★ If width/height differ between the two, their projections differ
+//                  and the reflection cannot line up across the whole screen.
+//   aspect         computed from width/height. The sampling in objectHF.hlsli reprojects world
+//                  positions through reflection_view_projection, so any aspect or FOV difference
+//                  between the matrix that RENDERED the reflection and the one that SAMPLES it
+//                  shows up as a horizontal slide that grows toward the screen edges.
+//   VP rows        the actual matrices. If the two differ only by the mirror, alignment is a
+//                  plane problem; if they differ in scale terms, it is a projection problem.
+static bool AutoHarness_ReflectionCommands(const char* cmd, const char* arg, char* result, int resultSize)
+{
+	if (_stricmp(cmd, "DUMP_REFLECTION") != 0) return false;
+
+	extern MasterRenderer* master_renderer;
+	if (master_renderer == nullptr)
+	{
+		_snprintf(result, resultSize, "ERROR: DUMP_REFLECTION no master_renderer");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	const wi::scene::CameraComponent& mc = *(master_renderer->camera);
+	const wi::scene::CameraComponent& rc = master_renderer->camera_reflection;
+	const wi::renderer::Visibility& vis = master_renderer->visibility_main;
+
+	const float mAspect = (mc.height  != 0.0f) ? (mc.width  / mc.height)  : 0.0f;
+	const float rAspect = (rc.height  != 0.0f) ? (rc.width  / rc.height)  : 0.0f;
+
+	int w = 0;
+	w += _snprintf(result + w, resultSize - w,
+		"REFLECTION planar_visible=%d\n"
+		"  plane      n=(%.5f,%.5f,%.5f) w=%.4f   (mirror height = %.4f when n=(0,1,0))\n",
+		vis.planar_reflection_visible ? 1 : 0,
+		vis.reflectionPlane.x, vis.reflectionPlane.y, vis.reflectionPlane.z, vis.reflectionPlane.w,
+		-vis.reflectionPlane.w);
+
+	w += _snprintf(result + w, resultSize - w,
+		"  main  eye=(%.2f,%.2f,%.2f) at=(%.3f,%.3f,%.3f) up=(%.3f,%.3f,%.3f)\n"
+		"        fov=%.5f w=%.1f h=%.1f aspect=%.6f near=%.3f far=%.1f jitter=(%.5f,%.5f)\n",
+		mc.Eye.x, mc.Eye.y, mc.Eye.z, mc.At.x, mc.At.y, mc.At.z, mc.Up.x, mc.Up.y, mc.Up.z,
+		mc.fov, mc.width, mc.height, mAspect, mc.zNearP, mc.zFarP, mc.jitter.x, mc.jitter.y);
+
+	w += _snprintf(result + w, resultSize - w,
+		"  refl  eye=(%.2f,%.2f,%.2f) at=(%.3f,%.3f,%.3f) up=(%.3f,%.3f,%.3f)\n"
+		"        fov=%.5f w=%.1f h=%.1f aspect=%.6f near=%.3f far=%.1f jitter=(%.5f,%.5f)\n",
+		rc.Eye.x, rc.Eye.y, rc.Eye.z, rc.At.x, rc.At.y, rc.At.z, rc.Up.x, rc.Up.y, rc.Up.z,
+		rc.fov, rc.width, rc.height, rAspect, rc.zNearP, rc.zFarP, rc.jitter.x, rc.jitter.y);
+
+	// ★ the three differences that would each produce a visible misalignment
+	w += _snprintf(result + w, resultSize - w,
+		"  DELTA aspect=%.6f  fov=%.6f  near=%.4f  far=%.2f  mainJitter=%d\n",
+		rAspect - mAspect, rc.fov - mc.fov, rc.zNearP - mc.zNearP, rc.zFarP - mc.zFarP,
+		(mc.jitter.x != 0.0f || mc.jitter.y != 0.0f) ? 1 : 0);
+
+	w += _snprintf(result + w, resultSize - w,
+		"  clipPlane  =(%.5f,%.5f,%.5f,%.4f)\n"
+		"  clipPlaneOrig=(%.5f,%.5f,%.5f,%.4f)\n",
+		rc.clipPlane.x, rc.clipPlane.y, rc.clipPlane.z, rc.clipPlane.w,
+		rc.clipPlaneOriginal.x, rc.clipPlaneOriginal.y, rc.clipPlaneOriginal.z, rc.clipPlaneOriginal.w);
+
+	// the matrices themselves - if these disagree by more than the mirror, it is a projection bug
+	w += _snprintf(result + w, resultSize - w,
+		"  mainVP r0=(%.5f,%.5f,%.5f,%.5f) r1=(%.5f,%.5f,%.5f,%.5f)\n"
+		"  reflVP r0=(%.5f,%.5f,%.5f,%.5f) r1=(%.5f,%.5f,%.5f,%.5f)\n",
+		mc.VP._11, mc.VP._12, mc.VP._13, mc.VP._14, mc.VP._21, mc.VP._22, mc.VP._23, mc.VP._24,
+		rc.VP._11, rc.VP._12, rc.VP._13, rc.VP._14, rc.VP._21, rc.VP._22, rc.VP._23, rc.VP._24);
+
+	// ★ Who asked for the reflection, and is the plane at their SURFACE or their CENTRE?
+	// wiRenderer.cpp:4787 builds the plane from object.center - the centre of the bounding box.
+	// For a flat puddle centre == surface and that is fine; for anything with thickness the mirror
+	// sits below the visible water and every reflection is offset by twice the difference.
+	{
+		wi::scene::Scene& sc = wi::scene::GetScene();
+		int listed = 0;
+		w += _snprintf(result + w, resultSize - w, "  REQUESTERS (IsRequestPlanarReflection):\n");
+		for (size_t i = 0; i < sc.objects.GetCount() && w < resultSize - 300; ++i)
+		{
+			const wi::scene::ObjectComponent& o = sc.objects[i];
+			if (!o.IsRequestPlanarReflection()) continue;
+			wi::ecs::Entity e = sc.objects.GetEntity(i);
+			const wi::scene::NameComponent* nm = sc.names.GetComponent(e);
+			const wi::primitive::AABB* bb = (i < sc.aabb_objects.size()) ? &sc.aabb_objects[i] : nullptr;
+			listed++;
+			if (bb != nullptr)
+			{
+				const float topGap = bb->_max.y - o.center.y;
+				w += _snprintf(result + w, resultSize - w,
+					"    \"%s\" center=(%.3f,%.4f,%.3f) aabbY=[%.4f..%.4f] thickness=%.4f centre-to-top=%.4f\n",
+					nm ? nm->name.c_str() : "(unnamed)",
+					o.center.x, o.center.y, o.center.z,
+					bb->_min.y, bb->_max.y, bb->_max.y - bb->_min.y, topGap);
+			}
+			else
+			{
+				w += _snprintf(result + w, resultSize - w,
+					"    \"%s\" center=(%.3f,%.4f,%.3f) (no aabb)\n",
+					nm ? nm->name.c_str() : "(unnamed)", o.center.x, o.center.y, o.center.z);
+			}
+		}
+		if (listed == 0) w += _snprintf(result + w, resultSize - w, "    (none - the plane came from the OCEAN path)\n");
+	}
+
+	result[resultSize - 1] = 0;
+	return true;
+}
+
 static bool AutoHarness_TransparencyCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
 {
 	if (_stricmp(cmd, "DUMP_TRANSPARENTS") == 0)
@@ -8103,7 +8219,8 @@ void AutoHarness_CheckForCommand(void)
 		// handled in the helper (see above the dispatch function)
 	}
 	else if (AutoHarness_TransparencyCommands(cmd, arg, result, sizeof(result))
-	      || AutoHarness_EnvProbeCommands(cmd, arg, result, sizeof(result))) // C1061: share the block, don't extend the ladder
+	      || AutoHarness_EnvProbeCommands(cmd, arg, result, sizeof(result))
+	      || AutoHarness_ReflectionCommands(cmd, arg, result, sizeof(result))) // C1061: share the block, don't extend the ladder
 	{
 		// handled in the helper (see above the dispatch function)
 	}
