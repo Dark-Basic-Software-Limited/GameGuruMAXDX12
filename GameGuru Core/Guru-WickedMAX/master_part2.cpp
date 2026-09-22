@@ -1,0 +1,446 @@
+//
+// GGMAX 3.83 - Object Library LIVE PREVIEW (DX12)
+// ============================================================================
+//
+// THE REGRESSION
+// --------------
+// Hovering a thumbnail in the Object Library used to replace the static image with a LIVE
+// render of the object, slowly rotating (and playing its idle animation for characters).
+// The whole game-side half of that feature survived the DX12 port intact - M-GridEditB_part9.cpp
+// diffs 1:1 against DX11 apart from Timer()->MAXTimer() - but the renderer half did not:
+// GrabBackBufferCopy() (M-GridEditB_part7.cpp) opens with an unconditional
+//
+//     if (ImGui_DX12_IsInitialized()) return;
+//
+// because its DX11 implementation rendered into legacy bitmap 99 and then pulled pixels out
+// with GrabImage(). In DX12 `m_pD3D` is NULL (master_part0.cpp:94), so GrabImageCore() bails
+// on its first line and the whole DBP image-grab layer is dead. Master::ForceRender's
+// SetRenderTarget and ComposeSimple calls are commented out for the same reason.
+//
+// ★ Same shape as the other five port defects: nothing BROKE. Something MOVED - the pixels
+//   now live in a DX12 resource the DX11 image layer cannot see - and nothing told anyone.
+//
+// WHAT THIS USES INSTEAD
+// ----------------------
+// Wicked DX12 has a native feature the DX11 fork did not: CameraComponent::render_to_texture.
+// Give any scene CameraComponent a non-zero `render_to_texture.resolution` and
+// RenderPath3D::RenderCameraComponents (wiRenderPath3D.cpp:2919, called unconditionally from
+// Render()) allocates the targets, culls, prepasses, tile-culls the lights, draws opaque +
+// transparent + sky and generates a mip chain - every frame, from that camera, into its own
+// texture. That is exactly the "manually created backbuffer capture" the DX11 code had to
+// hand-roll, now done by the engine.
+//
+// So this file does only the three things the engine does NOT do:
+//   1. owns the scene CameraComponent and drives it from GG camera space,
+//   2. tonemaps the engine's HDR result (format_rendertarget_main = R11G11B10_FLOAT) into an
+//      LDR texture, because ImGui samples raw and would otherwise show linear HDR,
+//   3. hands that LDR texture to the ImGui DX12 bridge so the thumbnail cell can draw it.
+//
+// ⚠ NO ENGINE CHANGE. Nothing in WickedEngineDX12 is touched, so no WICKED_ENGINE_CHANGES.md
+//   delta row is owed and the sweeps see an unchanged engine.
+//
+// ⚠ COST WHEN IDLE IS ZERO. resolution == {0,0} makes RenderCameraComponents free its
+//   resources and `continue` on its first line, and GGObjectPreview_Render() early-outs.
+//   The pass only exists while the pointer is actually resting on a thumbnail.
+//
+// SCOPE
+// -----
+// This restores the LIVE PREVIEW only. GrabBackBufferCopy's other three customers - thumbnail
+// generation to disk (BackBufferSaveCacheName), snapshot mode and the particle-thumb mode -
+// still need a GPU->CPU readback that does not exist in DX12 yet, and are left switched off
+// exactly as they were. See M-GridEditB_part7.cpp for the gate that says so.
+//
+
+// GGMAX 3.83 bisect switch - see SET_OBJPREVIEW in AutomationHarness.cpp.
+// 0 off | 1 engine render_to_texture only | 2 + tonemap | 3 + ImGui bind (default)
+int gg_objpreview_mode = 3;
+// Fixed grading for the preview. <= 0 means 'use the level's exposure', which is what the
+// first working build did and why the archway came out near-black at exposure 0.145.
+float gg_objpreview_exposure = 1.0f;
+// 0 = leave the backdrop plane exactly as GrabBackBufferCopy built it
+// 1 = force it opaque and keep its authored texture (default)
+// 2 = force it opaque and override the texture with a flat colour
+int gg_objpreview_backdrop = 1;
+
+namespace GGObjectPreview
+{
+	static wi::ecs::Entity			s_camEntity = 0;		// scene CameraComponent that does the render
+	static wi::graphics::Texture	s_ldr;					// tonemapped copy, what ImGui samples
+	static int						s_ldrW = 0, s_ldrH = 0;
+	static int						s_reqW = 0, s_reqH = 0;	// requested preview size (BackBufferSizeX/Y)
+	static int						s_imageId = 0;			// GG image id this live render stands in for
+	static bool						s_active = false;		// a preview is requested
+	static bool						s_haveFrame = false;	// at least one tonemapped frame exists
+	static void*					s_imTexId = nullptr;	// ImGui texture id for s_ldr
+	static int						s_parkedObject = 0;		// GG object currently parked in preview space
+	static float					s_parkedPos[3] = { 0,0,0 };
+	static float					s_parkedAng[3] = { 0,0,0 };
+	static bool						s_parkedVisible = false;
+	static int						s_backdropObject = 0;	// backdrop plane held visible for the preview
+
+	// ★ The engine's own framing reference. DX11 rendered the thumbnail at a FIXED 1920x1017
+	// (Master::ForceRender's USEFIXEDBACKBUFFERSIZE viewport / MakeBitmap(99,1920,1017)) and
+	// then GrabImage'd the centre BackBufferSizeX x BackBufferSizeY out of it. All of
+	// GrabBackBufferCopy's camera-distance tuning - fAdjustRange, fCamMove, the fLargestY
+	// ladder - was fitted against that crop, so to reuse that maths unchanged the preview
+	// camera has to reproduce the crop's field of view rather than the full frame's.
+	static const float FRAMING_REFERENCE_HEIGHT = 1017.0f;
+
+	// ★ The preview camera owns its clip range rather than borrowing the level's.
+	// GrabBackBufferCopy parks the backdrop plane 21200 units out (MoveObject -21200), so a
+	// level whose far plane is nearer than that renders the preview on black - which is
+	// every indoor level. Reverse-Z keeps the precision near the eye, so a far plane wide
+	// enough for the backdrop costs nothing.
+	static const float PREVIEW_ZNEAR = 1.0f;
+	static const float PREVIEW_ZFAR = 60000.0f;
+
+	// The flat stand-in for the DX11 backdrop image, used only when the plane has no
+	// base-colour texture. Picked to sit where the shipped library thumbnails sit: a
+	// desaturated blue that a grey or brown object reads clearly against.
+	static const float PREVIEW_BACKDROP_R = 0.106f;
+	static const float PREVIEW_BACKDROP_G = 0.208f;
+	static const float PREVIEW_BACKDROP_B = 0.361f;
+	static int s_backdropDiag = 0;   // 0 untested, 1 had a texture, 2 flat colour applied
+}
+
+// Is a live preview currently being driven? (used by the image-id override and by the
+// GrabBackBufferCopy teardown path)
+bool GGObjectPreview_IsActive(void)
+{
+	return GGObjectPreview::s_active;
+}
+
+// Remember where a GG object was before we parked it in preview space, so the un-hover path
+// can put it back. DX11 restored it on the same call because it rendered synchronously inside
+// GrabBackBufferCopy; we cannot, because the engine renders the preview camera in the NEXT
+// frame's Render() - the object has to still be there when it does.
+void GGObjectPreview_ParkObject(int ggObject, float px, float py, float pz, float ax, float ay, float az, bool bWasVisible)
+{
+	using namespace GGObjectPreview;
+	if (s_parkedObject == ggObject) return;		// already parked, keep the ORIGINAL transform
+	s_parkedObject = ggObject;
+	s_parkedPos[0] = px; s_parkedPos[1] = py; s_parkedPos[2] = pz;
+	s_parkedAng[0] = ax; s_parkedAng[1] = ay; s_parkedAng[2] = az;
+	s_parkedVisible = bWasVisible;
+}
+
+// The backdrop plane GrabBackBufferCopy positioned for this preview. It stays visible for
+// as long as the preview runs, because the render happens a frame after the setup.
+void GGObjectPreview_HoldBackdrop(int backdropObject)
+{
+	using namespace GGObjectPreview;
+	const bool bNew = (s_backdropObject != backdropObject);
+	s_backdropObject = backdropObject;
+	if (!bNew || backdropObject <= 0 || ObjectExist(backdropObject) != 1) return;
+
+	// Does the plane actually carry its backdrop image in DX12? TextureObject() feeds the
+	// legacy DBP image layer, which the DX12 port no longer wires into Wicked materials.
+	sObject* pBack = GetObjectData(backdropObject);
+	if (!pBack || !pBack->ppMeshList || pBack->iMeshCount <= 0) return;
+	sMesh* pMesh = pBack->ppMeshList[0];
+	if (!pMesh) return;
+	wi::scene::MeshComponent* mesh = wi::scene::GetScene().meshes.GetComponent(pMesh->wickedmeshindex);
+	if (!mesh || mesh->subsets.empty()) return;
+	wi::scene::MaterialComponent* mat = wi::scene::GetScene().materials.GetComponent(mesh->subsets[0].materialID);
+	if (!mat) return;
+
+	if (gg_objpreview_backdrop == 0) { s_backdropDiag = 3; return; }
+
+	const bool bHasTexture = mat->textures[wi::scene::MaterialComponent::BASECOLORMAP].resource.IsValid();
+
+	// ⚠ This is the whole bug. CreateBackdropObject does SetObjectTransparency(obj, 1), so
+	// the material carries FILTER_TRANSPARENT and GetBlendMode() returns BLENDMODE_ALPHA
+	// regardless of userBlendMode - and the backdrop images have no usable alpha, so a
+	// perfectly resident texture blended away to nothing and the preview sat on black.
+	mat->shaderType = wi::scene::MaterialComponent::SHADERTYPE_UNLIT;
+	mat->userBlendMode = wi::enums::BLENDMODE_OPAQUE;
+	mat->SetAlphaRef(1.0f);
+
+	if (bHasTexture && gg_objpreview_backdrop == 1)
+	{
+		// keep what the object's fpe asked for; white base colour so the image comes through
+		mat->SetBaseColor(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+		s_backdropDiag = 1;
+	}
+	else
+	{
+		mat->SetBaseColor(XMFLOAT4(PREVIEW_BACKDROP_R, PREVIEW_BACKDROP_G, PREVIEW_BACKDROP_B, 1.0f));
+		s_backdropDiag = 2;
+	}
+	mat->SetDirty(true);
+}
+
+// Put the parked object back and stop the pass. Safe to call every frame.
+void GGObjectPreview_Stop(void)
+{
+	using namespace GGObjectPreview;
+	if (s_parkedObject > 0)
+	{
+		if (ObjectExist(s_parkedObject) == 1)
+		{
+			PositionObject(s_parkedObject, s_parkedPos[0], s_parkedPos[1], s_parkedPos[2]);
+			RotateObject(s_parkedObject, s_parkedAng[0], s_parkedAng[1], s_parkedAng[2]);
+			if (s_parkedVisible) ShowObject(s_parkedObject); else HideObject(s_parkedObject);
+		}
+		s_parkedObject = 0;
+	}
+	if (s_backdropObject > 0)
+	{
+		if (ObjectExist(s_backdropObject) == 1) HideObject(s_backdropObject);
+		s_backdropObject = 0;
+		WickedCall_EnableThumbLight(false);
+	}
+	if (s_camEntity != 0)
+	{
+		wi::scene::CameraComponent* cam = wi::scene::GetScene().cameras.GetComponent(s_camEntity);
+		if (cam)
+		{
+			// resolution 0 makes RenderCameraComponents drop the whole render_to_texture block
+			// (targets, depth, tile buffer, visibility) on its next pass - see its first lines.
+			cam->render_to_texture.resolution = XMUINT2(0, 0);
+		}
+	}
+	s_active = false;
+	s_haveFrame = false;
+	s_imageId = 0;
+}
+
+// Called once per frame from GrabBackBufferCopy with the camera GG's own framing maths worked
+// out. Position/angles are GG camera space, which maps 1:1 onto Wicked world space through the
+// same TransformComponent recipe master_part0.cpp:531 uses for the editor camera.
+void GGObjectPreview_Submit(int imageId, int width, int height,
+	float camX, float camY, float camZ,
+	float angX, float angY, float angZ,
+	float fovYFullFrame, float zNear, float zFar)
+{
+	using namespace GGObjectPreview;
+
+	if (gg_objpreview_mode <= 0) return;
+	if (imageId <= 0 || width <= 0 || height <= 0) return;
+
+	// A NaN projection is a GPU hang, not a wrong picture: XM_PI/(CameraFOV_f/15) goes
+	// infinite at CameraFOV_f == 15 and negative below it, and a zero near plane divides
+	// by zero in the reverse-Z matrix. Neither is reachable through the UI - but neither
+	// was ever checked here, and this camera is built from level data.
+	if (!(fovYFullFrame > 0.05f) || fovYFullFrame > 2.8f) fovYFullFrame = 1.0471976f; // 60 deg
+	// zNear/zFar arrive from the level and are deliberately ignored - see PREVIEW_ZFAR.
+	(void)zNear; (void)zFar;
+	zNear = GGObjectPreview::PREVIEW_ZNEAR;
+	zFar = GGObjectPreview::PREVIEW_ZFAR;
+
+	// clamp - a runaway BackBufferSizeX would allocate a very large set of engine targets
+	if (width > 2048) width = 2048;
+	if (height > 2048) height = 2048;
+
+	wi::scene::Scene& scene = wi::scene::GetScene();
+
+	// (re)create the camera entity. Checked EVERY submit, not just once: a level load clears
+	// the scene and the entity goes with it, and a stale handle would silently render nothing.
+	if (s_camEntity == 0 || scene.cameras.GetComponent(s_camEntity) == nullptr)
+	{
+		s_camEntity = wi::ecs::CreateEntity();
+		scene.cameras.Create(s_camEntity);
+		// deliberately NO NameComponent and NO TransformComponent:
+		//  - a name would show up in anything that walks the scene by name,
+		//  - a transform would make Scene::RunCameraUpdateSystem overwrite Eye/At/Up from it
+		//    every frame (wiScene.cpp:5843), throwing away what we set below.
+	}
+
+	wi::scene::CameraComponent* cam = scene.cameras.GetComponent(s_camEntity);
+	if (!cam) return;
+
+	// ---- projection -------------------------------------------------------------------
+	// Reproduce the DX11 centre-crop's field of view (see FRAMING_REFERENCE_HEIGHT above) so
+	// GrabBackBufferCopy's distance tuning still frames the object the way it always did.
+	float tanHalfFull = tanf(fovYFullFrame * 0.5f);
+	float tanHalfCrop = tanHalfFull * ((float)height / GGObjectPreview::FRAMING_REFERENCE_HEIGHT);
+	if (tanHalfCrop < 0.001f) tanHalfCrop = 0.001f;
+	float fovYCrop = 2.0f * atanf(tanHalfCrop);
+	cam->CreatePerspective((float)width, (float)height, zNear, zFar, fovYCrop);
+
+	// ---- view -------------------------------------------------------------------------
+	// Same recipe as the editor camera so GG angles mean here what they mean everywhere else.
+	const double dDegToRad = 3.141592654 / 180.0;
+	wi::scene::TransformComponent camera_transform;
+	camera_transform.ClearTransform();
+	camera_transform.Translate(XMFLOAT3(camX, camY, camZ));
+	camera_transform.RotateRollPitchYaw(XMFLOAT3((float)(angX * dDegToRad), (float)(angY * dDegToRad), (float)(angZ * dDegToRad)));
+	camera_transform.UpdateTransform();
+	cam->TransformCamera(camera_transform);
+	cam->jitter = XMFLOAT2(0, 0);		// TAA jitter would make a still preview shimmer
+
+	// ⚠ A CameraComponent's scissor defaults to all zeros, and the shader camera derives
+	// scissor_uv from it (wiRenderer.cpp:13324). Any postprocess that opens with
+	// is_uv_inside_scissor - the tonemap does, on its first line - would then reject every
+	// thread and leave the preview black. RenderCameraComponents sets the VIEWPORT but not
+	// this, because nothing it calls reads it.
+	cam->canvas.init((uint32_t)width, (uint32_t)height);
+	cam->scissor.left = 0;
+	cam->scissor.top = 0;
+	cam->scissor.right = width;
+	cam->scissor.bottom = height;
+	cam->sample_count = 1;
+	cam->UpdateCamera();
+
+	// ---- ask the engine for the render -------------------------------------------------
+	cam->render_to_texture.resolution = XMUINT2((uint32_t)width, (uint32_t)height);
+	cam->render_to_texture.sample_count = 1;
+
+	s_reqW = width;
+	s_reqH = height;
+	s_imageId = imageId;
+	s_active = true;
+}
+
+// Per-frame GPU work. Called from MasterRenderer::Render() AFTER __super::Render(), which is
+// where RenderCameraComponents has just recorded the preview camera's own command list - lists
+// execute in the order they were begun, so its result is complete by the time ours runs.
+void GGObjectPreview_Render(float fExposure)
+{
+	using namespace GGObjectPreview;
+	if (!s_active) return;
+	if (s_camEntity == 0) return;
+
+	wi::scene::CameraComponent* cam = wi::scene::GetScene().cameras.GetComponent(s_camEntity);
+	if (!cam) return;
+
+	// ⚠ RenderCameraComponents SWAPS rendertarget_render/rendertarget_display at the top of
+	// every pass, so these Texture handles move. Read it fresh each frame; caching the handle
+	// would alternate between this frame's and last frame's image.
+	const wi::graphics::Texture& src = cam->render_to_texture.rendertarget_render;
+	if (!src.IsValid()) return;		// first frame after Submit - engine has not allocated yet
+
+	wi::graphics::GraphicsDevice* device = wi::graphics::GetDevice();
+	if (!device) return;
+
+	// (re)create the LDR target to match
+	if (!s_ldr.IsValid() || s_ldrW != (int)src.desc.width || s_ldrH != (int)src.desc.height)
+	{
+		wi::graphics::TextureDesc desc;
+		desc.width = src.desc.width;
+		desc.height = src.desc.height;
+		desc.format = wi::graphics::Format::R8G8B8A8_UNORM;
+		desc.bind_flags = wi::graphics::BindFlag::SHADER_RESOURCE | wi::graphics::BindFlag::UNORDERED_ACCESS;
+		// Postprocess_Tonemap barriers the output back to desc.layout when it finishes, so
+		// declaring SHADER_RESOURCE here is what leaves it readable by the ImGui bridge - which
+		// draws on a raw ID3D12GraphicsCommandList and issues no barriers of its own.
+		desc.layout = wi::graphics::ResourceState::SHADER_RESOURCE;
+		desc.mip_levels = 1;
+		if (!device->CreateTexture(&desc, nullptr, &s_ldr)) return;
+		device->SetName(&s_ldr, "GGMax ObjectPreview LDR");
+		s_ldrW = (int)desc.width;
+		s_ldrH = (int)desc.height;
+		s_imTexId = nullptr;		// force a fresh SRV for the new resource
+		s_haveFrame = false;
+	}
+
+	if (gg_objpreview_mode < 2) return;   // stage 1: engine render only
+
+	wi::graphics::CommandList cmd = device->BeginCommandList();
+	device->EventBegin("GGMax - Object Preview Tonemap", cmd);
+	wi::renderer::BindCommonResources(cmd);
+	// ★ Both, not one. tonemapCS reads GetCamera() before it does anything else, and an
+	// unbound camera CB on a fresh command list is undefined - it hung the device.
+	wi::renderer::BindCameraCB(*cam, *cam, *cam, cmd);
+	wi::renderer::Postprocess_Tonemap(
+		src,
+		s_ldr,
+		cmd,
+		(gg_objpreview_exposure > 0.0f) ? gg_objpreview_exposure : fExposure,
+		0.0f,		// brightness
+		1.0f,		// contrast
+		1.0f,		// saturation
+		false,		// dither - the preview is a small still, banding is not the risk here
+		nullptr,	// no colour grading LUT
+		nullptr,	// no distortion
+		nullptr,	// no eye adaption
+		nullptr,	// no bloom
+		wi::graphics::ColorSpace::SRGB,
+		wi::renderer::Tonemap::ACES,
+		nullptr,
+		1.0f
+	);
+	device->EventEnd(cmd);
+
+	// hand the result to ImGui. The resource pointer is stable for the life of s_ldr, so the
+	// bridge creates its descriptor once and returns the cached handle after that.
+	if (gg_objpreview_mode < 3) return;   // stage 2: tonemap but do not show it
+	if (s_imTexId == nullptr)
+	{
+		auto* dx12Device = static_cast<wi::graphics::GraphicsDevice_DX12*>(device);
+		if (dx12Device)
+		{
+			ID3D12Resource* res = dx12Device->GetTextureInternalResource(&s_ldr);
+			if (res)
+			{
+				extern void* ImGui_DX12_BindPreviewTexture(ID3D12Resource * resource, DXGI_FORMAT format);
+				s_imTexId = ImGui_DX12_BindPreviewTexture(res, DXGI_FORMAT_R8G8B8A8_UNORM);
+			}
+		}
+	}
+	if (s_imTexId != nullptr) s_haveFrame = true;
+}
+
+// The one hook into the UI: GetImagePointerView (CImageC_part1.cpp) asks this first, so an
+// ImgBtn on the hovered thumbnail draws the live render in place of the static file texture.
+// Everything else about the grid cell - size, hover, click, drag - is untouched.
+void* GGObjectPreview_GetImageOverride(int iID)
+{
+	using namespace GGObjectPreview;
+	if (!s_active || !s_haveFrame) return nullptr;
+	if (iID <= 0 || iID != s_imageId) return nullptr;
+	return s_imTexId;
+}
+
+// One-line status for the DUMP_OBJPREVIEW harness verb. Names every link in the chain, so a
+// blank thumbnail can be told apart from a preview that was never requested (no camera),
+// never rendered (engine target invalid), or never bound (no ImGui descriptor).
+void GGObjectPreview_DebugStatus(char* buf, int bufsize)
+{
+	using namespace GGObjectPreview;
+	if (!buf || bufsize < 64) return;
+	wi::scene::CameraComponent* cam = (s_camEntity != 0) ? wi::scene::GetScene().cameras.GetComponent(s_camEntity) : nullptr;
+	const wi::graphics::Texture* src = cam ? &cam->render_to_texture.rendertarget_render : nullptr;
+	// What the ENGINE culled for this camera - the line that separates 'the object and
+	// lights are not in the pass' from 'they are, and it is just dark'.
+	int visObjects = -1, visLights = -1;
+	if (cam && cam->render_to_texture.visibility)
+	{
+		const wi::renderer::Visibility& v = *(const wi::renderer::Visibility*)cam->render_to_texture.visibility.get();
+		visObjects = (int)v.visibleObjects.size();
+		visLights = (int)v.visibleLights.size();
+	}
+	extern wi::ecs::Entity g_entityThumbLight, g_entityThumbLight2;
+	const wi::scene::LightComponent* tl = g_entityThumbLight ? wi::scene::GetScene().lights.GetComponent(g_entityThumbLight) : nullptr;
+	const wi::scene::TransformComponent* tlt = g_entityThumbLight ? wi::scene::GetScene().transforms.GetComponent(g_entityThumbLight) : nullptr;
+	float bdx = 0, bdy = 0, bdz = 0, bddist = -1.0f;
+	if (s_backdropObject > 0 && ObjectExist(s_backdropObject) == 1)
+	{
+		bdx = ObjectPositionX(s_backdropObject);
+		bdy = ObjectPositionY(s_backdropObject);
+		bdz = ObjectPositionZ(s_backdropObject);
+		if (cam)
+		{
+			const float dx = bdx - cam->Eye.x, dy = bdy - cam->Eye.y, dz = bdz - cam->Eye.z;
+			bddist = sqrtf(dx*dx + dy*dy + dz*dz);
+		}
+	}
+	_snprintf(buf, bufsize,
+		"camEntity=%llu req=%dx%d imageId=%d parked=%d engineRT=%s(%dx%d) ldr=%s(%dx%d) imTexId=%s haveFrame=%d eye=(%.0f,%.0f,%.0f) visObj=%d visLight=%d exposure=%.3f near=%.1f far=%.0f fov=%.3f backdrop=%d(exist=%d vis=%d img=%d tex=%d at=(%.0f,%.0f,%.0f) dist=%.0f) thumbLight=%llu int=%.1f range=%.0f at=(%.0f,%.0f,%.0f)",
+		(unsigned long long)s_camEntity, s_reqW, s_reqH, s_imageId, s_parkedObject,
+		(src && src->IsValid()) ? "yes" : "NO",
+		(src && src->IsValid()) ? (int)src->desc.width : 0,
+		(src && src->IsValid()) ? (int)src->desc.height : 0,
+		s_ldr.IsValid() ? "yes" : "NO", s_ldrW, s_ldrH,
+		s_imTexId ? "yes" : "NO", s_haveFrame ? 1 : 0,
+		cam ? cam->Eye.x : 0.0f, cam ? cam->Eye.y : 0.0f, cam ? cam->Eye.z : 0.0f,
+		visObjects, visLights, (gg_objpreview_exposure > 0.0f) ? gg_objpreview_exposure : master.masterrenderer.getExposure(),
+		cam ? cam->zNearP : -1.0f, cam ? cam->zFarP : -1.0f, cam ? cam->fov : -1.0f,
+		s_backdropObject,
+		(s_backdropObject > 0 && ObjectExist(s_backdropObject) == 1) ? 1 : 0,
+		(s_backdropObject > 0 && g_ObjectList[s_backdropObject] && g_ObjectList[s_backdropObject]->bVisible) ? 1 : 0,
+		ImageExist(BACKDROPMAGE) ? 1 : 0, s_backdropDiag, bdx, bdy, bdz, bddist,
+		(unsigned long long)g_entityThumbLight, tl ? tl->intensity : -1.0f, tl ? tl->range : -1.0f,
+		tlt ? tlt->translation_local.x : 0.0f, tlt ? tlt->translation_local.y : 0.0f, tlt ? tlt->translation_local.z : 0.0f);
+	buf[bufsize - 1] = 0;
+}

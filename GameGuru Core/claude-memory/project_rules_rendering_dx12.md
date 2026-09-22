@@ -24,3 +24,17 @@ metadata:
 - **A field added to a Wicked component struct MUST ride its `Serialize`** — `Entity_Duplicate` is a serialization round-trip. **GGMAX bits in upstream FLAGS enums live in reserved range 24-31** ⚠ NOT `options_stencilref` (bits 24-31 = stencil ref).
 - ★★ **Texture streaming is ON by default** — gate = per-load opt-in && **editor only** (`gameisexe==0`) && plain `DDS ` magic. Residency is per-MATERIAL mip feedback → no static/dynamic distinction. ⚠ task #37's "DEFAULT OFF" title is WRONG. Repo `STREAMING_STATUS_2026-08-18.md`.
 - **SVT atlas default is 12288** (engine `90375285`) — 8192 IS DEAD (starves). Judge from `VT: free=`, not screenshots.
+
+- ★★★ **An extra command list running a Wicked postprocess must bind `BindCommonResources` AND
+  `BindCameraCB`** — `RenderPostprocessChain` does both, one line apart. `tonemapCS.hlsl` opens with
+  `GetCamera().is_uv_inside_scissor(uv)`; an unset root CBV is undefined in DX12 and answered with
+  `DXGI_ERROR_DEVICE_HUNG`. DRED cannot name it (`lastCompletedOp = 0` everywhere, no page fault =
+  TDR, not a freed resource) — stage the suspect steps behind a runtime switch instead. (3.83)
+- ★★ **`CameraComponent::render_to_texture` renders any scene camera to its own texture**, engine-side,
+  for free — reach for it before hand-rolling an offscreen pass. It renders on the NEXT frame, swaps
+  its two targets each pass, and needs `camera.scissor`/`canvas` set by the caller (they default to
+  zero, which makes every scissor-gated postprocess a no-op). [[project-object-library-preview]]
+- ⚠ **`MaterialComponent::GetBlendMode()` returns `BLENDMODE_ALPHA` whenever `FILTER_TRANSPARENT` is
+  set, whatever `userBlendMode` says** — clearing `alphaRef` is what actually makes a material opaque.
+- ⚠ **The legacy DBP image/bitmap layer is DEAD in DX12** (`m_pD3D == NULL`, `master_part0.cpp:94`):
+  `GrabImage`, `MakeBitmap`, `GetBitmapRenderTarget`, `GetBackBufferForGG` can never work here.

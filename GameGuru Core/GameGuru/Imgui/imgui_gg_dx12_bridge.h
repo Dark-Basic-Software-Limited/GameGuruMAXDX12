@@ -52,3 +52,9 @@ void ImGui_DX12_RemoveTexture(int imageId);
 
 // Query image file dimensions from disk without loading pixel data.
 bool ImGui_DX12_GetFileDimensions(const char* filepath, int* outWidth, int* outHeight);
+
+// GGMAX 3.83: register an ENGINE-OWNED texture (the object-library live preview render
+// target) for ImGui to sample. The bridge only creates a descriptor for it - it never
+// owns, uploads to, or releases the resource, and the entry is invisible to
+// ImGui_DX12_RemoveTexture. Returns the ImTextureID, or nullptr if no SRV slot is free.
+void* ImGui_DX12_BindPreviewTexture(ID3D12Resource* resource, DXGI_FORMAT format);

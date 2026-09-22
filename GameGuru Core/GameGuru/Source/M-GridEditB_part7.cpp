@@ -12,13 +12,32 @@
 	if (!bImGuiInitDone)
 		return;
 
-	// In DX12 mode, skip entirely — this function renders into a DX11 bitmap 99
-	// render target and grabs pixels, none of which works in DX12. Calling
-	// ForceRender(NULL) would start a second render pass on the swapChain
-	// within the same frame, causing "Device Lost on Present".
+	// GGMAX 3.83: the DX12 short-circuit is now SELECTIVE, not total.
+	//
+	// What still cannot run: everything that ends in GrabImage(). That reads pixels through
+	// g_pGlob->pCurrentBitmapSurface with the legacy DBP DX11 image layer, and in DX12
+	// m_pD3D is NULL (master_part0.cpp:94) so GrabImageCore() returns false on its first
+	// line. Thumbnail GENERATION to disk, snapshot mode and the particle-thumb mode all
+	// need a GPU->CPU readback that does not exist yet, and stay switched off.
+	//
+	// What CAN run: the live object preview. It does not want pixels on the CPU at all - it
+	// wants a texture ImGui can sample - so it takes the camera this function works out and
+	// lets the engine render it (see master_part2.cpp). Everything above this point, and
+	// all the framing maths below, is the original DX11 code doing its original job.
 	extern bool ImGui_DX12_IsInitialized();
-	if (ImGui_DX12_IsInitialized())
+	extern void GGObjectPreview_Stop(void);
+	extern bool GGObjectPreview_IsActive(void);
+	const bool bDX12 = ImGui_DX12_IsInitialized();
+	const bool bDX12LivePreview = bDX12 && bLoopBackBuffer && BackBufferObjectID > 0
+				  && !BackBufferSnapShotMode && !BackBufferParticlesMode && !BackBufferGrabGameScreen;
+	if (bDX12 && !bDX12LivePreview)
+	{
+		// not previewing (or previewing something we cannot do): make sure any object we
+		// parked out in preview space gets put back. This is the ONLY teardown path - the
+		// early returns below fire the instant the UI clears BackBufferObjectID on un-hover.
+		if (GGObjectPreview_IsActive()) GGObjectPreview_Stop();
 		return;
+	}
 
 	if (BackBufferObjectID == 0 && BackBufferGrabGameScreen)
 	{
@@ -50,7 +69,9 @@
 	extern int iLastResolutionHeight;
 
 	// make sure new rendertarget is the same as the backbuffer size.
-	if (!BitmapExist(99) || (iLastResolutionWidth != current_backbuffer_width || iLastResolutionHeight != current_backbuffer_height))
+	// GGMAX 3.83: bitmap 99 is a DBP DX11 render target and cannot be created in DX12,
+	// so skip the whole block rather than call MakeBitmap every frame for nothing.
+	if (!bDX12 && (!BitmapExist(99) || (iLastResolutionWidth != current_backbuffer_width || iLastResolutionHeight != current_backbuffer_height)))
 	{
 		current_backbuffer_height = iLastResolutionHeight;
 		current_backbuffer_width = iLastResolutionWidth;
@@ -74,7 +95,7 @@
 			}
 		}
 	}
-	if (BitmapExist(99))
+	if (!bDX12 && BitmapExist(99))
 	{
 		SetCurrentBitmap(99);
 		SETUPClearEx(64, 64, 64, 64);
@@ -152,6 +173,21 @@
 			fOldObjPosX = ObjectPositionX(displayobj); fOldObjPosY = ObjectPositionY(displayobj); fOldObjPosZ = ObjectPositionZ(displayobj);
 			fOldObjAngX = ObjectAngleX(displayobj); fOldObjAngY = ObjectAngleY(displayobj); fOldObjAngZ = ObjectAngleZ(displayobj);
 			if (g_ObjectList[displayobj] && g_ObjectList[displayobj]->bVisible)	bDisplayObjVisible = true;
+			// GGMAX 3.83: DX11 restored these a few lines after the render, because it rendered
+			// SYNCHRONOUSLY inside this call. The DX12 preview cannot - the engine renders the
+			// preview camera during the NEXT frame's Render(), so the object has to still be
+			// parked out in preview space when it gets there. Hand the original transform to
+			// the preview module instead and let it restore on un-hover.
+			if (bDX12LivePreview)
+			{
+				extern void GGObjectPreview_ParkObject(int,float,float,float,float,float,float,bool);
+				GGObjectPreview_ParkObject(displayobj, fOldObjPosX, fOldObjPosY, fOldObjPosZ,
+								fOldObjAngX, fOldObjAngY, fOldObjAngZ, bDisplayObjVisible);
+				// The two thumb point lights exist for exactly this and the LIVE path never used
+				// them - DX11 did not need to, because ForceRender re-rendered the whole lit level.
+				// A single camera drawing one object parked at y=39000 has no such luck.
+				WickedCall_EnableThumbLight(true);
+			}
 			float fOffsetX = 0.0f, fOffsetY = 0.0f, fOffsetZ = 0.0f;
 			pObject = g_ObjectList[displayobj];
 			if (pObject)
@@ -449,7 +485,37 @@
 	}
 
 	// force a render of the backbuffer to do the grab
-	bool renderstate = master.ForceRender(rendertarget);
+	bool renderstate = true;
+	if (bDX12LivePreview)
+	{
+		// GGMAX 3.83: DX12 path. Everything above has already positioned the object out in
+		// preview space, framed GG camera 0 on it, lit it with the thumb lights and placed the
+		// backdrop. All that is left is to say WHERE to render from - the engine does the rest
+		// through CameraComponent::render_to_texture.
+		//
+		// The FOV passed is the FULL-FRAME one on purpose: DX11 rendered at a fixed 1920x1017
+		// and cropped the centre BackBufferSizeX x BackBufferSizeY out of it, and every
+		// distance constant above (fAdjustRange, fCamMove, the fLargestY ladder) was fitted
+		// against that crop. GGObjectPreview_Submit converts it to the crop's own FOV so the
+		// framing comes out where those constants expect it.
+		float fFullFrameFov = XM_PI / ((t.visuals.CameraFOV_f > 1.0f ? t.visuals.CameraFOV_f : 45.0f) / 15.0f);
+		extern void GGObjectPreview_Submit(int,int,int,float,float,float,float,float,float,float,float,float);
+		GGObjectPreview_Submit(
+			BackBufferImageID,
+			(int)grabx, (int)graby,
+			CameraPositionX(0), CameraPositionY(0), CameraPositionZ(0),
+			CameraAngleX(0), CameraAngleY(0), CameraAngleZ(0),
+			fFullFrameFov, t.visuals.CameraNEAR_f, t.visuals.CameraFAR_f);
+	}
+	else
+	{
+		renderstate = master.ForceRender(rendertarget);
+	}
+	if (bDX12LivePreview)
+	{
+		extern void GGObjectPreview_HoldBackdrop(int backdropObject);
+		GGObjectPreview_HoldBackdrop((bUseBackDropImage && ObjectExist(backdropobj)) ? backdropobj : 0);
+	}
 
 	// restore render settings after the forced render
 	if (bIsWideScreen && !bFullScreenBackbuffer)
@@ -474,7 +540,9 @@
 	// restore after grab process
 	if (!BackBufferSnapShotMode && !BackBufferParticlesMode)
 	{
-		if (bUseBackDropImage && ObjectExist(backdropobj))
+		// GGMAX 3.83: in DX12 the render is a frame away, so hiding the backdrop here would
+		// leave the preview on a black background. GGObjectPreview_Stop hides it instead.
+		if (bUseBackDropImage && ObjectExist(backdropobj) && !bDX12LivePreview)
 		{
 			HideObject(backdropobj);
 			if (!bLoopBackBuffer)
@@ -492,7 +560,9 @@
 		}
 		PositionCamera(composx, composy, composz);
 		RotateCamera(comangx, comangy, comangz);
-		if (BackBufferObjectID > 0)
+		// GGMAX 3.83: see the park comment above - in DX12 the object must STAY in preview
+		// space until the pointer leaves the thumbnail, or the engine renders an empty frame.
+		if (BackBufferObjectID > 0 && !bDX12LivePreview)
 		{
 			PositionObject(displayobj, fOldObjPosX, fOldObjPosY, fOldObjPosZ);
 			RotateObject(displayobj, fOldObjAngX, fOldObjAngY, fOldObjAngZ);
@@ -526,7 +596,9 @@
 	}
 
 	// if not snaposhot mode - save a second file to act as our ICON image (RPG inventory usage mainly)
-	if (!BackBufferSnapShotMode && !BackBufferGrabGameScreen)
+	// GGMAX 3.83: dead in DX12 - GrabImage needs the DBP DX11 image layer. Skipped rather
+	// than left to fail silently on every preview frame.
+	if (!bDX12 && !BackBufferSnapShotMode && !BackBufferGrabGameScreen)
 	{
 		if (BackBufferSaveCacheName != "")
 		{
@@ -604,7 +676,9 @@
 
 	// handle loop grab mode
 	static int loop = 0;
-	if(loop++ % 2 == 0 || !bLoopBackBuffer || bLoopFullFPS || BackBufferGrabGameScreen || BackBufferSnapShotMode || BackBufferParticlesMode)
+	// GGMAX 3.83: same - the DX12 preview never copies pixels to the CPU, the texture goes
+	// straight from the engine's render target to ImGui.
+	if(!bDX12 && (loop++ % 2 == 0 || !bLoopBackBuffer || bLoopFullFPS || BackBufferGrabGameScreen || BackBufferSnapShotMode || BackBufferParticlesMode))
 	{
 		// get backbuffer pointer
 		int iPerEntityImageID = BackBufferImageID;
@@ -703,7 +777,8 @@
 	}
 
 	// if not snaposhot mode and we want to save the grab
-	if (!BackBufferSnapShotMode)
+	// GGMAX 3.83: saving needs a grabbed image, which DX12 has not produced.
+	if (!bDX12 && !BackBufferSnapShotMode)
 	{
 		if (BackBufferSaveCacheName != "")
 		{

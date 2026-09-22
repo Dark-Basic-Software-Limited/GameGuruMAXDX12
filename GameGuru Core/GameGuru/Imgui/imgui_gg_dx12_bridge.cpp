@@ -915,6 +915,52 @@ bool ImGui_DX12_IsInitialized()
     return g_ImGuiDX12Initialized;
 }
 
+// --- GGMAX 3.83: external (engine-owned) texture for the object-library live preview ---
+//
+// Everything else in this file OWNS its textures: it uploads pixels, keeps the ComPtr and
+// defer-deletes on removal. The live preview is the opposite - WickedEngine owns the
+// resource and renders into it every frame; all the bridge has to contribute is one SRV
+// inside ITS descriptor heap so the ImGui pixel shader can sample it.
+//
+// Deliberately NOT in g_TextureCache: nothing here may release the resource, and
+// ImGui_DX12_RemoveTexture must never see it. One slot, allocated once, rewritten only if
+// the preview target is recreated (which happens on a size change, before any frame has
+// been drawn with the new one - so no in-flight descriptor is ever overwritten).
+static ID3D12Resource*             g_PreviewResource = nullptr;
+static UINT                        g_PreviewSrvSlot = 0;
+static bool                        g_PreviewSrvAllocated = false;
+static D3D12_CPU_DESCRIPTOR_HANDLE g_PreviewCpuHandle = {};
+static D3D12_GPU_DESCRIPTOR_HANDLE g_PreviewGpuHandle = {};
+
+void* ImGui_DX12_BindPreviewTexture(ID3D12Resource* resource, DXGI_FORMAT format)
+{
+    if (!g_ImGuiDX12Initialized || !g_pd3dDevice || !resource) return nullptr;
+    if (resource == g_PreviewResource && g_PreviewSrvAllocated)
+        return (void*)g_PreviewGpuHandle.ptr;
+
+    if (!g_PreviewSrvAllocated)
+    {
+        if (!AllocSrvSlot(g_PreviewSrvSlot, g_PreviewCpuHandle, g_PreviewGpuHandle))
+        {
+            DX12Log("PREVIEW: no free SRV slot for the object preview texture");
+            return nullptr;
+        }
+        g_PreviewSrvAllocated = true;
+    }
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = format;
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDesc.Texture2D.MipLevels = 1;
+    srvDesc.Texture2D.MostDetailedMip = 0;
+    g_pd3dDevice->CreateShaderResourceView(resource, &srvDesc, g_PreviewCpuHandle);
+    g_PreviewResource = resource;
+    DX12Log("PREVIEW: bound external texture %p to SRV slot %u", (void*)resource, g_PreviewSrvSlot);
+    return (void*)g_PreviewGpuHandle.ptr;
+}
+
+
 // --- Texture loading for UI images ---
 
 static bool CreateDX12TextureFromPixels(unsigned char* pixels, int width, int height,

@@ -1419,6 +1419,14 @@ void MasterRenderer::Render() const
 	// OWN command list, so calling it here keeps the ordering guarantee - depth lists
 	// (begun earlier in __super::Render) -> mask list -> compose list (begun later).
 	RenderOutlineHighlighers(CommandList());
+
+	// GGMAX 3.83: object-library live preview. __super::Render() has just recorded the
+	// preview camera's own command list (RenderPath3D::RenderCameraComponents), so the HDR
+	// result is complete by the time the tonemap list below runs - command lists execute in
+	// the order they were BEGUN, the same ordering guarantee the outline pass relies on.
+	// Costs nothing at all unless the pointer is resting on a library thumbnail.
+	extern void GGObjectPreview_Render(float fExposure);
+	GGObjectPreview_Render(getExposure());
 }
 
 // moved into function so we can call it at the right time from within renderpath3D, just before 2D is rendered

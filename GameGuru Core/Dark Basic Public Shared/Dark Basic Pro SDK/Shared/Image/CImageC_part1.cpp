@@ -253,6 +253,17 @@ DARKSDK LPGGTEXTURE GetImagePointer ( int iID )
 DARKSDK LPGGTEXTUREREF GetImagePointerView ( int iID )
 {
 	#ifdef DX11
+	// GGMAX 3.83: the object-library LIVE PREVIEW substitutes a rendered texture for the
+	// hovered thumbnail's image. This is the single hook the feature needs on the UI side:
+	// ImgBtn resolves every image through here, so the grid cell keeps its size, hover,
+	// click and drag behaviour and only the pixels change. Asked BEFORE UpdatePtrImage
+	// so it works even for an id whose file-backed entry is being reloaded.
+	{
+		extern void* GGObjectPreview_GetImageOverride(int iID);
+		void* pLivePreview = GGObjectPreview_GetImageOverride ( iID );
+		if ( pLivePreview ) return (LPGGTEXTUREREF)pLivePreview;
+	}
+
 	// update internal data
 	if ( !UpdatePtrImage ( iID ) )
 		return NULL;

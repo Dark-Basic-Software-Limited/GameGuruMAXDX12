@@ -8924,23 +8924,23 @@ final check now captures every rung at both.
 2. `aztec_wall_152` is **1,530,144 verts for 510,048 tris — exactly 3.0 verts/tri, unwelded.**
    Content-side, and it multiplies everything above.
 3. Delayed Shadows is still off by default and still the largest single unclaimed saving (§3.33).
-
-## Gate
-
-Sweep `0828e` **CLEAN 19/19** on all four criteria (engine `544c6ccb`, game `73d6df22`):
-
-```
-C1 LOAD      PASS  19/19 reached the editor
-C2 GEOMETRY  PASS  POLYS identical to the 0825 reference on all 19 demos
-C3 VRAM      PASS  worst 3974.9 MB (Aztec Game Kit, in game), limit 4096, headroom 121.1 MB
-C4 GAME      PASS  every demo produced in-game FPS past the loading overlays
-```
-
-★ C2 is the one that matters here. Super Quick is off by default, so the sweep exercises the
-STOCK path - and POLYS bit-identical on all nineteen is the proof that the new variant bit, the
-extra pipeline permutations and the two new debug channels changed nothing about what gets drawn.
-The one edit that reaches the stock shader at all is the debugvis 23/24 switch, a uniform branch
-on a frame constant in the pixel shader beside twenty existing ones.
+
+## Gate
+
+Sweep `0828e` **CLEAN 19/19** on all four criteria (engine `544c6ccb`, game `73d6df22`):
+
+```
+C1 LOAD      PASS  19/19 reached the editor
+C2 GEOMETRY  PASS  POLYS identical to the 0825 reference on all 19 demos
+C3 VRAM      PASS  worst 3974.9 MB (Aztec Game Kit, in game), limit 4096, headroom 121.1 MB
+C4 GAME      PASS  every demo produced in-game FPS past the loading overlays
+```
+
+★ C2 is the one that matters here. Super Quick is off by default, so the sweep exercises the
+STOCK path - and POLYS bit-identical on all nineteen is the proof that the new variant bit, the
+extra pipeline permutations and the two new debug channels changed nothing about what gets drawn.
+The one edit that reaches the stock shader at all is the debugvis 23/24 switch, a uniform branch
+on a frame constant in the pixel shader beside twenty existing ones.
 
 
 ---
@@ -9619,7 +9619,7 @@ Rejected, with reasons:
 The first patch script joined lines with CRLF and *then* ran `.replace("
 ", CRLF)`, turning every
 `
-` into `
+` into `
 `. That rewrote all 1974 line endings (`git diff` showed 2018 insertions /
 1974 deletions for a 40-line addition), and a later line-based edit then mis-detected the block end
 and moved 316 lines of `addFunctions()` to the top of the file.
@@ -13218,3 +13218,145 @@ whose embedded visuals.ini states a shaderlevels key, and each move must be expl
 mechanism - a move on a demo whose file states no shaderlevels key is NOT explainable and is a real
 finding. C3 must still pass: the 4 GB min-spec limit is not negotiable, and a demo that now loads at
 a higher quality level could plausibly approach it.
+
+---
+
+## 3.83 Object Library LIVE PREVIEW restored (DX12) — 2026-09-22
+
+Lee: hovering a thumbnail in the Object Library used to replace the static image with a live
+render of the object, slowly rotating. DX11 does it; DX12 showed nothing. A visible regression.
+
+### The defect — the SIXTH instance of the same shape
+
+The game-side half of the feature survived the port **completely intact**. `M-GridEditB_part9.cpp`
+diffs 1:1 against DX11's `M-GridEditB.cpp:19400-20300` apart from `Timer()` → `MAXTimer()`: the
+hover timer, the 750 ms arm, the progress bar, the object load, the rotation accumulator, the
+un-hover restore — all of it, all correct, all running. `DUMP_OBJPREVIEW` on the very first build
+showed `obj=50068 imageid=4039 loop=1 rotate=1 rotY=246.2` while hovering. The feature was *asking*
+to be drawn, every frame, and nothing was listening.
+
+What did not survive was one function. `GrabBackBufferCopy()` (`M-GridEditB_part7.cpp`) opened with
+
+```cpp
+extern bool ImGui_DX12_IsInitialized();
+if (ImGui_DX12_IsInitialized()) return;     // "none of which works in DX12"
+```
+
+because its implementation renders into legacy DBP **bitmap 99** and pulls the pixels back out
+with `GrabImage()`. In DX12 `m_pD3D` is NULL (`master_part0.cpp:94`), so `GrabImageCore()` returns
+false on its first line and the entire DBP image-grab layer is dead. `Master::ForceRender`'s
+`SetRenderTarget` and `ComposeSimple` are commented out for the same reason.
+
+★ Nothing BROKE. The pixels MOVED — into a DX12 resource the DX11 image layer cannot see — and
+nothing told anyone. Same shape as the customDraw hook inventory, the tree-sway caller, the
+billboard atlas, the tree pool in the terrain update, the fog compat shim, the prepass RT0 meaning
+and the planar-reflection bumpColor.
+
+### The fix — the engine already had the feature
+
+Wicked DX12 has something the DX11 fork did not: **`CameraComponent::render_to_texture`**. Give any
+scene CameraComponent a non-zero `render_to_texture.resolution` and
+`RenderPath3D::RenderCameraComponents` (`wiRenderPath3D.cpp:2919`, called unconditionally from
+`Render()`) allocates the targets, culls, prepasses, tile-culls the lights, draws opaque +
+transparent + sky and generates a mip chain — every frame, from that camera, into its own texture.
+That is precisely the hand-rolled "backbuffer capture and texture assignment" DX11 had to build,
+now done by the engine.
+
+So `master_part2.cpp` (new) does only the three things the engine does not:
+
+1. owns one scene CameraComponent and drives it from GG camera space (same `TransformComponent`
+   recipe `master_part0.cpp:531` uses for the editor camera),
+2. tonemaps the engine's HDR result (`format_rendertarget_main` = R11G11B10_FLOAT) into an LDR
+   texture, because ImGui samples raw,
+3. hands that texture to the ImGui DX12 bridge (`ImGui_DX12_BindPreviewTexture`), which creates one
+   SRV for it in ImGui's own descriptor heap — it never owns, uploads or releases the resource.
+
+`GrabBackBufferCopy`'s DX12 short-circuit is now **selective**: the live preview runs, and the three
+customers that genuinely still need a GPU→CPU readback (thumbnail generation to disk, snapshot mode,
+particle-thumb mode) stay switched off exactly as they were. All of its camera framing maths — the
+pivots, decal and character cases, the EBE height bump, `fAdjustRange`, the `fLargestY` ladder, the
+per-FPE restore camera — is the original DX11 code doing its original job, unchanged.
+
+**⚠ ZERO ENGINE CHANGES.** Nothing in `WickedEngineDX12` is touched, so no
+`WICKED_ENGINE_CHANGES.md` delta row is owed and the sweeps see an unchanged engine.
+
+**Cost when idle is zero.** `resolution == {0,0}` makes `RenderCameraComponents` free its resources
+and `continue` on its first line; `GGObjectPreview_Render()` early-outs. Measured 288.5 FPS with the
+library open and the preview torn down — unchanged from before the feature existed.
+
+### Four defects found on the way, all the same mistake in different clothes
+
+The preview is its own little scene, and **every parameter it inherited from the level was a
+parameter that could be wrong for it.**
+
+| | symptom | cause |
+|---|---|---|
+| a | `DXGI_ERROR_DEVICE_HUNG` on the first hover | the tonemap command list bound `BindCommonResources` but **not `BindCameraCB`**, and `tonemapCS.hlsl`'s first statement is `GetCamera().is_uv_inside_scissor(uv)`. An unset root CBV is undefined in DX12; this driver took the device down. `RenderPostprocessChain` binds both, one line apart — I copied one. |
+| b | (latent behind a) preview would have been black anyway | `CameraComponent::scissor` defaults to all zeros and `scissor_uv` derives from it (`wiRenderer.cpp:13324`), so every tonemap thread would have failed the scissor test and returned. Set in `Submit` now. |
+| c | object rendered but nearly black | it inherited the **level's** exposure — **0.145** on this night warehouse. A library thumbnail is a product shot lit by two fixed-intensity thumb lights; it must be graded on its own fixed exposure or the same object looks different in every level. The full-scene path survives a dark level because it also runs eye adaption; this pass has no luminance history to adapt from. Fixed at 1.0. |
+| d | black background | the backdrop plane was in the frustum the whole time. `CreateBackdropObject` does `SetObjectTransparency(obj, 1)`, so the material carries `FILTER_TRANSPARENT` and `GetBlendMode()` returns `BLENDMODE_ALPHA` **whatever `userBlendMode` says** — and the backdrop images have no usable alpha, so a perfectly resident texture (`tex=1`) blended away to nothing. Forced opaque; the authored image is kept. |
+
+Plus three things DX11 could tear down in the same call and DX12 cannot, because the engine renders
+the preview camera on the **next** frame: the preview object (parked, restored on un-hover), the
+backdrop plane (held visible), and the thumb lights (DX11's live path never switched them on at all,
+because `ForceRender` re-rendered the whole lit level — a lone camera drawing one object parked at
+y=39000 has no such luck).
+
+### How it was found — staged, not guessed
+
+A device hang costs a full relaunch, and the DRED dump could not separate the three things that
+happen on that frame (`lastCompletedOp = 0` on every list, no page fault — a TDR, not a freed
+resource). So the three steps became a **runtime** switch instead of three rebuilds:
+
+```
+SET_OBJPREVIEW 0   off          SET_OBJPREVIEW 2   + tonemap
+SET_OBJPREVIEW 1   engine RT    SET_OBJPREVIEW 3   + ImGui bind (default)
+```
+
+1 clean → 2 hangs. One run, one culprit. The same verb later carried `[exposure] [backdrop]` so the
+exposure could be swept against **one live hover** rather than one rebuild per guess — which also
+kept the comparison honest, since separate runs would have compared different rotations as well as
+different grades.
+
+### New instruments (all reusable, none preview-specific)
+
+- **`MOUSE_AT <x> <y>` / `MOUSE_DOWN` / `MOUSE_UP` / `MOUSE_CLICK`** — the harness could not drive
+  a hover at all before this. `CLICK` is a table of named app actions and `PRESS_KEY` posts
+  `WM_KEYDOWN`, but `ImGui::IsItemHovered()` reads `io.MousePos`, which comes from the OS cursor.
+  Client pixels, the same space as `PICK_AT` and a `SCREENSHOT`.
+  ⚠ **`MOUSE_CLICK` does not work on ImGui widgets.** Down+up in one `SendInput` is drained by ONE
+  message pump, and `imgui_impl_win32` sets `io.MouseDown[0]` true on `WM_LBUTTONDOWN` and false on
+  `WM_LBUTTONUP`, so the pair nets to false and ImGui never sees a click. The hover works (it only
+  needs the position) and the click silently does not — which reads as "the button is broken".
+  Always `MOUSE_AT` → `MOUSE_DOWN` → sleep → `MOUSE_UP`.
+- **`DUMP_OBJPREVIEW`** — every link in one line: the GG-side request, the camera entity, the engine
+  render target, the LDR copy, the ImGui descriptor, the preview visibility counts, exposure, clip
+  range, and the backdrop's state and distance. `visObj=3 visLight=2 backdrop exist=1 vis=1 tex=1`
+  is what turned "it's black" from three hypotheses into one.
+- **`SET_OBJPREVIEW <0..3> [exposure] [backdrop]`** — the staging switch above.
+- `tools/objpreview_probe.sh`, `tools/objpreview_exposure.sh`.
+
+★ **A probe that takes one screenshot cannot test a live preview.** The feature IS the motion, so
+the probe takes four spaced shots and the pass condition is that they DIFFER. A single frame cannot
+tell a live render from a static thumbnail.
+
+★ **A 0% CPU "hang" with the process Responding is a modal**, again (the Test Game freeze rule). The
+probe now says so out loud instead of timing out blind — `health()` reports
+"HARNESS SILENT - process alive" and points at `dred_report.txt`.
+
+### Verified
+
+| | |
+|---|---|
+| hover Archway → live render replaces the static thumbnail | ✅ |
+| it ROTATES (four shots, all different) | ✅ |
+| lit, on the object's authored blue backdrop | ✅ |
+| un-hover → static thumbnail returns, identical to its neighbours | ✅ |
+| FPS with the library open, not hovering | 288.5 — unchanged |
+
+### Still open (out of scope here, all pre-existing)
+
+Thumbnail **generation to disk**, snapshot mode and the particle-thumb mode remain disabled in DX12.
+They need a GPU→CPU readback that does not exist yet. Stock content ships with its thumbnails, so
+this only bites imported/user content — worth its own pass, and the preview render target is now
+exactly the thing a readback would read from.

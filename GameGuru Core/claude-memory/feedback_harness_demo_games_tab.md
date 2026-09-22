@@ -54,3 +54,15 @@ what `CLICK_ONLY_LEVEL` actually returned, this was a two-minute fix.
 scene is 0.7-2.5 MB. Sort the screenshots by size and any failed render is the outlier.
 
 See also [[project-harness-open-my-games]], [[project-writable-area]], [[feedback-instrument-before-theory]].
+
+## ★★ Driving ImGui with the real cursor (3.83)
+
+`CLICK` is a table of named app actions and `PRESS_KEY` posts `WM_KEYDOWN`; neither can reach
+anything hover-triggered, because `ImGui::IsItemHovered()` reads `io.MousePos` from the OS cursor.
+`MOUSE_AT <x> <y>` moves it (client pixels, same space as `PICK_AT` and `SCREENSHOT`).
+
+⚠ **`MOUSE_CLICK` does not work on ImGui widgets.** Down+up in one `SendInput` is drained by ONE
+message pump, and `imgui_impl_win32` sets `io.MouseDown[0]` true on `WM_LBUTTONDOWN` and false on
+`WM_LBUTTONUP` — the pair nets to false and ImGui never sees a click. The HOVER works (it only needs
+the position) and the click silently does not, which reads as "that button is broken". Always
+`MOUSE_AT` → sleep → `MOUSE_DOWN` → sleep → `MOUSE_UP`. See [[project-object-library-preview]].

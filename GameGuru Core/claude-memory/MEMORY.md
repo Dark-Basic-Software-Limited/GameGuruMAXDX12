@@ -42,6 +42,11 @@
 - **Standalone arc 2.69–2.71 Lee-confirmed**: boot splash, save/load slots (Lua 5.4 float filenames), producelogfiles=0.
 - **[Convert ALL stock DDS](../../../../../max/GameGuruMAXDX12/GameGuru%20Core/MILESTONE_DDS_CONVERSION.md)** — 1641 files, 19/19. Revert = `D:\max\mipbackup`. Tools `tools/ddsconvert.py`, `tools/surfacescan.py`.
 
+> ★★★ **[Object Library live preview](project_object_library_preview.md)** — restored DX12 3.83 with the engine's
+> native **`CameraComponent::render_to_texture`** (zero engine edits). ★ Reach for that before hand-rolling any
+> offscreen scene render. ★ A preview is its OWN scene — exposure, far plane, scissor and blend mode inherited
+> from the level were all wrong for it. ⚠ `BindCommonResources` without `BindCameraCB` = DEVICE HANG.
+
 > ★★★ **[Two fog paths](project_fog_two_paths.md)** — the ENGINE fogs terrain/entities/near trees; GG's `ApplyFogCustom` fogs every **customDraw** (billboard trees, grass, bakes). The shim inverting `density = 4/(far-near)` dropped the 4, so custom draws ran **4× too foggy** (solid-red trees on pale terrain). Fixed 09-20. ★ A compat shim is where a value gets silently RE-DERIVED.
 
 > ★★★ **[DX12 customDraw hook inventory](project_customdraw_hook_inventory.md)** — DX11's ~20 `extern "C"` GGREDUCED engine hooks became `customDraw_*` FUNCTION POINTERS the GAME assigns in `master_part1.cpp:575-646`, so restoring a missing render feature needs NO engine edit. ★ The port's inventory was built by grepping GGTerrain/GGTrees/GGGrass — **every other hook in those same blocks fell out of scope silently** (bullet tracers, gpup, soft-particle interleave). Worked example: bullet tracers 3.55 (5 stacked defects, dds.h vs ddraw.h macros, C1061 harness rule). Hit 4× so far; GGTrees shadow/envprobe still unwired.

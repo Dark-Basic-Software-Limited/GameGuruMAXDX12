@@ -3291,6 +3291,128 @@ static bool AutoHarness_TracerCommands(const char* cmd, const char* arg, char* r
 	return true;
 }
 
+// GGMAX 3.83: real-cursor + object-preview verbs.
+//
+// Everything hover-driven in the editor was untestable until now: CLICK is a table of named
+// app actions and PRESS_KEY posts WM_KEYDOWN, but ImGui::IsItemHovered() reads io.MousePos,
+// which the Win32 backend takes from the OS cursor. So a hover needs the OS cursor moved.
+//
+// Coordinates are CLIENT pixels of the MAX window - the same space PICK_AT uses and the same
+// space a SCREENSHOT is measured in, so a coordinate read off a screenshot can be used here
+// directly.
+static bool AutoHarness_MouseCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
+{
+	const bool bAt = (_stricmp(cmd, "MOUSE_AT") == 0);
+	const bool bClick = (_stricmp(cmd, "MOUSE_CLICK") == 0);
+	// MOUSE_DOWN / MOUSE_UP exist because a down+up pair inside one SendInput is drained by
+	// ONE message pump, and imgui_impl_win32 sets io.MouseDown[0] true on WM_LBUTTONDOWN and
+	// false on WM_LBUTTONUP - so the pair nets to false and ImGui never sees a click. Hover
+	// works (it only needs the position), the click silently does not. Hold the button
+	// across at least one frame: MOUSE_AT, MOUSE_DOWN, sleep, MOUSE_UP.
+	const bool bDown = (_stricmp(cmd, "MOUSE_DOWN") == 0);
+	const bool bUp = (_stricmp(cmd, "MOUSE_UP") == 0);
+	if (bAt || bClick || bDown || bUp)
+	{
+		if (!g_pGlob || !g_pGlob->hWnd)
+		{
+			_snprintf(result, resultSize, "ERROR: no window handle");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		int mx = -1, my = -1;
+		int got = (arg && arg[0]) ? sscanf_s(arg, "%d %d", &mx, &my) : 0;
+		if (bAt && got != 2)
+		{
+			_snprintf(result, resultSize, "ERROR: MOUSE_AT requires <x> <y> in client pixels");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		// The Win32 ImGui backend only samples the cursor when MAX owns the foreground, so an
+		// unfocused window would take the move and register no hover at all - silently.
+		if (GetForegroundWindow() != g_pGlob->hWnd)
+		{
+			SetForegroundWindow(g_pGlob->hWnd);
+		}
+		POINT pt = { 0, 0 };
+		if (got == 2)
+		{
+			pt.x = mx; pt.y = my;
+			ClientToScreen(g_pGlob->hWnd, &pt);
+			SetCursorPos(pt.x, pt.y);
+		}
+		else
+		{
+			GetCursorPos(&pt);
+		}
+		if (bClick || bDown || bUp)
+		{
+			INPUT in[2] = {};
+			UINT n = 0;
+			if (bClick || bDown) { in[n].type = INPUT_MOUSE; in[n].mi.dwFlags = MOUSEEVENTF_LEFTDOWN; n++; }
+			if (bClick || bUp)   { in[n].type = INPUT_MOUSE; in[n].mi.dwFlags = MOUSEEVENTF_LEFTUP;   n++; }
+			SendInput(n, in, sizeof(INPUT));
+		}
+		_snprintf(result, resultSize, "OK: %s client=(%d,%d) screen=(%ld,%ld)",
+			bClick ? "MOUSE_CLICK" : bDown ? "MOUSE_DOWN" : bUp ? "MOUSE_UP" : "MOUSE_AT",
+		mx, my, pt.x, pt.y);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+
+	if (_stricmp(cmd, "SET_OBJPREVIEW") == 0)
+	{
+		// Stage the live preview so a device hang names WHICH of the three steps did it:
+		// 0 off, 1 engine render_to_texture only, 2 + tonemap, 3 + ImGui bind (default).
+		// SET_OBJPREVIEW <mode> [exposure]  - the exposure is optional and does NOT restart the
+		// pass, so it can be swept against one live hover instead of one rebuild per guess.
+		extern int gg_objpreview_mode;
+		extern float gg_objpreview_exposure;
+		extern int gg_objpreview_backdrop;
+		int m = -1; float ex = -1.0f; int bd = -1;
+		const int got = (arg && arg[0]) ? sscanf_s(arg, "%d %f %d", &m, &ex, &bd) : 0;
+		if (got < 1 || m < 0 || m > 3)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_OBJPREVIEW <0..3> [exposure] (now mode %d exposure %.3f)",
+				gg_objpreview_mode, gg_objpreview_exposure);
+		}
+		else
+		{
+			extern void GGObjectPreview_Stop(void);
+			const bool bModeChanged = (gg_objpreview_mode != m);
+			gg_objpreview_mode = m;
+			if (got >= 2) gg_objpreview_exposure = ex;
+			if (got >= 3 && bd >= 0 && bd <= 2) { gg_objpreview_backdrop = bd; GGObjectPreview_Stop(); }
+			if (bModeChanged) GGObjectPreview_Stop();
+			_snprintf(result, resultSize, "OK: SET_OBJPREVIEW mode %d exposure %.3f backdrop %d",
+				m, gg_objpreview_exposure, gg_objpreview_backdrop);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "DUMP_OBJPREVIEW") == 0)
+	{
+		// Names every link in the live-preview chain in one line, so a blank thumbnail can be
+		// told apart from a preview that was never requested, never rendered, or never bound.
+		extern int BackBufferObjectID;
+		extern int BackBufferImageID;
+		extern bool bLoopBackBuffer;
+		extern bool bRotateBackBuffer;
+		extern float BackBufferRotateY;
+		extern bool GGObjectPreview_IsActive(void);
+		extern void GGObjectPreview_DebugStatus(char* buf, int bufsize);
+		char st[512]; st[0] = 0;
+		GGObjectPreview_DebugStatus(st, sizeof(st));
+		extern bool ImGui_DX12_IsInitialized();
+		_snprintf(result, resultSize,
+			"OK: DUMP_OBJPREVIEW dx12=%d obj=%d imageid=%d loop=%d rotate=%d rotY=%.1f active=%d | %s",
+			ImGui_DX12_IsInitialized() ? 1 : 0,
+			BackBufferObjectID, BackBufferImageID, bLoopBackBuffer ? 1 : 0, bRotateBackBuffer ? 1 : 0,
+			BackBufferRotateY, GGObjectPreview_IsActive() ? 1 : 0, st);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	return false;
+}
 static bool AutoHarness_ShadowBudgetCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
 {
 	if (_stricmp(cmd, "SET_SHADOW_MAX") == 0)
@@ -8241,7 +8363,8 @@ void AutoHarness_CheckForCommand(void)
 	else if (AutoHarness_OutlineCommands(cmd, arg, result, sizeof(result))
 		|| AutoHarness_BulletHoleCommands(cmd, arg, result, sizeof(result))
 		|| AutoHarness_TracerCommands(cmd, arg, result, sizeof(result))
-		|| AutoHarness_TreeWindCommands(cmd, arg, result, sizeof(result))) // C1061: share the arm, never add one
+		|| AutoHarness_TreeWindCommands(cmd, arg, result, sizeof(result))
+		|| AutoHarness_MouseCommands(cmd, arg, result, sizeof(result))) // C1061: share the arm, never add one
 	{
 		// handled in the helper (see above the dispatch function)
 	}
