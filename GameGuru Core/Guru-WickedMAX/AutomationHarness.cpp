@@ -3417,6 +3417,38 @@ static bool AutoHarness_MouseCommands(const char* cmd, const char* arg, char* re
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_OBJPREVIEW_MAT") == 0)
+	{
+		// SET_OBJPREVIEW_MAT <metalness> [roughness] [bounce] - the first two override the PREVIEW
+		// OBJECT's subsets only (a temporary bank object, never a placed instance); -1 leaves them
+		// as loaded. bounce is the third light's strength as a fraction of the key, 0 disables it.
+		// (a temporary bank object, never a placed instance). -1 leaves the material as loaded.
+		extern float gg_objpreview_metal, gg_objpreview_rough;
+		extern float gg_objpreview_bounce;
+		float mv = -2.0f, rv = -2.0f, bv = -2.0f;
+		const int got = (arg && arg[0]) ? sscanf_s(arg, "%f %f %f", &mv, &rv, &bv) : 0;
+		if (got < 1)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_OBJPREVIEW_MAT <metalness> [roughness] (now %.2f / %.2f)",
+				gg_objpreview_metal, gg_objpreview_rough);
+		}
+		else
+		{
+			gg_objpreview_metal = mv;
+			if (got >= 2) gg_objpreview_rough = rv;
+			if (got >= 3) gg_objpreview_bounce = bv;
+			_snprintf(result, resultSize, "OK: SET_OBJPREVIEW_MAT metalness %.2f roughness %.2f bounce %.2f",
+				gg_objpreview_metal, gg_objpreview_rough, gg_objpreview_bounce);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "DUMP_OBJPREVIEW_MATS") == 0)
+	{
+		extern void GGObjectPreview_DumpMaterials(char*, int);
+		GGObjectPreview_DumpMaterials(result, (int)resultSize);
+		return true;
+	}
 	if (_stricmp(cmd, "DUMP_OBJPREVIEW") == 0)
 	{
 		// Names every link in the live-preview chain in one line, so a blank thumbnail can be

@@ -91,6 +91,17 @@ float gg_objpreview_lightint = 0.0f;   // >0 overrides the above with an absolut
 // the level's camera FOV, and every distance constant in GrabBackBufferCopy was fitted to
 // that. Passing the level's FOV made every object 1.39x too large.
 float gg_objpreview_fovdeg = 45.0f;
+// Material overrides applied to the PREVIEW OBJECT ONLY (a temporary bank object, never a
+// placed instance). <0 = leave the material as loaded.
+float gg_objpreview_metal = -1.0f;
+float gg_objpreview_rough = -1.0f;
+// Bounce fill strength as a fraction of the key, 0 disables the third light.
+// ⚠ DEFAULT OFF. The rig is here and works, but the shipped calibration (lightk) was matched
+// to the DX11 reference thumbnails WITHOUT it, and switching it on shifts that match. It was
+// added chasing the black-torso zombie and did not fix it (torso mean 26.9 -> 27.6), so there
+// is no evidence to pay for the recalibration yet. SET_OBJPREVIEW_MAT's third argument turns
+// it on for experiments.
+float gg_objpreview_bounce = 0.0f;
 
 namespace GGObjectPreview
 {
@@ -109,6 +120,7 @@ namespace GGObjectPreview
 	static int						s_backdropObject = 0;	// backdrop plane held visible for the preview
 	static int						s_litLights = 0;		// lights forced into the MAIN visibility this frame
 	static int						s_evictions = 0;		// times a predecessor had to be un-parked
+	static wi::ecs::Entity			s_bounceLight = 0;		// module-owned bounce fill from below-front
 
 	// ★ The engine's own framing reference. DX11 rendered the thumbnail at a FIXED 1920x1017
 	// (Master::ForceRender's USEFIXEDBACKBUFFERSIZE viewport / MakeBitmap(99,1920,1017)) and
@@ -238,6 +250,11 @@ void GGObjectPreview_Stop(void)
 	// left both lights - and the light-shaft / lens-flare switches they turn off, which are
 	// GLOBAL RenderPath3D state - stuck for the rest of the session.
 	WickedCall_EnableThumbLight(false);
+	if (s_bounceLight != 0)
+	{
+		wi::scene::GetScene().Entity_Remove(s_bounceLight);
+		s_bounceLight = 0;
+	}
 	if (s_camEntity != 0)
 	{
 		wi::scene::CameraComponent* cam = wi::scene::GetScene().cameras.GetComponent(s_camEntity);
@@ -277,9 +294,9 @@ void GGObjectPreview_PreVisibility(void)
 	if (!s_active) return;
 	extern wi::ecs::Entity g_entityThumbLight, g_entityThumbLight2;
 	wi::scene::Scene& scene = wi::scene::GetScene();
-	const wi::ecs::Entity le[2] = { g_entityThumbLight, g_entityThumbLight2 };
+	const wi::ecs::Entity le[3] = { g_entityThumbLight, g_entityThumbLight2, s_bounceLight };
 	s_litLights = 0;
-	for (int i = 0; i < 2; ++i)
+	for (int i = 0; i < 3; ++i)
 	{
 		if (!le[i]) continue;
 		const size_t idx = scene.lights.GetIndex(le[i]);
@@ -406,11 +423,27 @@ void GGObjectPreview_Submit(int imageId, int width, int height,
 		const float hx = -dz0, hz = dx0;
 		const float hl = sqrtf(hx*hx + hz*hz) > 0.001f ? sqrtf(hx*hx + hz*hz) : 1.0f;
 		const float rx = hx / hl, rz = hz / hl;
-		const struct { wi::ecs::Entity e; float ox, oy, oz, mul; } rig[2] = {
-			{ g_entityThumbLight,   rx * d * 0.45f, d * 0.35f, rz * d * 0.45f, 1.00f },   // key
-			{ g_entityThumbLight2, -rx * d * 0.70f, d * 0.20f, -rz * d * 0.70f, 0.45f },  // fill
+		// ★ The third light. Key and fill both sit ABOVE the camera, so a subject leaning away
+		// from them - a hunched zombie, a crouching character, the underside of anything -
+		// receives nothing, and with the level's ambient at (0,0,0) that is pure black rather
+		// than dark. This is the floor bounce a real studio gets for free.
+		if (gg_objpreview_bounce > 0.0f && s_bounceLight == 0)
+		{
+			s_bounceLight = wi::ecs::CreateEntity();
+			scene.lights.Create(s_bounceLight);
+			scene.transforms.Create(s_bounceLight);
+		}
+		else if (gg_objpreview_bounce <= 0.0f && s_bounceLight != 0)
+		{
+			scene.Entity_Remove(s_bounceLight);
+			s_bounceLight = 0;
+		}
+		const struct { wi::ecs::Entity e; float ox, oy, oz, mul; } rig[3] = {
+			{ g_entityThumbLight,   rx * d * 0.45f,  d * 0.35f, rz * d * 0.45f, 1.00f },  // key, high and right
+			{ g_entityThumbLight2, -rx * d * 0.70f,  d * 0.20f, -rz * d * 0.70f, 0.45f }, // fill, opposite
+			{ s_bounceLight,        rx * d * 0.10f, -d * 0.45f, rz * d * 0.10f, gg_objpreview_bounce }, // bounce, below front
 		};
-		for (int i = 0; i < 2; ++i)
+		for (int i = 0; i < 3; ++i)
 		{
 			if (!rig[i].e) continue;
 			wi::scene::LightComponent* lc = scene.lights.GetComponent(rig[i].e);
@@ -428,6 +461,32 @@ void GGObjectPreview_Submit(int imageId, int width, int height,
 				lt->ClearTransform();
 				lt->Translate(XMFLOAT3(camX + rig[i].ox, camY + rig[i].oy, camZ + rig[i].oz));
 				lt->SetDirty();
+			}
+		}
+	}
+
+	// Material override on the parked object's subsets, re-applied every submit because the
+	// object is reloaded on every fresh hover.
+	if ((gg_objpreview_metal >= 0.0f || gg_objpreview_rough >= 0.0f) && s_parkedObject > 0
+		&& ObjectExist(s_parkedObject) == 1)
+	{
+		sObject* pO = GetObjectData(s_parkedObject);
+		if (pO && pO->ppMeshList)
+		{
+			for (int m = 0; m < pO->iMeshCount; ++m)
+			{
+				sMesh* pM = pO->ppMeshList[m];
+				if (!pM) continue;
+				wi::scene::MeshComponent* me = scene.meshes.GetComponent(pM->wickedmeshindex);
+				if (!me) continue;
+				for (size_t si = 0; si < me->subsets.size(); ++si)
+				{
+					wi::scene::MaterialComponent* ma = scene.materials.GetComponent(me->subsets[si].materialID);
+					if (!ma) continue;
+					if (gg_objpreview_metal >= 0.0f) ma->metalness = gg_objpreview_metal;
+					if (gg_objpreview_rough >= 0.0f) ma->roughness = gg_objpreview_rough;
+					ma->SetDirty(true);
+				}
 			}
 		}
 	}
@@ -610,4 +669,114 @@ void GGObjectPreview_DebugStatus(char* buf, int bufsize)
 		tl ? tl->color.x : -1.0f, tl ? tl->color.y : -1.0f, tl ? tl->color.z : -1.0f,
 		wx ? wx->ambient.x : -1.0f, wx ? wx->ambient.y : -1.0f, wx ? wx->ambient.z : -1.0f);
 	buf[bufsize - 1] = 0;
+}
+
+// Per-subset material state of whatever the preview currently has parked. Written to a file
+// rather than the harness reply because a character is 6-10 subsets and the reply buffer is
+// shared. Uses GGDiagFopen so it lands in the diagnostic path, not a stray CWD.
+void GGObjectPreview_DumpMaterials(char* result, int resultSize)
+{
+	using namespace GGObjectPreview;
+	const int obj = s_parkedObject;
+	if (obj <= 0 || ObjectExist(obj) != 1)
+	{
+		_snprintf(result, resultSize, "ERROR: no preview object parked (hover a thumbnail first)");
+		result[resultSize - 1] = 0;
+		return;
+	}
+	extern FILE* GGDiagFopen(const char* name, const char* mode);
+	FILE* f = GGDiagFopen("objpreview_mats.txt", "w");
+	if (!f)
+	{
+		_snprintf(result, resultSize, "ERROR: could not open objpreview_mats.txt");
+		result[resultSize - 1] = 0;
+		return;
+	}
+	sObject* pObj = GetObjectData(obj);
+	wi::scene::Scene& scene = wi::scene::GetScene();
+	int meshes = 0, subsets = 0, blackBase = 0, noBaseTex = 0;
+	fprintf(f, "preview object %d  meshCount=%d  visible=%d\n",
+		obj, pObj ? pObj->iMeshCount : -1,
+		(g_ObjectList[obj] && g_ObjectList[obj]->bVisible) ? 1 : 0);
+	static const char* slotName[] = { "BASECOLOR", "NORMAL", "SURFACE", "EMISSIVE",
+		"DISPLACEMENT", "OCCLUSION", "TRANSMISSION", "SHEENCOLOR", "SHEENROUGH",
+		"CLEARCOAT", "CLEARCOATROUGH", "CLEARCOATNORMAL", "SPECULAR" };
+	if (pObj && pObj->ppMeshList)
+	{
+		for (int m = 0; m < pObj->iMeshCount; ++m)
+		{
+			sMesh* pMesh = pObj->ppMeshList[m];
+			if (!pMesh) { fprintf(f, "  mesh %d: NULL\n", m); continue; }
+			meshes++;
+			wi::scene::MeshComponent* mesh = scene.meshes.GetComponent(pMesh->wickedmeshindex);
+			if (!mesh) { fprintf(f, "  mesh %d: no MeshComponent (wickedmeshindex=%llu)\n",
+				m, (unsigned long long)pMesh->wickedmeshindex); continue; }
+			// ★ UV coverage per mesh. An empty or degenerate uvset_0 samples one texel of the atlas
+			// for the entire mesh - and this atlas is mostly black outside the garment islands.
+			// ★ Normal health. A zero-length or absent normal gives N.L == 0 for every light from
+			// every direction, which is uniform black that no amount of light can lift - exactly
+			// what the torso does while its own texture and material read as perfect.
+			float normLenLo = 9e9f, normLenHi = -9e9f;
+			int normZero = 0;
+			for (size_t ni = 0; ni < mesh->vertex_normals.size(); ++ni)
+			{
+				const XMFLOAT3& nv = mesh->vertex_normals[ni];
+				const float len = sqrtf(nv.x*nv.x + nv.y*nv.y + nv.z*nv.z);
+				if (len < normLenLo) normLenLo = len;
+				if (len > normLenHi) normLenHi = len;
+				if (len < 0.001f) normZero++;
+			}
+			float u0lo = 9e9f, u0hi = -9e9f, v0lo = 9e9f, v0hi = -9e9f;
+			for (size_t vi = 0; vi < mesh->vertex_uvset_0.size(); ++vi)
+			{
+				const XMFLOAT2& uv = mesh->vertex_uvset_0[vi];
+				if (uv.x < u0lo) u0lo = uv.x;  if (uv.x > u0hi) u0hi = uv.x;
+				if (uv.y < v0lo) v0lo = uv.y;  if (uv.y > v0hi) v0hi = uv.y;
+			}
+			fprintf(f, "  mesh %d: subsets=%d verts=%d uv0=%d uv1=%d colors=%d uv0range=[%.3f..%.3f, %.3f..%.3f]%s\n",
+				m, (int)mesh->subsets.size(), (int)mesh->vertex_positions.size(),
+				(int)mesh->vertex_uvset_0.size(), (int)mesh->vertex_uvset_1.size(),
+				(int)mesh->vertex_colors.size(),
+				(u0hi >= u0lo) ? u0lo : 0.0f, (u0hi >= u0lo) ? u0hi : 0.0f,
+				(u0hi >= u0lo) ? v0lo : 0.0f, (u0hi >= u0lo) ? v0hi : 0.0f,
+				(mesh->vertex_uvset_0.empty() || (u0hi - u0lo) < 0.001f) ? "   <== UV0 EMPTY/DEGENERATE" : "");
+			fprintf(f, "          normals=%d len=[%.3f..%.3f] zeroLen=%d tangents=%d%s\n",
+				(int)mesh->vertex_normals.size(),
+				(normLenHi >= normLenLo) ? normLenLo : 0.0f, (normLenHi >= normLenLo) ? normLenHi : 0.0f,
+				normZero, (int)mesh->vertex_tangents.size(),
+				(mesh->vertex_normals.empty() || normZero > 0) ? "   <== NORMALS MISSING/ZERO" : "");
+			for (size_t si = 0; si < mesh->subsets.size(); ++si)
+			{
+				subsets++;
+				wi::scene::MaterialComponent* mat = scene.materials.GetComponent(mesh->subsets[si].materialID);
+				if (!mat) { fprintf(f, "    subset %d: NO MATERIAL\n", (int)si); continue; }
+				const wi::scene::NameComponent* nm = scene.names.GetComponent(mesh->subsets[si].materialID);
+				const XMFLOAT4 bc = mat->baseColor;
+				const bool bBlack = (bc.x + bc.y + bc.z) < 0.02f;
+				if (bBlack) blackBase++;
+				fprintf(f, "    subset %d  '%s'\n", (int)si, nm ? nm->name.c_str() : "?");
+				fprintf(f, "      shaderType=%d blend=%d alphaRef=%.3f baseColor=(%.3f,%.3f,%.3f,%.3f)%s\n",
+					(int)mat->shaderType, (int)mat->userBlendMode, mat->alphaRef,
+					bc.x, bc.y, bc.z, bc.w, bBlack ? "   <== BLACK BASE COLOUR" : "");
+				fprintf(f, "      emissive=(%.3f,%.3f,%.3f,%.3f) metal=%.2f rough=%.2f reflect=%.2f\n",
+					mat->emissiveColor.x, mat->emissiveColor.y, mat->emissiveColor.z, mat->emissiveColor.w,
+					mat->metalness, mat->roughness, mat->reflectance);
+				for (int t2 = 0; t2 < wi::scene::MaterialComponent::TEXTURESLOT_COUNT; ++t2)
+				{
+					const auto& tex = mat->textures[t2];
+					if (!tex.resource.IsValid() && tex.name.empty()) continue;
+					const bool bValid = tex.resource.IsValid();
+					if (t2 == wi::scene::MaterialComponent::BASECOLORMAP && !bValid) noBaseTex++;
+					fprintf(f, "      slot%-2d %-15s %-8s uvset=%d '%s'\n", t2,
+						(t2 < 13) ? slotName[t2] : "?",
+						bValid ? "RESIDENT" : "ABSENT", (int)tex.uvset, tex.name.c_str());
+				}
+			}
+		}
+	}
+	fclose(f);
+	_snprintf(result, resultSize,
+		"OK: DUMP_OBJPREVIEW_MATS obj=%d meshes=%d subsets=%d blackBaseColour=%d missingBaseTex=%d -> objpreview_mats.txt",
+		obj, meshes, subsets, blackBase, noBaseTex);
+	result[resultSize - 1] = 0;
 }
