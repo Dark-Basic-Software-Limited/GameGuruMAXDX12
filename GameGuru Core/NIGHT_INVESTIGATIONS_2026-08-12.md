@@ -13047,3 +13047,56 @@ measuring it.
 2. **The default load camera differs** between DX11 and DX12 - DX11 faces the crate, DX12 points off
    to the left. Possibly the same family as the puddle sitting at y=5.7767 while the floor is at
    y=-0.1 (measured with `PICK_AT`), i.e. a load-time placement difference worth one look.
+
+
+## 3.81 - THE REFLECTIONS CHECKBOX LOADS OFF IN DX12 (2026-09-22) - REPRODUCED, NOT YET SOLVED
+
+Lee: the same level has Reflections TICKED in DX11's level settings and OFF in DX12.
+
+### Reproduced with an instrument, on the right level
+
+`DUMP_REFLECTION` gained a `REFLSTATE` line printing all four links of the enable chain at once.
+
+| level | loaded via | REFLSTATE |
+|---|---|---|
+| TESTPRO2 / testpro2level | `OPEN_PROJECT` + `CLICK_NODE` | `visuals=1 gamevisuals=1 entities=2 renderer=1` |
+| **Switch Escape (demo)** | `SELECT_DEMO` + `CLICK edit_game` + `CLICK_ONLY_LEVEL` | **`visuals=0 gamevisuals=0 entities=2 renderer=0`** |
+
+Lee's screenshots are `switch escape.fpm`, so the demo is the repro; testpro2level reads 1 only
+because he ticked it there and it saved.
+
+### Ruled OUT, each with evidence
+
+- **The LOW quality branch.** `M-Visuals_part1.cpp:688` force-clears the flag when
+  `shaderlevels.entities == 3`. It reads **2**. Not firing.
+- **A code difference from DX11.** The quality preset blocks are character-identical, and so is the
+  LOW branch including its `bReflectionsEnabled = false`. ⚠ I first reported that DX11 did NOT have
+  that line - **wrong, and the cause was a `head -20` truncating the grep**. The environment rules
+  already warn that `tail` withholds and discards; `head` does the same thing to a hit list.
+- **The persisted key.** A full diff of every `visuals.*` key: DX11 saves 161 / loads 158, DX12
+  saves 186 / loads 183, and DX11's set is a strict SUBSET of DX12's. Nothing DX11 persists is
+  missing from DX12, `visuals.ReflectionsEnabled` included.
+- **The global `visuals.ini`.** `visuals_load()` reads exactly one file,
+  `cFullWritePath + "visuals.ini"`, and it contains `visuals.ReflectionsEnabled=1`.
+- **The level file.** `switch escape.fpm` in the build area is the **original, unmodified Nov 2023
+  demo**, and DX11 reads reflections ON from that same file. So this is the LOAD PATH, not content.
+
+### The two live hypotheses, and the measurement that separates them
+
+The same global `visuals.ini` yields 1 on one level and 0 on the other, so something level- or
+path-specific overrides it. Note the two levels were opened by **different routes**, which is the
+lead I would chase first:
+
+1. **The demo route differs from the project route.** `SELECT_DEMO`/`edit_game` may reach a
+   visuals initialisation that leaves `gamevisuals` at its default and then copies
+   `gamevisuals -> visuals` (`M-GridEdit_part2.cpp:1758`). ⚠ **The two structs disagree on the
+   default for this one flag** - `visualstype` defaults it TRUE (`Types.h:4174`), `gamevisualstype`
+   defaults it FALSE (`Types.h:4437`) - so any copy that runs before `gamevisuals` is populated
+   yields OFF. That asymmetry is a latent trap regardless of which path triggers it.
+2. **A binary/struct layout difference** in whatever carries per-level visuals
+   ([[project_level_version_debt]]). DX12's `visualstype` has grown, so a raw read of a 2023-era
+   blob would misalign - but that would corrupt many settings, not one, so it is the weaker theory.
+
+★ **The discriminator is cheap:** open the SAME level by both routes and read `REFLSTATE`. If the
+project route gives 1 and the demo route gives 0 on one file, it is hypothesis 1 and the fix is in
+the demo load path. If both give 0, it is the level data and hypothesis 2.

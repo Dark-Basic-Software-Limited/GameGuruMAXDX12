@@ -4072,6 +4072,23 @@ static bool AutoHarness_ReflectionCommands(const char* cmd, const char* arg, cha
 		mc.VP._11, mc.VP._12, mc.VP._13, mc.VP._14, mc.VP._21, mc.VP._22, mc.VP._23, mc.VP._24,
 		rc.VP._11, rc.VP._12, rc.VP._13, rc.VP._14, rc.VP._21, rc.VP._22, rc.VP._23, rc.VP._24);
 
+	// ★ GGMAX 3.81: the whole Reflections enable chain in one line. Lee sees the tick ON in
+	// DX11 and OFF in DX12 for the same level, and each link can break independently:
+	//   visuals          what the level/visuals.ini loaded and the checkbox binds to
+	//   gamevisuals      the play-time copy; the editor copies FROM it on some load paths
+	//   shaderlevels     entities==3 (LOW) force-clears the flag in M-Visuals_part1.cpp:688
+	//                    - DX11 has the identical branch, so a DIFFERENT value here is the tell
+	//   renderer         what the engine is actually doing, past all of the above
+	{
+		extern MasterRenderer* master_renderer;
+		w += _snprintf(result + w, resultSize - w,
+			"  REFLSTATE visuals=%d gamevisuals=%d shaderlevels.entities=%d renderer=%d\n",
+			t.visuals.bReflectionsEnabled ? 1 : 0,
+			t.gamevisuals.bReflectionsEnabled ? 1 : 0,
+			(int)t.visuals.shaderlevels.entities,
+			(master_renderer && master_renderer->getReflectionsEnabled()) ? 1 : 0);
+	}
+
 	// ★ Who asked for the reflection, and is the plane at their SURFACE or their CENTRE?
 	// wiRenderer.cpp:4787 builds the plane from object.center - the centre of the bounding box.
 	// For a flat puddle centre == surface and that is fine; for anything with thickness the mirror
