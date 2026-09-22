@@ -8,6 +8,98 @@ metadata:
   modified: 2026-09-20T13:45:00.000Z
 ---
 
+# ▶▶ RESUME HERE — 2026-09-22, Lee is compacting then running the sweeps
+
+## ★★★ THE NEXT ACTION: run the three sweeps on game `9b5f6d88` / engine `3c955028`
+
+Build area exe **31,906,816 bytes, 15:34** — that IS the 3.82 build. Both repos clean and pushed.
+
+    cd "D:/max/GameGuruMAXDX12/GameGuru Core"
+    GGMAX_SWEEP_OUT=<dir> bash tools/demo_fps_sweep.sh 0922_3.82      # fresh gate, ~50 min
+    bash tools/demo_soak_sweep.sh <dir>                               # soak, ~70 min, run twice
+    bash tools/sweepgate.sh <results file>
+
+## ⚠⚠ C2 IS AMENDED FOR THIS RUN — READ `tools/prereg_0922_3.82.txt` BEFORE SCORING
+
+3.82 changed what settings a level LOADS WITH, which no change since 3.71 has done. Most shipped
+demos have pre-2024 visuals files, so a demo whose old file states a `shaderlevels.*` key now keeps
+its STATED level instead of being stamped LOW. Shaderlevels drive vegetation and object detail.
+
+- **A POLYS move on a demo whose embedded visuals.ini states a shaderlevels key is EXPECTED.**
+- **A POLYS move on a demo whose file states no such key is NOT explained and is a real finding.**
+  Check the demo's extracted `Files/levelbank/testmap/visuals.ini` before concluding either way.
+- Known non-deterministic demos (notes 3.74): **Foggy Forest, The Mystery of Z Island, Aztec Game
+  Kit Teaser** — Aztec oscillates by exactly 312 triangles.
+- ⚠ **C3 IS NOT AMENDED.** 3.82 makes old levels HEAVIER, which is what the downgrade existed to
+  prevent. If any demo exceeds **4096 MB on a FRESH launch**, that is a genuine regression from
+  3.82 and the change gets fixed or reconsidered. Last known fresh worst case: 3767.9 MB
+  (Aztec Game Kit), 328 MB headroom.
+- Soaks ALWAYS exceed 4096 (they load 19 levels in one process) — that is the gate applying a
+  fresh-launch limit to an accumulation test, not a build problem. Compare soak-to-soak: the band
+  across five prior runs is **4365.9–4394.9 MB**.
+
+## What landed this session (all verified, all pushed)
+
+| | |
+|---|---|
+| 3.72 | fog: GG customDraws fogged 4× harder than the terrain (compat shim dropped a `4`) |
+| 3.73 | Terrain Bake deleted every near 3D tree (pool hosted inside the terrain's update) |
+| 3.74 | three sweeps clean; **Aztec Game Kit Teaser is non-deterministic** |
+| 3.75/3.76 | clouds drawn over billboards: GG prepass was erasing the PrimitiveID + upsample fallback |
+| 3.77 | prepass RT1 `rtCustomDepth` so ID-less draws occlude (5.25 MB, measured by census) |
+| 3.78 | three sweeps clean on 3.77 |
+| 3.80 | planar reflection: removed `+ bumpColor` from the UV — **DX11 had this fix, the port lost it** |
+| 3.81 | diagnosed the Reflections checkbox loading OFF |
+| 3.82 | honour visuals keys a level states explicitly |
+
+## Open, ranked
+
+1. ⚠⚠ **Standalone texture residency** — [[project-standalone-vram]]. +950 to +1520 MB. Cause NOT
+   found. Still the only open item that changes a number the project relies on.
+2. **4 GB report** (`VRAM_4GB_REPORT_2026-09-21.md`) — no level exceeds alone; three do in a
+   multi-level session. The one recoverable item is the shadowMapAtlas ratchet, §3.69d, one line.
+3. **Default load camera differs DX11 vs DX12** — Lee reported it, not yet investigated.
+4. **Four reflective planes share ONE mirror plane** (nearest wins), so a second puddle at a
+   different height in the same view cannot be right. Not Lee's reported bug, but it is someone's.
+5. Aspect delta 1.9176 vs 1.9200 on the reflection buffer (801/4 truncates to 200). Real, ~2 px.
+
+## Instruments added this session — use them before theorising
+
+- **`DUMP_REFLECTION`** — both cameras' transforms, every planar-reflection requester with centre
+  and AABB, plus `REFLSTATE` (the whole Reflections enable chain), `VISGUARD` and `VISTRACE`.
+- `tools/cso_size_probe.sh` — the ONLY honest way to prove an ENGINE shader edit landed;
+  `build.bat` deletes stale engine `.cso` and MAX recompiles at launch, so date and existence lie.
+- `tools/vram_residue_probe.sh` / `vram_residue_scale.sh` — leak vs bounded-pin discriminator.
+- `tools/reflect_dump.sh`, `cloudtree_repro2.sh`, `bake_trees_probe.sh`, `aztec_polys_probe.sh`.
+
+## Measurement rules this session paid for
+
+- ★★★ **Scale the threshold to the SIGNAL.** I called the reflection fix a no-op on ">40 delta,
+  0.00%" — the puddle's median luminance is **24**, so >40 was impossible. Lee was right from the
+  running editor. Sample the content first; report by REGION, not one global percentage.
+- ★★ **A pixel diff needs a STATIC scene.** Two frames of the same build differ 29% when clouds
+  animate.
+- ★★ **Pre-register a statistic, not a single cell.** An 8 MB effect is invisible in one noisy cell
+  (spread 85 MB) but clear in the median of 19.
+- ★ **`census_bytes` rising proves data is LIVE, not LEAKED** — scale the intervening work to tell
+  a bounded rolling pin from a leak.
+- ⚠ **`head -N` truncates a grep the way `tail` does** — it made me claim DX11 lacked a line it has.
+
+## DO NOT
+
+- Do not kill MAX while Lee is working.
+- Do not SAVE or mutate Lee's projects (TESTPRO2 excepted).
+- `D:/max/GameGuruMAX` and `D:/max/WickedRepo` are **strictly read-only** — but READ them, they are
+  the parity reference and they solved 3.80.
+- Do not rationalise a C2 move. Check the demo's visuals.ini for a shaderlevels key first.
+- Every engine edit needs a delta row in `WICKED_ENGINE_CHANGES.md`.
+- ⚠ A `<< 'EOF'` heredoc collapses `chr(92)chr(92)n` to a real newline — write patch scripts to a
+  FILE with the Write tool. Cost a broken build again this session.
+
+---
+
+## Earlier resume blocks, newest first (history)
+
 # ▶▶ RESUME HERE — 2026-09-20, after the 8-hour pre-alpha run
 
 ## Read these first, in this order
@@ -86,8 +178,6 @@ synthetic click moved that title screen; whether a real mouse click works is unt
 - Every engine edit needs a delta row in `WICKED_ENGINE_CHANGES.md`.
 
 ---
-
-## Earlier resume blocks, newest first (history)
 
 # ▶ (superseded) 2026-09-20 03:10 — mid-run state, written while the sweeps were still going
 
