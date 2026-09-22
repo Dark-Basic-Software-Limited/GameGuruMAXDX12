@@ -3389,6 +3389,34 @@ static bool AutoHarness_MouseCommands(const char* cmd, const char* arg, char* re
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_OBJPREVIEW_LIGHT") == 0)
+	{
+		// SET_OBJPREVIEW_LIGHT <k> [absIntensity] [fovDeg] - k is the distance-scaled light
+		// preview is up. Does not restart the pass, so intensity can be swept against ONE live
+		// hover. 0 = leave whatever WickedCall_EnableThumbLight created (8 cd / 2900).
+		extern float gg_objpreview_lightk;
+		extern float gg_objpreview_lightint;
+		extern float gg_objpreview_fovdeg;
+		float lk = -1.0f, li = -1.0f, fv = -1.0f;
+		const int got = (arg && arg[0]) ? sscanf_s(arg, "%f %f %f", &lk, &li, &fv) : 0;
+		if (got < 1)
+		{
+			_snprintf(result, resultSize,
+				"ERROR: SET_OBJPREVIEW_LIGHT <k> [absIntensity] [fovDeg] (now k=%.2f abs=%.1f fov=%.1f)",
+				gg_objpreview_lightk, gg_objpreview_lightint, gg_objpreview_fovdeg);
+		}
+		else
+		{
+			gg_objpreview_lightk = lk;
+			if (got >= 2) gg_objpreview_lightint = li;
+			if (got >= 3) gg_objpreview_fovdeg = fv;
+			_snprintf(result, resultSize,
+				"OK: SET_OBJPREVIEW_LIGHT k=%.2f (intensity = k*d^2) abs=%.1f fov=%.1f",
+				gg_objpreview_lightk, gg_objpreview_lightint, gg_objpreview_fovdeg);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "DUMP_OBJPREVIEW") == 0)
 	{
 		// Names every link in the live-preview chain in one line, so a blank thumbnail can be

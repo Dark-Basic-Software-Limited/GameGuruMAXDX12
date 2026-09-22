@@ -637,6 +637,14 @@ void Master::Update(float dt)
 	// packs the shadow atlas. See wickedcalls_part3.cpp.
 	WickedCall_UpdateCharacterShadows();
 
+	// GGMAX 3.84: same slot, same reason. The object-library preview's lights have to be in
+	// the MAIN camera's visibility or they are never packed into the frame's shader entity
+	// array, and then no camera can see them - including the preview's own. After
+	// Scene::Update (which rebuilds scene.aabb_lights) and before PreRender's
+	// UpdateVisibility reads them. Returns immediately unless a preview is on screen.
+	extern void GGObjectPreview_PreVisibility(void);
+	GGObjectPreview_PreVisibility();
+
 	// push splash render to end of function FLICKER - MAKE THIS WORK!!!!
 	static bool bCustomSplash = false;
 	wiImageParams fx;
