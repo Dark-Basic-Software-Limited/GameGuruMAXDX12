@@ -13049,7 +13049,7 @@ measuring it.
    y=-0.1 (measured with `PICK_AT`), i.e. a load-time placement difference worth one look.
 
 
-## 3.81 - THE REFLECTIONS CHECKBOX LOADS OFF IN DX12 (2026-09-22) - REPRODUCED, NOT YET SOLVED
+## 3.81 - THE REFLECTIONS CHECKBOX LOADS OFF IN DX12 (2026-09-22) - SOLVED
 
 Lee: the same level has Reflections TICKED in DX11's level settings and OFF in DX12.
 
@@ -13100,3 +13100,72 @@ lead I would chase first:
 ★ **The discriminator is cheap:** open the SAME level by both routes and read `REFLSTATE`. If the
 project route gives 1 and the demo route gives 0 on one file, it is hypothesis 1 and the fix is in
 the demo load path. If both give 0, it is the level data and hypothesis 2.
+
+
+## 3.81d - SOLVED: an OLD level visuals file force-downgrades the whole level to LOW
+
+Three instruments, each ruling out the previous theory, got there.
+
+`VISGUARD` - did the level-load visuals block run, and from where?
+    ran=1  cwd="...\Files\levelbank	estmap"
+So it RAN (killing my relative-vs-absolute path theory), and the CWD is the EXTRACTED level folder,
+which is the real find: **each level carries its own `visuals.ini` inside the .fpm.**
+`visuals_load()` takes the relative path when `g.fpscrootdir_s` is empty, sets
+`bVisualFileFromLevel = true`, and reads THAT file - not the global one.
+
+`VISTRACE` - bracket the clobber:
+    afterParse=0 beforeEditorDefaults=0 afterEditorDefaults=0 atApplyVisuals=0
+**Already 0 the moment `visuals_load()` returns**, although the level's own file plainly contains
+`visuals.ReflectionsEnabled=1`. So the clear happens INSIDE the load, after the parse.
+
+### The mechanism, `M-Visuals_part0.cpp:1863`
+
+    // if older visuals file and loaded into new performance aware engine, add best defaults for
+    // PERFORMANCE! No-one remarks on QUALITY in Steam Reviews, so favor PERFORMANCE.
+    if (bVisualFileFromLevel == true)
+    {
+        if (t.visuals.newperformancepresets == 0)
+        {
+            visuals_shaderlevels_setlevel(4, bUpdateEngine);   // LOW
+            t.visuals.newperformancepresets = 1;
+
+`setlevel(4)` sets `shaderlevels.entities = 3`, and the LOW branch of
+`visuals_shaderlevels_update_core` (`M-Visuals_part1.cpp:688`) does
+`t.visuals.bReflectionsEnabled = false`.
+
+**Switch Escape's embedded `visuals.ini` is a 2023-era file with 124 keys against the modern 190,
+and `visuals.NewPerformancePresets` is one of the 66 it lacks.** So `newperformancepresets` stays 0,
+the downgrade fires, and the level's own explicit `ReflectionsEnabled=1` is overwritten seconds
+after being read. testpro2level's file is modern, so it keeps its 1 - which is exactly why the two
+levels disagreed under an identical global `visuals.ini`.
+
+★★★ **The code is IDENTICAL in DX11** - same `bVisualFileFromLevel`, same downgrade at
+`M-Visuals.cpp:1625`, same `setlevel(4) -> entities 3`, same LOW branch clearing the flag. So this
+is **not a port regression**: Lee's DX11 install simply has newer demo content whose embedded
+visuals file carries the flag. The DX12 build area still ships the original Nov 2023 `.fpm`.
+
+### ⚠ The design question, which is Lee's to answer
+
+Regardless of vintage, **a level that explicitly saved `ReflectionsEnabled=1` has it silently
+overridden** because its file predates a flag that has nothing to do with reflections. The
+downgrade is deliberate and the comment says why, but it cannot tell "the author never expressed a
+preference" from "the author asked for this and the file is just old".
+
+Options, in increasing boldness:
+1. **Remember which keys the level file explicitly contained, and re-apply them after the
+   downgrade.** Honours an explicit choice, keeps the performance default for everything unstated.
+   ⚠ Every old level with reflections ticked gets them back - slower, and that is the point of the
+   downgrade, so it is a product call.
+2. Ship refreshed demo content carrying `NewPerformancePresets=1`. Narrow, no code change, but only
+   fixes the demos.
+3. Leave it. Then the Reflections tick is simply not honoured on pre-2024 levels, and that should be
+   documented rather than discovered.
+
+### Wrong turns worth keeping
+
+- I proposed the guard's RELATIVE `FileExist("visuals.ini")` vs the loader's absolute path as the
+  cause. `VISGUARD` refuted it in one run - the guard ran. ★ But the instrument still paid: its CWD
+  field is what revealed that levels carry their own visuals file.
+- I asserted DX11 lacked the LOW-branch line that clears the flag. It has it. **The cause was
+  `head -20` truncating my grep** - the environment rules already warn that `tail` withholds and
+  discards, and `head` does exactly the same to a hit list. Re-checked without a pipe limit.

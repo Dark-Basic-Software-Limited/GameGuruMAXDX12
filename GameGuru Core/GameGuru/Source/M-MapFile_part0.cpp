@@ -4,6 +4,10 @@
 
 // Includes 
 #include "stdafx.h"
+#include <direct.h>   // GGMAX 3.81b: _getcwd for the visuals-guard diagnostic
+int g_ggVisualsGuardRan = -1;        // GGMAX 3.81b: -1 not reached, 0 guard said no, 1 ran
+char g_ggVisualsGuardCwd[512] = {0}; // GGMAX 3.81b: cwd when the guard was evaluated
+int g_ggReflTrace[4] = {-1,-1,-1,-1};  // GGMAX 3.81c: bReflectionsEnabled sampled through the load
 #include "gameguru.h"
 
 #include "GGTerrain\GGTerrainFile.h"
@@ -1268,10 +1272,17 @@ void mapfile_loadproject_fpm ( void )
 
 		//  load in visuals from loaded file
 		timestampactivity(0,"LOADMAP: load in visuals");
+		// GGMAX 3.81b DIAGNOSTIC: this guard tests a RELATIVE path while the visuals_load()
+		// it guards reads an ABSOLUTE one (cFullWritePath + "visuals.ini"). Record what the
+		// guard decided and where it was standing when it decided it.
+		extern int g_ggVisualsGuardRan; extern char g_ggVisualsGuardCwd[512];
+		g_ggVisualsGuardRan = (FileExist("visuals.ini") == 1) ? 1 : 0;
+		{ char* cwdp = _getcwd(g_ggVisualsGuardCwd, 511); (void)cwdp; }
 		if (  FileExist("visuals.ini") == 1 ) 
 		{
 			t.tstorefpscrootdir_s=g.fpscrootdir_s;
 			g.fpscrootdir_s="" ; visuals_load ( );
+			g_ggReflTrace[0] = t.visuals.bReflectionsEnabled ? 1 : 0;   // GGMAX 3.81c
 			g.fpscrootdir_s=t.tstorefpscrootdir_s;
 			t.trerfeshvisualsassets=1;
 
@@ -1280,8 +1291,10 @@ void mapfile_loadproject_fpm ( void )
 			t.editorvisuals=t.visuals;
 
 			//  And ensure editor visuals mimic required settings from loaded data
+			g_ggReflTrace[1] = t.visuals.bReflectionsEnabled ? 1 : 0;   // GGMAX 3.81c
 			visuals_editordefaults ( );
 			t.visuals=t.editorvisuals;
+			g_ggReflTrace[2] = t.visuals.bReflectionsEnabled ? 1 : 0;   // GGMAX 3.81c
 			t.visuals.skyindex=t.gamevisuals.skyindex;
 			t.visuals.sky_s=t.gamevisuals.sky_s;
 			t.visuals.terrainindex=t.gamevisuals.terrainindex;
@@ -1400,6 +1413,7 @@ void mapfile_loadproject_fpm ( void )
 		SetDir ( t.tdirst_s.Get() );
 
 		//  if visuals file present, apply it
+		g_ggReflTrace[3] = t.visuals.bReflectionsEnabled ? 1 : 0;   // GGMAX 3.81c
 		timestampactivity(0,"LOADMAP: apply visuals");
 		if (  t.trerfeshvisualsassets == 1 ) 
 		{

@@ -4087,6 +4087,16 @@ static bool AutoHarness_ReflectionCommands(const char* cmd, const char* arg, cha
 			t.gamevisuals.bReflectionsEnabled ? 1 : 0,
 			(int)t.visuals.shaderlevels.entities,
 			(master_renderer && master_renderer->getReflectionsEnabled()) ? 1 : 0);
+		{
+			extern int g_ggVisualsGuardRan; extern char g_ggVisualsGuardCwd[512];
+			w += _snprintf(result + w, resultSize - w,
+				"  VISGUARD ran=%d (-1=never reached, 0=FileExist(\"visuals.ini\") said NO) cwd=\"%s\"\n",
+				g_ggVisualsGuardRan, g_ggVisualsGuardCwd);
+			extern int g_ggReflTrace[4];
+			w += _snprintf(result + w, resultSize - w,
+				"  VISTRACE afterParse=%d beforeEditorDefaults=%d afterEditorDefaults=%d atApplyVisuals=%d\n",
+				g_ggReflTrace[0], g_ggReflTrace[1], g_ggReflTrace[2], g_ggReflTrace[3]);
+		}
 	}
 
 	// ★ Who asked for the reflection, and is the plane at their SURFACE or their CENTRE?
