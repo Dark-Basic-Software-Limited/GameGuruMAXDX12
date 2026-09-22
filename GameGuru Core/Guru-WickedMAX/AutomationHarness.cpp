@@ -3425,8 +3425,9 @@ static bool AutoHarness_MouseCommands(const char* cmd, const char* arg, char* re
 		// (a temporary bank object, never a placed instance). -1 leaves the material as loaded.
 		extern float gg_objpreview_metal, gg_objpreview_rough;
 		extern float gg_objpreview_bounce;
-		float mv = -2.0f, rv = -2.0f, bv = -2.0f;
-		const int got = (arg && arg[0]) ? sscanf_s(arg, "%f %f %f", &mv, &rv, &bv) : 0;
+		extern int gg_objpreview_unlit;
+		float mv = -2.0f, rv = -2.0f, bv = -2.0f; int uv2 = -1;
+		const int got = (arg && arg[0]) ? sscanf_s(arg, "%f %f %f %d", &mv, &rv, &bv, &uv2) : 0;
 		if (got < 1)
 		{
 			_snprintf(result, resultSize, "ERROR: SET_OBJPREVIEW_MAT <metalness> [roughness] (now %.2f / %.2f)",
@@ -3437,8 +3438,9 @@ static bool AutoHarness_MouseCommands(const char* cmd, const char* arg, char* re
 			gg_objpreview_metal = mv;
 			if (got >= 2) gg_objpreview_rough = rv;
 			if (got >= 3) gg_objpreview_bounce = bv;
-			_snprintf(result, resultSize, "OK: SET_OBJPREVIEW_MAT metalness %.2f roughness %.2f bounce %.2f",
-				gg_objpreview_metal, gg_objpreview_rough, gg_objpreview_bounce);
+			if (got >= 4) gg_objpreview_unlit = uv2;
+			_snprintf(result, resultSize, "OK: SET_OBJPREVIEW_MAT metalness %.2f roughness %.2f bounce %.2f unlit %d",
+				gg_objpreview_metal, gg_objpreview_rough, gg_objpreview_bounce, gg_objpreview_unlit);
 		}
 		result[resultSize - 1] = 0;
 		return true;

@@ -102,6 +102,9 @@ float gg_objpreview_rough = -1.0f;
 // is no evidence to pay for the recalibration yet. SET_OBJPREVIEW_MAT's third argument turns
 // it on for experiments.
 float gg_objpreview_bounce = 0.0f;
+// Diagnostic: 1 forces the preview object's materials UNLIT (baseColor * texture, no
+// lighting term). Splits 'the lighting is wrong' from 'the texture sample is black'.
+int gg_objpreview_unlit = 0;
 
 namespace GGObjectPreview
 {
@@ -467,7 +470,7 @@ void GGObjectPreview_Submit(int imageId, int width, int height,
 
 	// Material override on the parked object's subsets, re-applied every submit because the
 	// object is reloaded on every fresh hover.
-	if ((gg_objpreview_metal >= 0.0f || gg_objpreview_rough >= 0.0f) && s_parkedObject > 0
+	if ((gg_objpreview_metal >= 0.0f || gg_objpreview_rough >= 0.0f || gg_objpreview_unlit) && s_parkedObject > 0
 		&& ObjectExist(s_parkedObject) == 1)
 	{
 		sObject* pO = GetObjectData(s_parkedObject);
@@ -485,6 +488,7 @@ void GGObjectPreview_Submit(int imageId, int width, int height,
 					if (!ma) continue;
 					if (gg_objpreview_metal >= 0.0f) ma->metalness = gg_objpreview_metal;
 					if (gg_objpreview_rough >= 0.0f) ma->roughness = gg_objpreview_rough;
+					if (gg_objpreview_unlit) ma->shaderType = wi::scene::MaterialComponent::SHADERTYPE_UNLIT;
 					ma->SetDirty(true);
 				}
 			}
@@ -726,6 +730,16 @@ void GGObjectPreview_DumpMaterials(char* result, int resultSize)
 				if (len > normLenHi) normLenHi = len;
 				if (len < 0.001f) normZero++;
 			}
+			float tanLenLo = 9e9f, tanLenHi = -9e9f; int tanZero = 0, tanNaN = 0;
+			for (size_t ti = 0; ti < mesh->vertex_tangents.size(); ++ti)
+			{
+				const XMFLOAT4& tv = mesh->vertex_tangents[ti];
+				const float len = sqrtf(tv.x*tv.x + tv.y*tv.y + tv.z*tv.z);
+				if (!(len == len)) { tanNaN++; continue; }
+				if (len < tanLenLo) tanLenLo = len;
+				if (len > tanLenHi) tanLenHi = len;
+				if (len < 0.001f) tanZero++;
+			}
 			float u0lo = 9e9f, u0hi = -9e9f, v0lo = 9e9f, v0hi = -9e9f;
 			for (size_t vi = 0; vi < mesh->vertex_uvset_0.size(); ++vi)
 			{
@@ -745,6 +759,10 @@ void GGObjectPreview_DumpMaterials(char* result, int resultSize)
 				(normLenHi >= normLenLo) ? normLenLo : 0.0f, (normLenHi >= normLenLo) ? normLenHi : 0.0f,
 				normZero, (int)mesh->vertex_tangents.size(),
 				(mesh->vertex_normals.empty() || normZero > 0) ? "   <== NORMALS MISSING/ZERO" : "");
+			fprintf(f, "          tangents len=[%.3f..%.3f] zeroLen=%d nan=%d%s\n",
+				(tanLenHi >= tanLenLo) ? tanLenLo : 0.0f, (tanLenHi >= tanLenLo) ? tanLenHi : 0.0f,
+				tanZero, tanNaN,
+				(mesh->vertex_tangents.empty() || tanZero > 0 || tanNaN > 0) ? "   <== TANGENT FRAME DEGENERATE" : "");
 			for (size_t si = 0; si < mesh->subsets.size(); ++si)
 			{
 				subsets++;

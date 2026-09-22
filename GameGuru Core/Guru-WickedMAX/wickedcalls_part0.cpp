@@ -794,6 +794,38 @@ void WickedCall_LoadNode(sFrame* pFrame, Entity parent, Entity root, WickedLoade
 				}
 			}
 
+			// ★★★ GGMAX 3.84c: a DBO tangent slot that EXISTS but contains only zeros.
+			//
+			// The push above tests offsetMap.dwTU[2] > 0 - the slot's existence - and nothing about
+			// its content. The Character Creator zombie body DBO has the slot and fills it with
+			// zeros, so 4298 zero-length tangents went in. Wicked then generates tangents only
+			// `if (vertex_tangents.empty() && ...)` (wiScene_Components.cpp:727), so a non-empty
+			// array of zeros is TRUSTED and its generator never runs. The shader builds TBN from
+			// it, the normal-mapped normal collapses, and N.L is zero for every light from every
+			// direction - a uniformly black mesh, immune to light position and strength, whose
+			// texture, UVs, vertex normals, base colour and material all measure perfect.
+			//
+			// ★ A present-but-empty stream is worse than an absent one, because PRESENT is exactly
+			// what the generator tests. Validate the content, not the slot.
+			//
+			// Dropping the stream puts the mesh on the same generator path that meshes with no DBO
+			// tangents already take - which the handedness note above records as having always
+			// been correct in both engines. Only fires when EVERY tangent is degenerate, so a mesh
+			// with a real tangent stream is never touched.
+			if (!mesh.vertex_tangents.empty())
+			{
+				bool gg_degenerate_tangent = true;
+				for (size_t gt = 0; gt < mesh.vertex_tangents.size(); ++gt)
+				{
+					const XMFLOAT4& gtv = mesh.vertex_tangents[gt];
+					if ((gtv.x * gtv.x + gtv.y * gtv.y + gtv.z * gtv.z) > 1.0e-8f) { gg_degenerate_tangent = false; break; }
+				}
+				if (gg_degenerate_tangent)
+				{
+					mesh.vertex_tangents.clear();   // let CreateRenderData build a real tangent frame
+				}
+			}
+
 			// apply material to mesh
 			mesh.subsets.push_back(wiScene::MeshComponent::MeshSubset());
 			mesh.subsets.back().materialID = pDBOMesh->wickedmaterialindex;

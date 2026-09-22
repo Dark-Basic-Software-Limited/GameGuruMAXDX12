@@ -13501,3 +13501,63 @@ failed to keep any of them. Write probe scripts to a FILE, exactly as the rule a
 **`visObj=7`.** The preview camera reports seven visible objects where subject + backdrop is two.
 It is 7 on the first hover of a fresh launch, so it is not the parking leak. Unexplained — recorded
 rather than filed as understood.
+
+---
+
+## 3.84c The black shirt: a DBO tangent slot that exists and is empty — 2026-09-22
+
+Lee: "Bodger - Creeper Zombie" showed a pure black shirt in the live preview where its DX11
+thumbnail has a blue/cream striped vest. Legs, boots, cap and head were all correct on the same
+object.
+
+### The chain
+
+```
+wickedcalls_part0.cpp:766   pushes a tangent per vertex whenever offsetMap.dwTU[2] > 0 — the
+                            slot's EXISTENCE is the only test. The Zombie Male body DBO has the
+                            slot and fills it with zeros: 4298 zero-length tangents.
+wiScene_Components.cpp:727  generates tangents only `if (vertex_tangents.empty() && ...)`, so a
+                            non-empty array of zeros is TRUSTED and the generator never runs.
+the shader                  builds TBN from it, the normal-mapped normal collapses, and N.L is 0
+                            for every light from every direction.
+```
+
+★★★ **A present-but-empty stream is worse than an absent one, because PRESENT is exactly what
+the generator tests.** Validate the content, not the slot.
+
+Fix: after the vertex loop, if EVERY tangent is degenerate, drop the stream. The mesh then takes
+the same generator path meshes with no DBO tangents already take — which the handedness note
+directly above that push site records as having always been correct in both engines. A mesh with a
+real tangent stream is never touched.
+
+### What it cost, and the two rules that would have saved it
+
+Nine hypotheses were measured and refuted first: light strength (a **115×** key sweep moved the
+torso mean only 26.9 → 40.2 while p99 blew 150 → 255), light position (a third bounce light: 26.9
+→ 27.6), texture streaming, texture content, texture binding, UVs, **vertex** normals, baseColor,
+metalness/roughness, and the surface map's occlusion channel.
+
+★★ **The probe that should have been first: force the material UNLIT.** It splits the space in
+half in one run — unlit bypasses the tangent frame entirely, so the torso jumped 26.4 → 59.3 and
+proved in a single measurement that the texture and UV path were perfect and the LIGHTING term was
+the whole bug. Everything before it was narrowing one candidate at a time.
+
+★★ **I measured the vertex normals and called normals cleared.** The shader does not light with
+the vertex normal; it lights with the normal-mapped normal, which needs the TANGENT frame. I had
+even printed `tangents=4298` — the COUNT — next to the normal lengths, and read the count as
+health. A count is not a measurement.
+
+⚠ **This was never a preview bug.** Any DBO whose tangent slot is present and zeroed has had
+broken normal mapping everywhere since the port; a lit level hides it behind ambient and IBL,
+while the preview's (0,0,0) ambient and dark backdrop turn "unshaded" into pure black. The fix is
+in the loader and applies to every mesh the engine loads.
+
+### Verified
+
+| torso cell | mean | p90 |
+|---|---|---|
+| before | 26.4 | 75.2 |
+| after | **77.9** | **152.9** |
+
+`tangents len=[0.000..0.000] zeroLen=4298` became `len=[1.000..1.000] zeroLen=0`, and the vest
+renders matching the DX11 thumbnail.
