@@ -4,6 +4,12 @@
 
 // Includes
 #include "stdafx.h"
+#include <set>       // GGMAX 3.82
+#include <string>    // GGMAX 3.82
+// GGMAX 3.82: every visuals key the file being parsed STATED EXPLICITLY. An absent key and a
+// key set to its default are not the same thing, and the old-file downgrade below has to be
+// able to tell them apart.
+static std::set<std::string> g_ggVisualsKeysSeen;
 #include "gameguru.h"
 
 #include "GGTerrain/GGTerrain.h"
@@ -1456,6 +1462,7 @@ void visuals_load ( void )
 	}
 	if ( FileExist(t.visfile_s.Get()) == 1 ) 
 	{
+		g_ggVisualsKeysSeen.clear();   // GGMAX 3.82
 		OpenToRead (  1,t.visfile_s.Get() );
 		do
 		{
@@ -1468,6 +1475,9 @@ void visuals_load ( void )
 					t.tvalue_s=Right(t.tline_s.Get(),Len(t.tline_s.Get())-Len(t.tfield_s.Get())-1);
 				}
 			}
+			// GGMAX 3.82: one record point for all ~190 keys - the only place tfield_s is set.
+			if (t.tfield_s.Get() != NULL && t.tfield_s.Get()[0] != 0)
+				g_ggVisualsKeysSeen.insert(std::string(t.tfield_s.Get()));
 			t.try_s = "visuals.shaderlevels.terrain" ; if (  t.tfield_s == t.try_s  )  t.visuals.shaderlevels.terrain = ValF(t.tvalue_s.Get());
 			t.try_s = "visuals.shaderlevels.entities" ;
 			if (  t.tfield_s == t.try_s  )
@@ -1865,9 +1875,38 @@ void visuals_load ( void )
 		{
 			if (t.visuals.newperformancepresets == 0)
 			{
+				// ★★★ GGMAX 3.82: the downgrade may not overwrite a setting the author STATED.
+				//
+				// Every level carries its own visuals.ini inside the .fpm, and one written before
+				// `NewPerformancePresets` existed lands here - so the whole level is stamped LOW,
+				// which among other things clears bReflectionsEnabled (M-Visuals_part1.cpp, the
+				// `shaderlevels.entities == 3` branch). Lee hit exactly that: Switch Escape's 2023
+				// file says `visuals.ReflectionsEnabled=1` and the checkbox still loaded OFF, because
+				// the value was overwritten seconds after being read.
+				//
+				// ★ The downgrade is still right for everything the file DOES NOT mention - an old
+				// level that never expressed a preference should favour performance. What it cannot
+				// do is tell "unstated" from "stated and old". g_ggVisualsKeysSeen is that
+				// distinction: snapshot, downgrade, then put back only the fields whose key was
+				// physically present in the file.
+				//
+				// ⚠ Restores ONLY what the downgrade actually stamps - shaderlevels.* via
+				// visuals_shaderlevels_setlevel, and the three flags its update_core writes.
+				// Extending the downgrade means extending this list; they are a pair.
+				const visualstype vStated = t.visuals;
 				bool bUpdateEngine = false;
 				visuals_shaderlevels_setlevel(4, bUpdateEngine); // LOW - best for performance :)
 				t.visuals.newperformancepresets = 1;
+
+				#define GG_KEY_STATED(k) (g_ggVisualsKeysSeen.find(k) != g_ggVisualsKeysSeen.end())
+				if (GG_KEY_STATED("visuals.shaderlevels.terrain"))    t.visuals.shaderlevels.terrain    = vStated.shaderlevels.terrain;
+				if (GG_KEY_STATED("visuals.shaderlevels.entities"))   t.visuals.shaderlevels.entities   = vStated.shaderlevels.entities;
+				if (GG_KEY_STATED("visuals.shaderlevels.vegetation")) t.visuals.shaderlevels.vegetation = vStated.shaderlevels.vegetation;
+				if (GG_KEY_STATED("visuals.shaderlevels.lighting"))   t.visuals.shaderlevels.lighting   = vStated.shaderlevels.lighting;
+				if (GG_KEY_STATED("visuals.ReflectionsEnabled"))      t.visuals.bReflectionsEnabled     = vStated.bReflectionsEnabled;
+				if (GG_KEY_STATED("visuals.LevelVSyncEnabled"))       t.visuals.bLevelVSyncEnabled      = vStated.bLevelVSyncEnabled;
+				if (GG_KEY_STATED("visuals.DisableSkybox"))           t.visuals.bDisableSkybox          = vStated.bDisableSkybox;
+				#undef GG_KEY_STATED
 			}
 		}
 	}

@@ -13169,3 +13169,52 @@ Options, in increasing boldness:
 - I asserted DX11 lacked the LOW-branch line that clears the flag. It has it. **The cause was
   `head -20` truncating my grep** - the environment rules already warn that `tail` withholds and
   discards, and `head` does exactly the same to a hit list. Re-checked without a pipe limit.
+
+
+## 3.82 - HONOUR THE KEYS A LEVEL FILE STATES EXPLICITLY (2026-09-22)
+
+Lee chose option 1 from §3.81d. The old-file performance downgrade stays - it is right for a level
+that never expressed a preference - but it may no longer overwrite a setting the author actually
+wrote down.
+
+### Implementation
+
+`g_ggVisualsKeysSeen`, a `std::set<std::string>` filled at the ONE point in `visuals_load()` where
+`t.tfield_s` is extracted, so all ~190 keys are recorded without touching 190 parse lines. Then at
+the downgrade:
+
+    const visualstype vStated = t.visuals;          // what the file actually said
+    visuals_shaderlevels_setlevel(4, bUpdateEngine);  // LOW, unchanged
+    ...
+    if (GG_KEY_STATED("visuals.ReflectionsEnabled")) t.visuals.bReflectionsEnabled = vStated.bReflectionsEnabled;
+
+⚠ It restores **only what the downgrade actually stamps**: `shaderlevels.terrain/entities/
+vegetation/lighting` (from `visuals_shaderlevels_setlevel`) plus the three flags its `update_core`
+writes - `bReflectionsEnabled`, `bLevelVSyncEnabled`, `bDisableSkybox`. **Extending the downgrade
+means extending this list; they are a pair**, and that is written at the call site.
+
+★ The core idea is worth carrying: **an absent key and a key set to its default are not the same
+thing.** The downgrade was never wrong to exist, only unable to tell those two apart.
+
+### Verified
+
+| | before | after |
+|---|---|---|
+| Switch Escape (the repro) | `visuals=0`, `afterParse=0` | **`visuals=1 gamevisuals=1 renderer=1`, afterParse=1 throughout** |
+| testpro2level (control) | all 1s | all 1s, unchanged |
+
+`shaderlevels.entities` still reads 2 in both - that is `visuals_editordefaults()`
+(`M-Visuals_part0.cpp:517`) setting the EDITOR's own level after the load, which is pre-existing and
+identical before and after.
+
+### ⚠ This one CAN legitimately move the sweep gate - pre-registered before running
+
+Unlike 3.72-3.80, this changes what settings a level loads with, and **most shipped demos have
+pre-2024 visuals files**. Any demo whose old file explicitly states `shaderlevels.*` now keeps its
+stated level instead of being forced LOW, which can change drawn geometry and VRAM.
+
+**So C2 is AMENDED for this change, in writing, before the run:** a POLYS move is EXPECTED on demos
+whose embedded visuals.ini states a shaderlevels key, and each move must be explainable by that
+mechanism - a move on a demo whose file states no shaderlevels key is NOT explainable and is a real
+finding. C3 must still pass: the 4 GB min-spec limit is not negotiable, and a demo that now loads at
+a higher quality level could plausibly approach it.

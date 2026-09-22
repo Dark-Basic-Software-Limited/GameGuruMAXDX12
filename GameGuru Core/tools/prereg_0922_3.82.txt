@@ -1,0 +1,24 @@
+PRE-REGISTERED BEFORE THE 2026-09-22 POST-3.82 SWEEPS (written before any run started)
+
+Build: game with 3.82 (honour explicitly-stated visuals keys), engine 3c955028 (3.80 reflection).
+
+⚠ C2 IS AMENDED FOR THIS CHANGE. Reasoning, before the numbers exist:
+
+  3.82 stops the old-file performance downgrade from overwriting settings a level's own
+  visuals.ini states explicitly. MOST SHIPPED DEMOS HAVE PRE-2024 VISUALS FILES - Switch Escape's
+  has 124 keys against the modern 190 - so any demo whose old file explicitly states
+  shaderlevels.terrain/entities/vegetation/lighting now KEEPS its stated level instead of being
+  stamped LOW. Shaderlevels drive vegetation and object detail, so POLYS can legitimately move.
+
+  PREDICTION: POLYS moves ONLY on demos whose embedded visuals.ini contains a shaderlevels key.
+  A move on a demo whose file states no shaderlevels key is NOT explained by this change and is a
+  real finding to investigate, not to rationalise.
+
+  The three known non-deterministic demos remain Foggy Forest, The Mystery of Z Island and
+  Aztec Game Kit Teaser (notes 3.74).
+
+C3 IS NOT AMENDED. The 4 GB min-spec limit is not negotiable. A demo that now loads at a higher
+quality level could plausibly approach it, and if any demo exceeds 4096 MB on a FRESH launch that
+is a genuine regression from this change and must be fixed or the change reconsidered.
+
+C1 19/19 and C4 19/19 expected unchanged.
