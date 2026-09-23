@@ -38,3 +38,26 @@ metadata:
   set, whatever `userBlendMode` says** — clearing `alphaRef` is what actually makes a material opaque.
 - ⚠ **The legacy DBP image/bitmap layer is DEAD in DX12** (`m_pD3D == NULL`, `master_part0.cpp:94`):
   `GrabImage`, `MakeBitmap`, `GetBitmapRenderTarget`, `GetBackBufferForGG` can never work here.
+
+- ★★★ **A present-but-EMPTY vertex stream is worse than an absent one, because PRESENT is exactly what
+  the generator tests.** The DBO loader pushes a tangent whenever the slot exists
+  (`wickedcalls_part0.cpp:766` tests `offsetMap.dwTU[2] > 0` — existence, never content), and
+  `wiScene_Components.cpp:727` generates tangents only `if (vertex_tangents.empty())`. A model file
+  whose tangent slot is filled with zeros therefore gets 4298 zero-length tangents that the
+  generator then trusts. **Degenerate tangent frame → uniform, gradient-free, light-immune BLACK**:
+  TBN collapses, the normal-mapped normal dies, N·L = 0 for every light from every direction, and
+  texture / UVs / vertex normals / base colour / material all measure perfect. A lit level hides it
+  behind ambient and IBL; only a (0,0,0)-ambient view makes it obvious. **Validate the CONTENT of a
+  stream, not the slot** — and 3.84c's fix is in the loader, so it applies to every mesh the engine
+  loads. ★ The probe that splits this space in ONE run is **force the material UNLIT** (unlit
+  bypasses the TBN entirely): torso 26.4 → 59.3 proved the whole bug was the lighting term. Run it
+  FIRST, not ninth. ★ And **a COUNT is not a MEASUREMENT** — printing `tangents=4298` beside the
+  normal lengths and reading it as health cost another build.
+- ★★★ **The shader's light array is packed ONCE per frame from the MAIN camera's cull**
+  (`wiRenderPath3D.cpp:473` → `wiRenderer.cpp:6349` `for (lightIndex : vis.visibleLights)`).
+  `ComputeTiledLightCulling` touches a per-camera visibility only for an empty early-out
+  (`wiRenderer.cpp:12228`). **So a per-camera light count is NOT a count of lights that camera's
+  shader can see** — a `render_to_texture` camera reported `visLight=2` for the entire time its
+  subject rendered pure black. A light that must reach a secondary camera needs to survive the MAIN
+  cull: force its `scene.aabb_lights[idx]` infinite before `UpdateVisibility` runs.
+  [[project-object-library-preview]]

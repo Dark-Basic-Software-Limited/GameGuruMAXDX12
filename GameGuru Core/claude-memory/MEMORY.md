@@ -8,7 +8,7 @@
 
 > ★★★ **[Standalone VRAM](project_standalone_vram.md)** — PLAY GAME holds the SAME textures at FULL resolution where the editor and Test Game hold them reduced: **+950 to +1520 MB** on 3 demos. Snowy Mountain Stroll: 293 FEWER resources, 954 MB MORE. Cause NOT found; "streaming is off" refuted. ★ Test Game was the discriminator.
 
-> ★★★ **THE THREE HANDOFF DOCUMENTS (09-20)** — `GameGuru Core/PREALPHA_REPORT_2026-09-20.md` (night's work, test results, DX11 comparison, ship recommendation; §3.6 is the big finding) · `CHECKLIST_CHRONOLOGICAL.md` (**213 numbered items** since the fork, date order, what Lee is working through) · `CHANGES_SINCE_2025-11.md` (same set by app area + tester notes). ★ Of 213: **126 Lee-confirmed, 10 swept, 64 NEVER exercised** — and the untested ones cluster at the two ENDS of the timeline, not the middle.
+> ★★★ **THE THREE HANDOFF DOCUMENTS (09-20)** — `GameGuru Core/PREALPHA_REPORT_2026-09-20.md` (night's work, test results, DX11 comparison, ship recommendation; §3.6 is the big finding) · `CHECKLIST_CHRONOLOGICAL.md` (**213 numbered items** since the fork, date order, what Lee is working through) · `CHANGES_SINCE_2025-11.md` (same set by app area + tester notes). ★ Of 213 (09-23: items 216-221 added for 3.80-3.84c): **133 Lee-confirmed, 10 swept, 65 NEVER exercised** — the untested ones cluster at the two ENDS of the timeline, not the middle. ⚠ All three stop at 09-20 unless a later report supersedes them.
 
 > ★★ **[Pre-alpha readiness](project_prealpha_readiness.md)** — the build area holds ARMING FILES (dred.txt et al) that ship diagnostics switched ON, plus 200+ MB of debris (it grows with every sweep). `tools/prealpha_clean.sh` first. Export Game is untested since 08-16.
 
@@ -42,10 +42,19 @@
 - **Standalone arc 2.69–2.71 Lee-confirmed**: boot splash, save/load slots (Lua 5.4 float filenames), producelogfiles=0.
 - **[Convert ALL stock DDS](../../../../../max/GameGuruMAXDX12/GameGuru%20Core/MILESTONE_DDS_CONVERSION.md)** — 1641 files, 19/19. Revert = `D:\max\mipbackup`. Tools `tools/ddsconvert.py`, `tools/surfacescan.py`.
 
-> ★★★ **[Object Library live preview](project_object_library_preview.md)** — restored DX12 3.83 with the engine's
-> native **`CameraComponent::render_to_texture`** (zero engine edits). ★ Reach for that before hand-rolling any
-> offscreen scene render. ★ A preview is its OWN scene — exposure, far plane, scissor and blend mode inherited
-> from the level were all wrong for it. ⚠ `BindCommonResources` without `BindCameraCB` = DEVICE HANG.
+> ★★★ **[Test Game never restores the quality preset](project_testgame_preset_not_restored.md)** — **OPEN 09-23**.
+> Test Level → ESC → load another level = up to **35% of its triangles gone** for the rest of the session.
+> The restore at `M-GridEdit_part2.cpp:1790` is a **comment**. ★ A wrong explanation in a script comment hid
+> it for 4 days. ★ The tree pool explained it perfectly and was NOT it. ⚠ Every SOAK POLYS number in this
+> repo is a LOW-preset figure.
+
+> ★★★ **[Object Library live preview](project_object_library_preview.md)** — restored DX12 3.83 with the
+> engine's native **`CameraComponent::render_to_texture`** (zero engine edits). ★ Reach for that before
+> hand-rolling any offscreen scene render. ★ A preview is its OWN scene — exposure, far plane, scissor,
+> blend mode and FOV inherited from the level were ALL wrong for it. ⚠ `BindCommonResources` without
+> `BindCameraCB` = DEVICE HANG. ★ 3.84: the shader light array is packed from the MAIN camera's cull, so
+> a per-camera light count means nothing. ★ 3.84c: a DBO tangent slot that EXISTS and is ZEROED → dead
+> normal mapping everywhere, not just previews — [Rendering rules](project_rules_rendering_dx12.md).
 
 > ★★★ **[Two fog paths](project_fog_two_paths.md)** — the ENGINE fogs terrain/entities/near trees; GG's `ApplyFogCustom` fogs every **customDraw** (billboard trees, grass, bakes). The shim inverting `density = 4/(far-near)` dropped the 4, so custom draws ran **4× too foggy** (solid-red trees on pale terrain). Fixed 09-20. ★ A compat shim is where a value gets silently RE-DERIVED.
 

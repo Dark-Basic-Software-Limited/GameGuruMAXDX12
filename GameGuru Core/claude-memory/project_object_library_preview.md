@@ -10,6 +10,7 @@ metadata:
 
 Hovering a thumbnail in the Object Library replaces the static image with a live rotating render
 of the object. DX11 had it; DX12 showed nothing. **Restored 2026-09-22 (3.83), Lee-confirmed.**
+Lighting, framing and object release fixed in 3.84; the black-shirt character in 3.84c.
 
 ## The shape — the 7th instance
 
@@ -66,6 +67,31 @@ Any extra command list running a Wicked postprocess must bind **both**, as
 `GetCamera().is_uv_inside_scissor(uv)`; an unset root CBV is undefined in DX12 and this driver
 answered with `DXGI_ERROR_DEVICE_HUNG`. DRED could not name it (`lastCompletedOp = 0` on every
 list, **no page fault** — a TDR, not a freed resource).
+
+## 3.84 — the four follow-up defects, three of which were ONE bug
+
+A character rendered a **pure black silhouette** against a correctly-lit backdrop, and exposure 64
+and thumb-light intensity 5000 both changed nothing: it received exactly zero light. Cause: the
+preview's lights sat ~39,000 units from the editor camera, so the MAIN cull dropped them and they
+were never written into the frame's entity array — see the light-array rule in
+[[project-rules-rendering-dx12]]. Fixed by `GGObjectPreview_PreVisibility()`, called from
+`Master::Update` right after `WickedCall_UpdateCharacterShadows()`: same slot, same reason — after
+`Scene::Update` rebuilds `scene.aabb_lights`, before `PreRender`'s `UpdateVisibility` reads them.
+No engine change.
+
+Also: the camera was **1.39× too close** because `GrabBackBufferCopy` passed the LEVEL's FOV where
+DX11 rendered thumbnails at the editor's fixed 45, which every distance constant in that function
+was fitted against — the fourth inherited-parameter defect. And a new hover adopted an object
+without giving the previous one back, so two sat superimposed; only a **fast flick between adjacent
+thumbnails** reproduces it, because a normal move crosses a gap that ends the preview cleanly.
+
+★★ **Bracket the knee before reading a flat line as "no effect".** `intensity = k·d²`; the first
+sweep ran 1752 → 525,000 candela, entirely above saturation, so a working knob read as broken.
+★★ **Measure p99 over the SUBJECT, not the mean over the cell.** Lee's DX11-vs-DX12 shots were
+mean 66.8 vs 67.6 — indistinguishable, the backdrop swamps it — and p99 145.6 vs 220.1.
+
+⚠ **`visObj=7`** — the preview camera reports seven visible objects where subject + backdrop is
+two, on the FIRST hover of a fresh launch, so it is not the parking leak. Unexplained, recorded.
 
 ## Method that paid
 
