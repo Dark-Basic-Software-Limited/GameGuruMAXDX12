@@ -14302,6 +14302,14 @@ in this change. ★ **When a fix rests on a claim about how content is built, pr
 number and keep printing it.** A premise with no instrument is a premise nobody can notice going
 stale.
 
-⚠ NOT VISUALLY CONFIRMED. The numbers prove the parts of a character now share one period and one
-phase. Only Lee's eye can say the head and feet are back where they belong.
+### LEE-CONFIRMED, 2026-09-23: "That fixed it"
+
+At Reduction Scale 100 on his saved testpro2level camera. Both causes closed: the every-frame
+two-pose alternation (3.92, the ungated streamout ping-pong) and the head/feet displacement
+(3.93, parts of a character on different phases and periods).
+
+Three defects stacked on one symptom, and Lee's own hypothesis - "when it is time to update the
+character animation, ALL the body parts should be handled, and then the next frame a total
+skip" - was the correct invariant for all three. ★ A user describing the INVARIANT they expect,
+rather than the bug they see, is the most useful bug report there is.
 

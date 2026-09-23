@@ -42,6 +42,15 @@
 - **Standalone arc 2.69–2.71 Lee-confirmed**: boot splash, save/load slots (Lua 5.4 float filenames), producelogfiles=0.
 - **[Convert ALL stock DDS](../../../../../max/GameGuruMAXDX12/GameGuru%20Core/MILESTONE_DDS_CONVERSION.md)** — 1641 files, 19/19. Revert = `D:\max\mipbackup`. Tools `tools/ddsconvert.py`, `tools/surfacescan.py`.
 
+> ★★★ **Reduction Scale desync — THREE defects, one symptom (3.92/3.93, Lee-confirmed 09-23)**
+> — distant characters flickering with head and feet displaced. (1) the skinning streamout ping-pong
+> swapped on frames whose dispatch was skipped; (2) a character's parts are SEPARATE armatures, staggered
+> onto different phases by design; (3) and different periods, from each part's own AABB centre.
+> ⚠ **3.25n's recorded premise “parts share ONE armature” is FALSE** — one armature per skinned mesh;
+> group on the shared world PIVOT (no quantisation, no seam). ★ A number that AGREES with you is worth
+> one check — this was found because a counter matched too exactly.
+> [Rendering rules](project_rules_rendering_dx12.md) · [Debugging habits](project_rules_debugging.md)
+
 > ★★★ **[Test Game never restores the quality preset](project_testgame_preset_not_restored.md)** — **OPEN 09-23**.
 > Test Level → ESC → load another level = up to **35% of its triangles gone** for the rest of the session.
 > The restore at `M-GridEdit_part2.cpp:1790` is a **comment**. ★ A wrong explanation in a script comment hid

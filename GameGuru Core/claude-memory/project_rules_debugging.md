@@ -21,3 +21,27 @@ metadata:
 - ★ **"Make X the size of Y" wants the HALF-EXTENT** — `AABB::getRadius()` is the half-diagonal (√3×). Before scaling something the engine draws for ALL of a class, read the loop: harmless at scale 1 ≠ harmless at scale 60.
 - **Map record ≠ live entity — validate LIVENESS** before trusting a scene lookup. **A port diff must include the CALLER'S dt clamp regime.** **Never verify a time-dependent system on a short window**; `frac(sin(big·seed))` degrades with seed magnitude.
 - ⚠ **Don't reach for the obvious content lever — three of four are LEVEL-DATA MUTATORS**: `GGTrees_HideAll` writes 400K instance words, `GGGrass_RemoveAll` zeroes the 16 MB painted-grass map, `visuals->bWaterEnable` is re-derived every load. `SetTerrainVisible(false)` is the fourth trap: chunks persist and `Generation_Update` keeps making more.
+
+- ★★★ **WHEN A FIX RESTS ON A CLAIM ABOUT HOW CONTENT IS BUILT, PRINT THE CLAIM AS A NUMBER AND
+  KEEP PRINTING IT.** GGMAX 3.25n wrote "a character is several objects sharing ONE armature" into
+  a code comment as fact. It was false. It survived TWO rounds of verification because both tested
+  the CONSEQUENCE (does it look right, are armatures being held) and never the PREMISE - and the
+  comment then actively steered the next investigation wrong until `DUMP_SKIN` contradicted it.
+  3.93 added `pivot groups : N of M armatures` to the dump: if content ever breaks the assumption,
+  N climbs toward M and it shows up as a number before anyone photographs it. ★ **A premise with
+  no instrument is a premise nobody can notice going stale.**
+- ★★★ **A NUMBER THAT AGREES WITH YOU IS WORTH ONE CHECK BEFORE YOU BANK IT.** 3.93 was found only
+  because a verification came back TOO NEAT: a new `meshes held` counter exactly equalled the
+  existing `armatures held` at three different scales, which can only happen at one mesh per
+  armature - contradicting the premise the fix was built on. The tidy number was the evidence of a
+  second defect. ⚠ The failure mode it guards against is reading agreement as confirmation.
+- ★★ **FIXING THE PHASE WITHOUT THE PERIOD IS A PARTIAL CURE PRESENTED AS A CURE.** When work is
+  throttled, a group can desync through EITHER the phase (which frame in the cycle) or the period
+  (how long the cycle is). 3.93 had to fix both: parts of a character differed by up to 57 units,
+  enough to straddle a period boundary even with a shared phase. Enumerate every input to the
+  throttle, not just the one the symptom pointed at.
+- ★★ **A STAGGER KEY MUST BE COPRIME WITH THE PERIODS IT WILL MEET, AND MUST NOT BE AN INDEX.**
+  `ai * 7` reached only 3 phases of 21 at period 21 and exactly ONE at period 7 - every armature in
+  that band firing on the same frame, the opposite of spreading load. And `Entity_Remove` is
+  swap-with-last, so an INDEX-keyed phase reshuffles everything when an unrelated entity dies.
+  Hash a stable ENTITY id.

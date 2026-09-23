@@ -256,6 +256,25 @@ file states; the Object Library live preview is back; and a mesh whose model fil
 tangent slot is normal-mapped correctly instead of rendering flat and unlit - that last one is a
 loader fix, so it applies anywhere in the build, not just to previews.
 
+## Since 2026-09-23
+
+**Water reflections.** Two new controls in Graphics and Performance under Texture Detail:
+**Water Reflection Size** and **Water Reflection Blur**. Still water used to shimmer and crawl as
+you turned the camera, because the reflection was drawn at a quarter of your screen size and then
+stretched over the water. Size draws it larger; Blur softens it instead, which is cheaper and
+reads as natural diffusion. They ship at 1024 and 2 passes. ⚠ Blur affects every mirror
+surface in a level, not only water.
+
+**Test Level keeps your Post Processing.** If your *Graphics Quality (Test Game)* was set below
+High, pressing Test Level used to switch off Reflections, FXAA, Light Shafts and Lens Flare.
+
+**Terrain Bake keeps reflections.** Ticking Terrain Bake no longer removes the reflection from a
+puddle or pond.
+
+**Distant characters animate cleanly at high Reduction Scale.** They step at a low rate by design
+- that is the setting working - but as a whole character, not two poses flickering with the head
+and feet out of place.
+
 ## What we would most like you to hammer
 
 1. **Export Game** and running the exported standalone. Least-tested area in the build.

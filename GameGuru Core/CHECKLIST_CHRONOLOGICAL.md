@@ -283,6 +283,11 @@ DX12 ported them later (most in the 3.44–3.50 parity round, 2026-09-16/17).
 | 220 | **The live preview is lit by its own rig, not by the level** - it looks the same whatever level is open, the framing matches the DX11 thumbnail, and a fast flick between adjacent thumbnails no longer leaves two objects superimposed | L |
 | 221 | **Normal mapping on a mesh whose DBO carries a tangent slot full of zeros** - the Character Creator zombie's striped vest renders lit instead of black. This is a LOADER fix: it applies to every mesh the engine loads, in levels as well as previews, so it is worth an eye anywhere a surface looked flat or unlit | U |
 | 222 | ⚠ **KNOWN DEFECT, not a fix — after a Test Level round trip, every level you load afterwards can lose up to 35% of its triangles** for the rest of the session. Only fires when *Graphics Quality (Test Game)* is below High; the shipped default is High. Workaround: restart MAX after testing, or leave that setting on High. Root cause named in `PREALPHA_REPORT_2026-09-23.md` §3.3 | U |
+| 223 | **Test Level no longer wipes the level's authored Post Processing** - open a level with Reflections, FXAA, Light Shafts or Lens Flare on, press Test Level, and they are still on. Only bit when *Graphics Quality (Test Game)* was below High | L |
+| 224 | **Terrain Bake no longer kills the water reflection** - tick Terrain Bake on a level with a reflective puddle or pond; the reflection stays | L |
+| 225 | **Water Reflection Size** (Graphics and Performance, under Texture Detail) - Auto / 512 / 768 / 1024 / 1536 / 2048. The cure for a still pond that shimmers as you turn the camera. ⚠ ships defaulting to **1024**, which costs ~26 MiB per level | L |
+| 226 | **Water Reflection Blur** - 0-3 passes, softens the reflection instead of enlarging it. Ships defaulting to **2**. ⚠ affects every mirror surface, not only water | L |
+| 227 | **Reduction Scale no longer glitches distant characters** - tick Lower Animation, slide Reduction Scale to 100, watch a character in the distance past the 10 s settling period. It should step at a low, chunky rate but always as a WHOLE character - never two poses flickering, never the head and feet in different places | L |
 
 ---
 
