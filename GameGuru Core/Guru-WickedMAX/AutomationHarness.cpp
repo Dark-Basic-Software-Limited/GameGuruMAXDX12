@@ -3291,6 +3291,39 @@ static bool AutoHarness_TracerCommands(const char* cmd, const char* arg, char* r
 	return true;
 }
 
+// GGMAX 3.87: DUMP_POSTFX - the five level-authored post-processing flags in BOTH stores at once,
+// plus the tree LOD distance the quality preset dials.
+//
+// Built because the defect it verifies is INVISIBLE to every instrument that existed: the editor
+// and the test game each render their own panel correctly, and only a side-by-side of t.visuals
+// against t.gamevisuals, taken in BOTH states, shows one being stamped over. Lee could only report
+// it with two screenshots; this makes it one command.
+//
+// lod_dist rides along because it is the SAME preset call (GGTrees_SetPerformanceMode) and it is
+// the one field that is still NOT restored on the way back to the editor - see notes 3.86.
+static bool AutoHarness_PostFXCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
+{
+	if (_stricmp(cmd, "DUMP_POSTFX") != 0) return false;
+	extern preferences pref;   // defined in imgui_gg_dx11_part0.cpp; not declared in any header
+	_snprintf(result, resultSize,
+		"OK: DUMP_POSTFX visuals[ssr=%d refl=%d fxaa=%d shafts=%d flare=%d bloom=%d vsync=%d] "
+		"gamevisuals[ssr=%d refl=%d fxaa=%d shafts=%d flare=%d bloom=%d vsync=%d] "
+		"testgamequality=%d treelod=%.0f state=%s",
+		t.visuals.bSSREnabled ? 1 : 0, t.visuals.bReflectionsEnabled ? 1 : 0,
+		t.visuals.bFXAAEnabled ? 1 : 0, t.visuals.bLightShafts ? 1 : 0,
+		t.visuals.bLensFlare ? 1 : 0, t.visuals.bBloomEnabled ? 1 : 0,
+		t.visuals.bLevelVSyncEnabled ? 1 : 0,
+		t.gamevisuals.bSSREnabled ? 1 : 0, t.gamevisuals.bReflectionsEnabled ? 1 : 0,
+		t.gamevisuals.bFXAAEnabled ? 1 : 0, t.gamevisuals.bLightShafts ? 1 : 0,
+		t.gamevisuals.bLensFlare ? 1 : 0, t.gamevisuals.bBloomEnabled ? 1 : 0,
+		t.gamevisuals.bLevelVSyncEnabled ? 1 : 0,
+		pref.iTestGameGraphicsQuality,
+		GGTrees::ggtrees_global_params.lod_dist,
+		AutoHarness_GetAppState());
+	result[resultSize - 1] = 0;
+	return true;
+}
+
 // GGMAX 3.83: real-cursor + object-preview verbs.
 //
 // Everything hover-driven in the editor was untestable until now: CLICK is a table of named
@@ -8426,7 +8459,8 @@ void AutoHarness_CheckForCommand(void)
 		|| AutoHarness_BulletHoleCommands(cmd, arg, result, sizeof(result))
 		|| AutoHarness_TracerCommands(cmd, arg, result, sizeof(result))
 		|| AutoHarness_TreeWindCommands(cmd, arg, result, sizeof(result))
-		|| AutoHarness_MouseCommands(cmd, arg, result, sizeof(result))) // C1061: share the arm, never add one
+		|| AutoHarness_MouseCommands(cmd, arg, result, sizeof(result))
+		|| AutoHarness_PostFXCommands(cmd, arg, result, sizeof(result))) // C1061: share the arm, never add one
 	{
 		// handled in the helper (see above the dispatch function)
 	}

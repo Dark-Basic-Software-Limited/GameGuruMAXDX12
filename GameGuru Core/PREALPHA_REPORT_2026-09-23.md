@@ -101,10 +101,19 @@ Pre-registered in `tools/prereg_0923_prealpha.txt` before the run; raw in
   "refills the tangent stream" from "allocates a second one", and it is the reason the fix is safe
   to ship on a gate day.
 - **3.81d/3.82 MAY move POLYS**, and C2 was amended in writing to allow it. **Nothing moved.**
-  Either no shipped demo's `visuals.ini` states a `shaderlevels` key, or the stated value already
-  equals what the downgrade produced — I could not determine which, because the `.fpm` archives
-  are encrypted and the embedded file cannot be read from outside the app. Either way that change
-  is exercised only by USER levels, which is where you confirmed it.
+
+  ★ **Corrected later the same day.** I first wrote that I could not tell whether that was because
+  no demo states a `shaderlevels` key or because the stated value already matches the downgrade,
+  "because the `.fpm` archives are encrypted". They are encrypted, but **the password is in the
+  source** (`M-MapFile_part0.cpp:100`), so the embedded `visuals.ini` reads fine from outside the
+  app. I should have looked for the key before declaring the question unanswerable.
+
+  Answered properly: **21 of 21 shipped levels state all four `shaderlevels` keys.** They fall into
+  two groups — `1/1/1/1` (thirteen levels, including Switch Escape) and roughly `3/2/3/2`
+  (eight, including Aztec Game Kit and Operation Amazon). So the amendment's precondition was met
+  on **every** demo and POLYS *still* matched the 0825 reference on all 19. 3.82's restore is
+  landing on values that produce byte-identical geometry to the pre-3.82 path. That is a stronger
+  C2 result than the one I first recorded, not a weaker one.
 
 ⚠⚠ **The screenshots from this run are worthless, and the check over them passed.** `grab_shot`
 looked only in `Max/Files/screenshots` while `SCREENSHOT` writes to `Max/screenshots`, so `ls -t`

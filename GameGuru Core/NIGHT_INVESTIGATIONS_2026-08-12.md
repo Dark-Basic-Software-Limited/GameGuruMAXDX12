@@ -13682,3 +13682,100 @@ through, so landing it means shipping ungated code or re-running 2.5 h of sweeps
 the pre-alpha ships. Fix shape: mirror grass (snapshot on entry, restore on exit), or re-assert the
 editor's own quality on return.
 
+---
+
+## 3.87 TEST GAME WIPES THE LEVEL'S AUTHORED POST PROCESSING — 2026-09-23 — FIXED
+
+Lee, with two shots of Switch Escape: the editor's Post Processing panel shows Reflections, FXAA,
+Light Shafts and Lens Flare **ON**, and the moment he presses Test Level all four are **OFF**.
+His read was that the level's loaded visuals were not reaching `t.gamevisuals`.
+
+### It is the same call site as 3.86, and the copy he asked for already existed
+
+Those four plus SSR are **exactly** the five fields `SetGlobalGraphicsSettings` writes
+(`M-GridEdit_part0.cpp:1783-1787`; the LOW case sets all five false). The path is:
+
+```
+M-MapFile_part0.cpp:1288    t.gamevisuals = t.visuals;            at level load, comment says so
+M-GridEdit_part2.cpp:990    t.gamevisuals.bSSREnabled = ...       all five re-asserted, field by field
+M-GridEdit_part2.cpp:1041   t.visuals = t.gamevisuals;            arrives INTACT
+M-GridEdit_part2.cpp:1046   SetGlobalGraphicsSettings(pref)       <-- stamped over, two lines later
+```
+
+★ **The requested fix was already implemented, twice, and was not the bug.** Bloom is the clincher
+from the other side: the preset never writes bloom, and bloom came through at the authored 1.33.
+A stale or default `t.gamevisuals` would have shown bloom 2.0 and the effects at their struct
+defaults. **When a report names a mechanism, test the mechanism before building on it** — the
+discriminator was already sitting in his own screenshot.
+
+### Fixed at the CALL SITE, not in the preset
+
+`grep -rn SetGlobalGraphicsSettings` returns exactly two callers, **with opposite intent**:
+
+| caller | intent |
+|---|---|
+| `M-GridEdit_part2.cpp:1046` Test Game entry | must NOT destroy authored level data |
+| `M-LUA-General.cpp:1625` `lua_setgamequality`, from `titlesbank/default/graphics.lua` | stamping these five **IS** the player's choice in an exported game |
+
+So GGMAX 2.39's shape — comment the writes out — would have silently disabled post-processing
+scaling in every exported game's own options menu. 2.39 could do it for the shadow writes only
+because they had no second caller. ★ **Before removing a write, count the callers; "the same fix as
+last time" is a hypothesis about the call graph, not a fact.**
+
+The fix snapshots the five, calls the preset, and restores them into both `t.visuals` and
+`t.gamevisuals`. The preset's real work — `GGTerrain/GGTrees/GGGrass_SetPerformanceMode`, where a
+low-spec test game actually gets its frame time — runs untouched.
+
+### Verified with a new instrument, `DUMP_POSTFX`
+
+It prints both stores side by side plus the tree LOD and the Test Game quality, because the defect
+is invisible to every other instrument: editor and game each render their own panel correctly and
+only the comparison convicts. Lee needed two screenshots; this is one command.
+
+```
+EDITOR  visuals[ssr=0 refl=1 fxaa=1 shafts=1 flare=1 bloom=1 vsync=1]  testgamequality=0 treelod=3000
+GAME    visuals[ssr=0 refl=1 fxaa=1 shafts=1 flare=1 bloom=1 vsync=1]  testgamequality=0 treelod=1000
+BACK    visuals[ssr=0 refl=1 fxaa=1 shafts=1 flare=1 bloom=1 vsync=1]  testgamequality=0 treelod=1000
+```
+
+matching Switch Escape's own authored `visuals.ini` exactly. ⚠ `testgamequality=0` is load-bearing
+in that output: the stamp is gated `!= 2` and the shipped default **is** 2, so **anyone verifying
+this on a box that never lowered the preference sees no change before OR after** and would wrongly
+report it unfixed. `treelod 3000 → 1000 → 1000` is §3.86, still live, deliberately untouched.
+
+### Caused or exposed: EXPOSED, and mostly not by us
+
+The stamping call is not new code — it is in the read-only DX11 reference at
+`D:/max/GameGuruMAX/.../M-GridEdit.cpp:15013` with the **same** orphaned
+`//PE: restore SetGlobalGraphicsSettings here.` comment. Nothing in 3.81d or 3.82 writes
+`t.gamevisuals`. What 3.82 changed is *visibility*: before it, the old-file downgrade also cleared
+`bReflectionsEnabled` in the **editor**, so editor and Test Game agreed and the clobber of that one
+field looked like nothing. 3.82 correctly puts Reflections back, and the divergence surfaced.
+FXAA, Light Shafts and Lens Flare were already diverging — nothing on the load path writes them.
+★ **Fixing a display bug turns a silent data bug into a visible one.** That is the fix working.
+
+### Two claims I was handed and did not pass on
+
+- **"The build area's `visuals.ini` is contaminated by a LOW-stamped save (`FXAAEnabled=0`)."**
+  It is dated **11 March 2024**. It predates all of this by eighteen months; it is an old seed
+  template, not a fingerprint. ★ **An mtime refutes a provenance claim in one command.**
+- **"The `.fpm` archives are encrypted so the embedded visuals.ini cannot be read"** — my own claim,
+  in this morning's report. They are encrypted; **the password is in `M-MapFile_part0.cpp:100`**.
+  Reading them settles the C2 question I had left open: **21 of 21 shipped levels state all four
+  `shaderlevels` keys**, in two groups (`1/1/1/1` on thirteen, ~`3/2/3/2` on eight), and POLYS still
+  matched the 0825 reference on all 19. ★ **"I cannot read that" is a claim that needs checking too.**
+
+### Still open at this call site
+
+§3.86 — the terrain and tree performance-mode globals the same call stamps are still never restored
+on the way back (`treelod` stays 1000 above). Reading the 3.87 comment block could give the
+impression the call site is now clean. **It is not; only the post-processing half is.** Eight
+globals are involved, and six of the terrain ones are level-authored and serialised into
+`ggterrain.dat`, so saving a level after a round trip may bake the LOW values in permanently —
+read from code (`GGTerrain_part0.cpp:5784-5827`), not yet confirmed by diffing a saved file.
+
+⚠ **The single-session soak is affected by this fix**: it does Test Game round trips, so it will now
+come back with post-processing ON where it previously came back OFF. FPS and VRAM taken after a
+round trip in that sweep are not comparable to the 0923 run. The fresh-launch gate is unaffected —
+nothing on the level-load path changed. Amend in writing before re-running.
+

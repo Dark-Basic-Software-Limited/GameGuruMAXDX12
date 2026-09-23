@@ -1042,8 +1042,50 @@ void editor_previewmapormultiplayer_initcode ( int iUseVRTest )
 
 	gggrass_save_params = gggrass_global_params;
 
+	// GGMAX 3.87: THE TEST GAME QUALITY PRESET MUST NOT DESTROY THE LEVEL'S AUTHORED POST PROCESSING.
+	//
+	// Lee, on Switch Escape: the editor's Post Processing panel shows Reflections, FXAA, Light
+	// Shafts and Lens Flare all ON, and the moment he presses Test Level all four are OFF. Those
+	// four plus SSR are EXACTLY the five fields SetGlobalGraphicsSettings writes
+	// (M-GridEdit_part0.cpp:1782-1786) - its LOW case sets all five false.
+	//
+	// The copy that was supposed to carry the author's choice into the game is already correct and
+	// is NOT the bug: lines 990-1000 above copy all five from t.visuals into t.gamevisuals, and
+	// line 1041 copies them back. They arrive intact and are then stamped over, two lines later.
+	//
+	// FIXED HERE, AT THE CALL SITE, AND NOT IN SetGlobalGraphicsSettings, because that function has
+	// a SECOND CALLER WITH THE OPPOSITE INTENT: M-LUA-General.cpp:1625 runs it from the shipped
+	// game's own graphics options menu, where stamping these five IS the player's choice. Gutting
+	// the preset the way GGMAX 2.39 gutted its shadow writes would have silently disabled that
+	// menu. Only this path is destroying authored level data.
+	//
+	// What the preset still does here is untouched: GGTerrain/GGTrees/GGGrass performance modes,
+	// which is where a low-spec test game actually gets its frame time. Only the five level-authored
+	// post-processing flags are put back.
+	//
+	// Third defect at this one call site - 2.39 stopped it stamping the level's authored SHADOW
+	// settings for the same reason. An apply with no restore. See NIGHT_INVESTIGATIONS 3.86/3.87.
 	if(pref.iTestGameGraphicsQuality != 2)
+	{
+		const bool ggAuthoredSSR         = t.visuals.bSSREnabled;
+		const bool ggAuthoredFXAA        = t.visuals.bFXAAEnabled;
+		const bool ggAuthoredLightShafts = t.visuals.bLightShafts;
+		const bool ggAuthoredLensFlare   = t.visuals.bLensFlare;
+		const bool ggAuthoredReflections = t.visuals.bReflectionsEnabled;
+
 		SetGlobalGraphicsSettings( pref.iTestGameGraphicsQuality );
+
+		t.visuals.bSSREnabled         = ggAuthoredSSR;
+		t.visuals.bFXAAEnabled        = ggAuthoredFXAA;
+		t.visuals.bLightShafts        = ggAuthoredLightShafts;
+		t.visuals.bLensFlare          = ggAuthoredLensFlare;
+		t.visuals.bReflectionsEnabled = ggAuthoredReflections;
+		t.gamevisuals.bSSREnabled         = ggAuthoredSSR;
+		t.gamevisuals.bFXAAEnabled        = ggAuthoredFXAA;
+		t.gamevisuals.bLightShafts        = ggAuthoredLightShafts;
+		t.gamevisuals.bLensFlare          = ggAuthoredLensFlare;
+		t.gamevisuals.bReflectionsEnabled = ggAuthoredReflections;
+	}
 
 	t.visuals.refreshshaders=1;
 	t.visuals.refreshvegtexture=1;
