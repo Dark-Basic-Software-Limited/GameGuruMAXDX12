@@ -862,6 +862,31 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 				if (ImGui::IsItemHovered()) ImGui::SetTooltip("How big the picture is that the water uses for its reflection. Auto is what the engine has always done - a quarter of your screen's width and height - and it is the first thing to try when still, flat water shimmers or crawls as you turn the camera slowly: at Auto that picture is being stretched four times, so neighbouring pixels in it can be very different from each other. Larger sizes make the reflection sharper and steadier. The cost is video memory and some frame rate, because the whole scene is drawn a second time into that bigger picture - the largest setting is around a hundred megabytes and is meant for finding out what is wrong rather than for shipping. Try one step up first. Only water and other mirror surfaces are affected.");
 			}
 
+			// ★ GGMAX 3.90: WATER REFLECTION BLUR - the cheap substitute for the size above.
+			//
+			// Lee's own sweep of Water Reflection Size settled the cause: much reduced at 768 wide,
+			// ZERO swim at 2048. A monotone response like that is the signature of under-sampling,
+			// and blur attacks the same thing for a fraction of the cost - one pass over 76,800
+			// texels instead of a 5x larger second render of the whole scene.
+			{
+				int rb = t.visuals.iReflectionBlur;
+				if (rb < 0) rb = 0;
+				if (rb > 3) rb = 3;
+				char blbl[48];
+				if (rb == 0) sprintf_s(blbl, sizeof(blbl), "Off");
+				else         sprintf_s(blbl, sizeof(blbl), "%d pass%s", rb, rb == 1 ? "" : "es");
+				ImGui::Text("Water Reflection Blur");
+				if (ImGui::SliderInt("##gg_reflection_blur", &rb, 0, 3, blbl))
+				{
+					if (rb < 0) rb = 0;
+					if (rb > 3) rb = 3;
+					// ⚠ BOTH copies - the .fpm saves from gamevisuals (M-MapFile_part0.cpp:242).
+					t.gamevisuals.iReflectionBlur = t.visuals.iReflectionBlur = rb;
+					g.projectmodified = 1;
+				}
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Softens the reflection picture instead of making it bigger. This is the cheap answer to a still pond that shimmers or crawls as you turn the camera: the reflection is a small picture stretched over the water, and smoothing it removes the crawl for almost no frame rate, where raising Water Reflection Size removes it by drawing the whole scene again at a larger size. Blurry reflections read as natural diffusion on water, so one or two passes often looks better rather than worse. Each step blurs further. ⚠ It affects every mirror surface in the level, not only water, so a polished floor or a puddle meant to look sharp will soften too.");
+			}
+
 			ImGui::PopItemWidth();
 		}
 

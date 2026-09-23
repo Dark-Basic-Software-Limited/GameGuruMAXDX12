@@ -920,6 +920,15 @@ void MasterRenderer::Update(float dt)
 			}
 		}
 
+		// GGMAX 3.90: Water Reflection Blur. A BARE assignment on purpose - unlike 3.89 there is
+		// nothing to re-create here, because the blur temp is created in setReflectionsEnabled
+		// beside the target it tracks, so it already follows the size.
+		{
+			int rb = t.visuals.iReflectionBlur;
+			if (rb < 0 || rb > 3) rb = 0;   // pre-3.90 levels parse as 0 = off
+			wi::renderer::gg_reflection_blur = rb;
+		}
+
 		// ★★★ GGMAX 3.34: Super Quick Objects -> which rung of the cut-down opaque shader.
 		//
 		// 3.31 pushed a bare 0/1 and all it ever did was collapse exotic material permutations

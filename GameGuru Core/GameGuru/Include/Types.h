@@ -3869,6 +3869,10 @@ struct visualstype
 	                          // resolution / 4 (384x200 on a 1536x801 window). Otherwise
 	                          // 128..2048, height following the main camera's aspect. A level
 	                          // saved before 3.89 parses as 0, which is Auto, so it does not move.
+	int  iReflectionBlur;     // GGMAX 3.90: Water Reflection Blur - passes of a 9-tap separable
+	                          // Gaussian over the resolved planar reflection. 0..3, 0 = off and
+	                          // byte-identical. Substitutes for resolution: blur and
+	                          // supersampling attack the same under-sampling.
 
 	bool bEnableTerrainChunkCulling;
 	bool bEnablePointShadowCulling;
@@ -4373,6 +4377,10 @@ struct visualsdatastoragetype
 	                          // resolution / 4 (384x200 on a 1536x801 window). Otherwise
 	                          // 128..2048, height following the main camera's aspect. A level
 	                          // saved before 3.89 parses as 0, which is Auto, so it does not move.
+	int  iReflectionBlur;     // GGMAX 3.90: Water Reflection Blur - passes of a 9-tap separable
+	                          // Gaussian over the resolved planar reflection. 0..3, 0 = off and
+	                          // byte-identical. Substitutes for resolution: blur and
+	                          // supersampling attack the same under-sampling.
 
 	bool bEnableTerrainChunkCulling;
 	bool bEnablePointShadowCulling;

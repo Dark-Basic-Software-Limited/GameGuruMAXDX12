@@ -4237,6 +4237,28 @@ static bool AutoHarness_ReflectionCommands(const char* cmd, const char* arg, cha
 	// planar reflection resolution without reaching for the panel. 0 = Auto (stock internal/4).
 	// ⚠ C1061: the main dispatch ladder is AT the MSVC nesting limit, so this verb SHARES
 	// this helper by widening its early-out. Never add an else-if arm for it.
+	// GGMAX 3.90: SET_REFLECTIONBLUR <0..3>. Added because the 3.90 smoke test could not reach
+	// the blur at all without it - it printed blur=0 twice and proved nothing while the UAV
+	// store on an MSAA resolve target, the one part of the change with no in-tree precedent,
+	// stayed unexecuted. A knob with no way to exercise it is a knob with no way to test it.
+	// ⚠ C1061: shares this helper, never a new else-if arm.
+	if (_stricmp(cmd, "SET_REFLECTIONBLUR") == 0)
+	{
+		const int v = atoi(arg);
+		if (v < 0 || v > 3)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_REFLECTIONBLUR %d out of range (0 = off, 1..3 = passes of the 9-tap separable Gaussian)", v);
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		// ⚠ BOTH copies, as with the size verb - the .fpm saves from gamevisuals.
+		t.gamevisuals.iReflectionBlur = t.visuals.iReflectionBlur = v;
+		_snprintf(result, resultSize,
+			"OK: SET_REFLECTIONBLUR %d. Applied by the push in MasterRenderer::Update, so it takes "
+			"one frame - run DUMP_REFLECTION and read the REFLBLUR line to confirm.", v);
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_REFLECTIONSIZE") == 0)
 	{
 		const int v = atoi(arg);
@@ -4270,8 +4292,18 @@ static bool AutoHarness_ReflectionCommands(const char* cmd, const char* arg, cha
 	const wi::scene::CameraComponent& rc = master_renderer->camera_reflection;
 	const wi::renderer::Visibility& vis = master_renderer->visibility_main;
 
-	const float mAspect = (mc.height  != 0.0f) ? (mc.width  / mc.height)  : 0.0f;
-	const float rAspect = (rc.height  != 0.0f) ? (rc.width  / rc.height)  : 0.0f;
+	// ⚠⚠ GGMAX 3.90: THESE ARE TARGET SIZES AND THEY DO NOT FEED THE PROJECTION.
+	//
+	// This line reported refl aspect 1.920000 against main 1.917603 and I spent an hour on it
+	// as a suspected sampling misalignment. It is an artefact of THIS dump. camera_reflection
+	// is copied from the main camera and Reflect() runs UpdateCamera(), which builds P from
+	// 1536/801; the 384x200 is written to the width/height FIELDS 381 lines later and reaches
+	// only internal_resolution and the scissor. Nothing rebuilds the matrix after.
+	//
+	// The honest check is below: mainVP and reflVP _11 must match in magnitude, and they do.
+	// Read THAT, not these two numbers.
+	const float mAspect = (mc.height  != 0.0f) ? (mc.width  / mc.height)  : 0.0f;  // target, not projection
+	const float rAspect = (rc.height  != 0.0f) ? (rc.width  / rc.height)  : 0.0f;  // target, not projection
 
 	int w = 0;
 	w += _snprintf(result + w, resultSize - w,
@@ -4341,6 +4373,10 @@ static bool AutoHarness_ReflectionCommands(const char* cmd, const char* arg, cha
 				"  REFLSIZE visuals=%d gamevisuals=%d engine=%d (0 = Auto = internal/4)  rt=%dx%d samples=%d valid=%d\n",
 				t.visuals.iReflectionWidth, t.gamevisuals.iReflectionWidth,
 				wi::renderer::gg_reflection_width, rtw, rth, rts, rtv);
+			w += _snprintf(result + w, resultSize - w,
+				"  REFLBLUR visuals=%d gamevisuals=%d engine=%d (0 = off, else 9-tap Gaussian passes)\n",
+				t.visuals.iReflectionBlur, t.gamevisuals.iReflectionBlur,
+				wi::renderer::gg_reflection_blur);
 		}
 		{
 			extern int g_ggVisualsGuardRan; extern char g_ggVisualsGuardCwd[512];

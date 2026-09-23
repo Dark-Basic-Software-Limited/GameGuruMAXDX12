@@ -13969,3 +13969,118 @@ VRAM, for the record: ~54 B/px across the four targets (4x MSAA R11G11B10 + 4x M
 D32_FLOAT_S8X24 + resolved R11G11B10 + resolved R16_UNORM). 384x200 = 4 MiB, 1024x534 = 28 MiB,
 1536x801 = 63 MiB, 2048x1068 = 113 MiB. The 4x MSAA on the reflection is hardcoded and untouched.
 
+---
+
+## 3.90 WATER REFLECTION BLUR - and five refuted correctness leads, two of them mine - 2026-09-23
+
+Lee swept the 3.89 dial and settled the cause himself: **"at 768 wide the shimmering is VERY MUCH
+REDUCED", "2048 shows ZERO swim"**. A monotone response to resolution is the signature of
+under-sampling, so blur - which attacks the same thing - can substitute for it. He had already said
+blurry reflections are fine: "it will be treated as simple diffusion and add to the natural look".
+
+### FIRST: is any of it a bug? No. Five candidates, all refuted, two of them mine
+
+Checked before reaching for a blur, because Lee had already ACCEPTED the trade - and an accepted
+trade is exactly the circumstance in which nobody looks for the free fix any more.
+
+| lead | verdict |
+|---|---|
+| aspect mismatch (mine) | **NOT a bug** |
+| half-texel / texel centres | **NOT a bug**, and the truth is stronger |
+| TAA jitter mismatch | not a bug - forced to 0 for the reflection, TAA never enabled |
+| MSAA resolve broken | not a bug - colour resolves as average, depth as max = nearest under reverse-Z |
+| forced mip 0 | not a bug - no mip chain exists, and LOD would pick mip 0 anyway |
+
+*** THE ASPECT LEAD WAS MINE AND IT WAS WRONG, AND THE DISPROOF WAS IN THE DUMP I ALREADY HAD.**
+I told Lee that `refl aspect=1.920000` against `main 1.917603` was a promising misalignment.
+`camera_reflection` is copied from the main camera and `Reflect()` runs `UpdateCamera()`, which
+builds P from **1536/801**; the 384x200 reaches only the width/height FIELDS 381 lines later, and
+those feed `internal_resolution` and the scissor, nothing else. The same dump printed
+`mainVP r0=(-0.65885..)` and `reflVP r0=(0.65885..)` - identical magnitude, i.e. identical
+projection. **I had the refutation on screen when I raised the lead.**
+
+*** AND THE MISLEADING NUMBER CAME OUT OF MY OWN INSTRUMENT.** `DUMP_REFLECTION` computed "aspect"
+from `rc.width/rc.height` and its comment asserted those "drive the PROJECTION aspect". They do
+not. Relabelled, with the reason, so it cannot cost anyone else an hour.
+**An instrument that reports a derived quantity must say what it is derived FROM.**
+
+*** THE SECOND LEAD, THE POINT-SAMPLED DEPTH TAP, WAS ALSO MINE AND IS INERT ON HIS LEVEL.**
+`oceanSurfacePS.hlsl:77` ends `lerp(color.rgb, reflectiveColor.rgb, saturate(exp(-water_depth *
+color.a)))`. At `color.a == 0` that is `exp(0) == 1` and the tap contributes nothing. GG's default
+water alpha is 0 (`M-Visuals_part0.cpp:570`, and nearly every terrain preset) - and a `DUMP_BAKE`
+I had taken hours earlier read **Water Base Color RGBA = 9, 21, 43, 0**. Again: the disproof was
+already in hand. ★ **Before promoting a suspect, grep your own transcript for the value that
+decides it.**
+
+### The real mechanism, and the geometry that kills the obvious alternative
+
+The reflection is a fresh 384x200 rasterisation of the whole scene every frame. 4x MSAA
+antialiases polygon edges but NOT alpha-tested cutouts (trees, grass - the clip kills every sample)
+and not shading. Those sub-texel differences change as the camera turns and the water magnifies
+them ~4x. That is under-sampling, not a defect, and blur is the correct answer.
+
+*** On FLAT water the reflection UV is EXACTLY the mirrored screen UV and is STATIONARY under
+camera rotation.** `Reflect()` mirrors the basis with an orthogonal matrix of determinant -1; for
+any point ON the plane the view-space coords are `(-x, y, z)` of the main camera's, and the same
+projection gives `reflectionUV = (1 - u, v)` exactly. The bump term vanishes because the normal is
+(0,1,0). **Consequence: magnification is a uniform 4.0x everywhere, horizon included - there is no
+minification anywhere on the sheet.** So `ddx/ddy` = 0.25 texels per pixel, LOD = -2, mip 0 always.
+**A mip chain with derivative-driven LOD would do literally nothing here.** That refutes the
+textbook first choice, and only the algebra shows it.
+
+### What shipped
+
+**Water Reflection Blur**, 0..3 passes of the engine's existing 9-tap separable Gaussian, run in
+place on `rtReflection_resolved` right after the planar reflection pass, behind a per-level knob
+defaulting to 0 = byte-identical.
+
+- Blurred **at the write**, once over 76,800 texels - not multi-tapped at the read, which would pay
+  per water pixel (up to ~1.2M) for the same image and have to be duplicated into two more shaders.
+- Reuses `Postprocess_Blur_Gaussian` with the in-place input==output pattern the engine already
+  uses at `wiRenderPath3D.cpp:2906`. The same shader already runs 7x a frame on `rtSceneCopy`,
+  which is the identical 384x200 R11G11B10 target - so the honest cost reference was already on
+  Lee's profiler as "Scene MIP Chain".
+- ⚠ **FAMILY: one shared reflection target**, so at blur > 0 this also softens the flat planar
+  mirrors `shadingHF.hlsli:57` reads - the 3.80 crate-and-puddle case - not only water. At 0
+  nothing changes. Said in the tooltip.
+- ⚠ The reflection **depth** buffer is deliberately not filtered: it is also bound as
+  `camera_reflection.texture_depth_index`, i.e. it is scene depth, not an image.
+
+Rider, same commit: the depth tap goes point -> linear in **both** twins (`oceanSurfacePS.hlsl` and
+the dead-in-GG `objectHF.hlsli` WATER block). Invisible on a default level, one word each, and
+diverging twins is how this codebase grows bugs.
+
+### ⚠ The first gate was VACUOUS and said nothing about it
+
+Round 1 reported defaults intact, device alive, no PSO failures - and **never executed the blur**,
+because I had shipped the knob with no harness verb. It printed `blur=0` twice and read as a pass.
+Added `SET_REFLECTIONBLUR` and re-ran. ★ **A knob with no way to exercise it is a knob with no way
+to test it** - and this is the second vacuous pass in two days, after the 0923 sweep that validated
+one stale screenshot 38 times.
+
+Round 2, which actually drives it: blur 1, 2, 3 at Auto then 2 at 768 then back to 0. Device alive
+throughout, no PSO failures, `visuals`/`gamevisuals`/`engine` agree at every step. **The UAV store
+onto a texture that is also an MSAA resolve destination had no in-tree precedent** - `rtSceneCopy`
+is blurred the same way but is never a resolve target - so it needed executing, not reasoning about.
+
+| blur | size | target | FPS |
+|---|---|---|---|
+| 0 | Auto | 384x200 | 224.9 |
+| 1 | Auto | 384x200 | 223.2 |
+| 2 | Auto | 384x200 | 223.2 |
+| 3 | Auto | 384x200 | 212.8 |
+| 2 | 768 | 768x400 | 220.1 |
+| 0 | Auto | 384x200 | **222.5** |
+
+⚠ **Single samples, and the return to baseline read 222.5 against the 224.9 it started at** - so
+~2.5 FPS of drift sits inside this run and 1 and 2 passes are INSIDE it. Only 3 passes is clearly
+outside, and that is still one sample. The supportable claim is "1-2 passes cost about nothing".
+Per [[project-measuring-rules]] a single-cell delta needs an interleaved same-session A/B; this is
+a smoke test, not a benchmark, and it is recorded as one.
+
+### Context Lee should read his own sweep against
+
+DX11 renders this reflection at internal resolution / **2** with no MSAA, and its ocean shader has
+no reflection depth tap at all. DX12's Auto is a **quarter**. That is why the swim is a new
+complaint rather than something that was always there.
+

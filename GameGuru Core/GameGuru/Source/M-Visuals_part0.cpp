@@ -205,6 +205,7 @@ void gg_visuals_reset_brutal_switches()
 		// single apply point is the per-frame block in MasterRenderer::Update, which keeps
 		// this file free of any wi:: reference (it has none today).
 		t.visuals.iReflectionWidth = 0;
+		t.visuals.iReflectionBlur = 0;   // GGMAX 3.90
 		gg_terrain_bake_res_near = 8192;
 	}
 	// Texture Detail is deliberately NOT pushed live here. GGSetTextureDivideLive re-creates
@@ -904,6 +905,8 @@ void visuals_save ( void )
 	t.strwork = ""; t.strwork = t.strwork + "visuals.TerrainBakeResNear=" + Str(t.visuals.iTerrainBakeResNear);
 	WriteString(1, t.strwork.Get());
 	t.strwork = ""; t.strwork = t.strwork + "visuals.ReflectionWidth=" + Str(t.visuals.iReflectionWidth);
+	WriteString(1, t.strwork.Get());
+	t.strwork = ""; t.strwork = t.strwork + "visuals.ReflectionBlur=" + Str(t.visuals.iReflectionBlur);
 	WriteString(1, t.strwork.Get());
 	
 	t.strwork = ""; t.strwork = t.strwork + "visuals.EnableTerrainChunkCulling=" + Str(t.visuals.bEnableTerrainChunkCulling);
@@ -1651,6 +1654,7 @@ void visuals_load ( void )
 				// GGMAX 3.89: Water Reflection Size. ONE clamp, used identically by the panel, the
 				// harness verb and the engine push. Anything out of range reads as Auto.
 				t.try_s = "visuals.ReflectionWidth"; if (t.tfield_s == t.try_s) { t.visuals.iReflectionWidth = (int)ValF(t.tvalue_s.Get()); if (t.visuals.iReflectionWidth != 0 && (t.visuals.iReflectionWidth < 128 || t.visuals.iReflectionWidth > 2048)) t.visuals.iReflectionWidth = 0; }
+				t.try_s = "visuals.ReflectionBlur"; if (t.tfield_s == t.try_s) { t.visuals.iReflectionBlur = (int)ValF(t.tvalue_s.Get()); if (t.visuals.iReflectionBlur < 0 || t.visuals.iReflectionBlur > 3) t.visuals.iReflectionBlur = 0; }
 			}
 
 			t.try_s = "visuals.EnableTerrainChunkCulling"; if (t.tfield_s == t.try_s)  t.visuals.bEnableTerrainChunkCulling = ValF(t.tvalue_s.Get());
