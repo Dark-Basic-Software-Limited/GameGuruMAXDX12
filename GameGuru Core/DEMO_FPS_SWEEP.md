@@ -16,6 +16,57 @@ that FPS is meaningless.
 (LOAD / POLYS / VRAM / GAME) are unaffected — the gate excludes FPS on purpose.
 
 
+## 0923b — PRE-ALPHA GATE after 3.87-3.94b (game `66b3dd7c`, engine `38c13913`)
+
+C1 19/19 · C2 **18 of 19 exact or in-range; the 19th is Z Island's own non-determinism, re-measured
+and confirmed** · C3 worst **3799.3 MB**, Aztec Game Kit in Test Game, **headroom 296.7 MB** ·
+C4 19/19. Pre-registered in `tools/prereg_0923b_reflection_default.txt`; raw in
+`tools/sweep_0923b_prealpha.txt`. 20.8 h uptime — FPS columns are NOT comparable to the 0923
+morning run (3.24b).
+
+### The one C2 miss, and why it is not a regression
+
+`The Mystery of Z Island` read 320304 against the 0825 reference 320624 — short by **320**. Two of
+its three samples were BIT-IDENTICAL to the morning run; only the third differed (320624 AM,
+317344 PM).
+
+Settled by direct re-measurement, the same method 0825 used to establish determinism — 12 samples
+on a fresh launch:
+
+```
+320200  320728  320728  320624  320200  320728
+317344  321464  320200  320200  320624  320728
+```
+
+**It reaches the reference twice.** The demo wanders freely; nothing changed.
+
+★★ **TWO THINGS THIS CORRECTS, both of which made the gate report a failure it should not have:**
+
+1. **Notes 3.74 record Z Island's spread as 528 (320200..320728). It is at least 4120**
+   (317344..321464). The recorded figure was taken from too few samples and has been under-stating
+   this demo ever since.
+2. **The gate's `polysrange` escape hatch samples only THREE times.** It compares the reference
+   against this run's own min..max, which cannot bracket a demo whose true spread is 4120 — the
+   three samples have to be lucky. Aztec Teaser passed by range tonight; Z Island did not, and the
+   difference was luck, not behaviour. ★ **An escape hatch for non-determinism has to sample more
+   than the noise it is there to absorb.** Recorded, not fixed — the fix is more samples on the
+   three known non-deterministic demos, which costs sweep time and wants deciding deliberately.
+
+### ⚠ The VRAM prediction could not be tested by this run, and I said it could
+
+The pre-registration predicted a uniform ~+27 MB per demo from the 3.91 reflection default.
+Observed across the two runs: **−32.3 to +65.7 MB, median +16.3, and 7 of 19 went DOWN**. A
+reflection target that definitely grew cannot make a demo use less memory, so cross-run
+`driver_usage_mb` simply cannot resolve a 27 MB signal — allocator and residency variance swamp it.
+
+★ **The prediction was sound; the instrument was wrong for it.** The valid measurement is the
+in-session interleaved A/B from notes 3.90b, where only the setting changed. **Pre-registering a
+number commits you to an instrument that can actually read it** — check that before the run, not
+after.
+
+C3 is unaffected by any of this: it gates on the absolute worst case, which is 3799.3 MB against a
+4096 limit.
+
 ## 0923 — PRE-ALPHA GATE, 3.84c (game `5af6e350`, engine `3c955028`) — CLEAN 19/19
 
 The first full gate sweep since 3.79. Pre-registered in `tools/prereg_0923_prealpha.txt` before the

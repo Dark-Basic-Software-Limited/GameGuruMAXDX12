@@ -1,5 +1,14 @@
 # GameGuruMAX Project Memory
 
+> ★★★ **RESUMING 2026-09-24? Read `GameGuru Core/RESUME_2026-09-24.md` FIRST** — the pre-alpha gate is
+> effectively CLEAN (0923b: 19/19, 296.7 MB headroom) and three decisions are waiting: run
+> `prealpha_clean.sh --apply`, fix §3.86 (Test Game leaves the terrain/tree LOD unrestored — 35% of
+> geometry gone for the rest of the session), and re-measure the new 1024+blur2 reflection default on
+> the AMD card, which this rig is too GPU-idle to judge.
+> ⚠ Two instruments corrected: Z Island's POLYS spread is **4120, not 528**, and the gate's
+> `polysrange` hatch samples only 3 times so it fails on luck; and **cross-run driver VRAM cannot
+> resolve ~27 MB** — 7 of 19 demos went DOWN after a change that can only add memory.
+
 > **Resuming work? Read [Next action immediate](project_next_action_immediate.md) FIRST** — current state, next step, do-not list.
 > ⚠⚠ **TWO MACHINES since 08-31** — run ``[ -d /d/DEV/BUILDS ] && echo LAPTOP || echo DESKTOP`` before trusting any path, GPU or perf number. **DESKTOP = RX 9060 XT, the primary box and the source of every recorded FPS/VRAM baseline**; LAPTOP = GTX 1050, set up 08-31 and unused since, where those baselines are INVALID. Full table: [Machine migration](project_machine_migration.md).
 > ⚙ This folder is mirrored into the repo at `GameGuru Core/claude-memory/` — `tools/sync_claude_memory.sh to-repo` after a session; `to-live` on a new box. ⚠ The live path is keyed on the repo's ABSOLUTE path — a wrong key fails SILENTLY.

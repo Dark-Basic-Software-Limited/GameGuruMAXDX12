@@ -12223,7 +12223,7 @@ samples, so this cost nothing but a script:
 | demo | sample min | sample max | spread |
 |---|---|---|---|
 | Foggy Forest | 1241116 | 1248844 | **7728** |
-| The Mystery of Z Island | 320200 | 320728 | **528** |
+| The Mystery of Z Island | 320200 | 320728 | **528** ⚠ **CORRECTED 2026-09-24: at least 4120** (317344..321464, 12 samples on a fresh launch, notes 3.95). 528 came from too few samples and under-stated this demo for a month. |
 | *the other 17* | | | **0 - bit-exact across all three** |
 
 ★★★ **Two demos' triangle counts are not stable even when the scene has settled, and C2 compares
@@ -14398,4 +14398,59 @@ Also worth knowing, and NOT fixed here: mechanism 3, the `IsRenderable` animatio
 
 ⚠ NOT VISUALLY CONFIRMED - the numbers prove the exemption engages and clears. Only Lee's eye
 can say the character is animating again.
+
+---
+
+## 3.95 The pre-alpha gate after 3.87-3.94b, and two instrument corrections - 2026-09-24
+
+Full 19-demo gate on game `66b3dd7c` / engine `38c13913`, the first since the morning 0923 run and
+covering eight changes. Written up in `DEMO_FPS_SWEEP.md` under 0923b; raw in
+`tools/sweep_0923b_prealpha.txt`; pre-registered in `tools/prereg_0923b_reflection_default.txt`.
+
+**C1 19/19 - C2 18 of 19, the 19th confirmed as the demo's own noise - C3 worst 3799.3 MB with
+296.7 MB of headroom - C4 19/19.** Effectively clean; nothing found that should stop a pre-alpha.
+
+### The C2 miss was real noise, and proving it corrected the instrument twice
+
+Z Island read 320304 against the 0825 reference 320624, short by 320, with two of its three samples
+BIT-IDENTICAL to the morning run. Rather than reach for "that demo is known non-deterministic" -
+which my own pre-registration explicitly told me not to do - I re-measured it the way 0825 did, 12
+samples on a fresh launch:
+
+```
+320200  320728  320728  320624  320200  320728
+317344  321464  320200  320200  320624  320728
+```
+
+It reaches the reference twice. Nothing changed. But getting there corrected two things:
+
+1. ★★ **Notes 3.74 recorded this demo's spread as 528. It is at least 4120.** The
+   figure came from too few samples and has under-stated the demo for a month. Corrected in place
+   in the 3.74 table rather than appended, so the wrong number is not left readable.
+2. ★★★ **The gate's own escape hatch for non-determinism samples THREE times.** It
+   compares the reference against this run's min..max, which cannot bracket a demo whose real
+   spread is 4120 - the three samples simply have to get lucky. Aztec Teaser got lucky tonight;
+   Z Island did not. **An escape hatch for noise has to sample more than the noise it exists to
+   absorb.** Recorded, not fixed: the remedy is more samples on the three known non-deterministic
+   demos, which costs sweep wall-clock and wants deciding deliberately rather than at midnight.
+
+### ⚠⚠ I pre-registered a prediction against an instrument that cannot read it
+
+The pre-registration predicted a uniform ~+27 MB per demo from the 3.91 reflection default (1024
+wide = +26 MiB of reflection targets, arithmetic). Observed across the two runs: **-32.3 to
++65.7 MB, median +16.3, and SEVEN OF NINETEEN WENT DOWN.**
+
+A reflection target that definitely grew cannot make a demo use less memory. So the reading is not
+"the prediction failed" - it is that cross-run `driver_usage_mb` cannot resolve a 27 MB signal at
+all; allocator and residency variance swamp it. The valid measurement already existed: the
+in-session interleaved A/B in 3.90b, where only the setting changed between cells.
+
+★★★ **Pre-registering a number commits you to an instrument that can actually read it, and
+that has to be checked BEFORE the run.** Pre-registration is supposed to stop a verdict being
+rationalised after seeing the data; a prediction the instrument cannot resolve quietly defeats
+that, because any outcome is consistent with it. Same family as the mean-vs-p99 error in 3.84b and
+the mean-vs-std error in 3.88: **match the statistic to the signal, and check the instrument can
+see the effect size before you commit to it.**
+
+C3 is unaffected - it gates on the absolute worst case, 3799.3 MB against 4096.
 

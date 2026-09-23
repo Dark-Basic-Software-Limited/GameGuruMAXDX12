@@ -44,3 +44,21 @@ CHEAPEST setting as the slowest, which is a no-signal result, not a free one.
 
 Also accepted by this default, and not a defect: every MIRROR surface softens, not only water.
 There is one shared planar reflection target, so the 3.80 crate-and-puddle case is blurred too.
+
+--- RUN STAMP, written as the sweep started ---
+Game 66b3dd7c, engine 38c13913. DESKTOP (RX 9060 XT), 20.8 h since boot, dred.txt armed as for
+every prior baseline. Tag 0923b.
+
+20.8 h uptime is well past the 6 h mark at which this rig's FPS stops being comparable across runs
+(notes 3.24b: a hub-wide -18.2% drift that a reboot reversed). C1-C4 exclude FPS on purpose, so the
+GATE is unaffected - but do NOT compare this run's FPS columns to the 0923 morning sweep.
+
+Eight changes since the 0923 morning gate: 3.87 (Test Game post-processing), 3.88 (Terrain Bake
+reflections), 3.89/3.90 (the two water reflection controls, both inert at their defaults at the
+time), 3.91 (those defaults changed to 1024 + blur 2 - THE change this amendment is about),
+3.92/3.93 (Reduction Scale streamout gate and character grouping), 3.94/3.94b (the live preview
+exempt from the animation throttles).
+
+Of those, only 3.91 is predicted to move a gate number. 3.92/3.93 change WHEN armatures update, not
+WHICH, and touch no geometry; 3.94 only fires while an Object Library thumbnail is hovered, which a
+sweep never does.
