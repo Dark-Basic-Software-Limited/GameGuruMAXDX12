@@ -102,13 +102,27 @@ for demo in "${DEMOS[@]}"; do
     echo "$demo|FAIL_EDITOR|alive=$(alive && echo yes || echo no)" >> "$RES"; continue; fi
   TLOAD=$(( $(date +%s) - T0 ))
 
-  # SETTLE. 2026-09-19: the first run of this script used 25 s + three samples 4 s apart and
-  # read POLYS LOW on 11 of 19 demos - every one of them vegetation-heavy, every sparse or indoor
-  # level exact. Direct re-measurement with a longer ladder returned the C2 reference EXACTLY on
-  # Operation Amazon (486602, was 315943) and RPG Template (540778, was 351661), on a cold load
-  # and again on a warm second load. So it was the window, not the geometry - the tree pool had
-  # not finished populating. Under-settling can only ever UNDER-count, so the max of the samples
-  # is the settled figure. 60 s plus a wider spread; do not shorten it to save wall clock.
+  # SETTLE. 60 s plus a wide spread; do not shorten it to save wall clock.
+  #
+  # ⚠⚠ 2026-09-23: THE EXPLANATION THAT USED TO BE WRITTEN HERE WAS WRONG, and having it written
+  # down stopped anyone measuring it again for four days. It said the LOW POLYS this sweep reads on
+  # 12 of 19 demos was under-settling - "the tree pool had not finished populating, it was the
+  # window, not the geometry". It is the geometry. Refuted three ways:
+  #   - this WARM run settles LONGER (60 s + 3 samples 15 s apart) than the COLD fresh-launch sweep
+  #     that reads HIGHER (30 s + 3 samples 4 s apart);
+  #   - all three samples are identical in both - 486602/486602/486602 cold against
+  #     315943/315943/315943 warm on Operation Amazon. Nothing is climbing;
+  #   - the warm figures reproduce BIT-IDENTICALLY against the 09-19 soak on a different build,
+  #     on 18 of 19 demos. A race does not do that.
+  # Real cause, found 09-23 and named in PREALPHA_REPORT_2026-09-23.md §3.3: entering Test Game
+  # applies SetGlobalGraphicsSettings(pref.iTestGameGraphicsQuality) at M-GridEdit_part2.cpp:1045
+  # and NOTHING restores it on the way back - the restore at line 1790 is a comment. Every level
+  # loaded after a test game keeps that preset, so ggtrees lod_dist stays at the Test Game value
+  # (1000 = LOW here, against 3000 = HIGH healthy) and later levels hand their trees to billboards
+  # far too close. This sweep takes every demo into Test Game, so demo 2 onwards is affected.
+  # It only fires when Graphics Quality (Test Game) is below High; this machine has it at Low, so
+  # THE POLYS COLUMN BELOW IS A LOW-PRESET NUMBER, not what a default install produces.
+  # Max-of-samples is kept because under-settling can still only ever UNDER-count.
   sleep 60
   for s in 1 2 3; do send "GET_PERF_DATA" 30 > "$OUT/perf/ed${s}_$IDX.txt"; sleep 15; done
   EF=$(grep -hm1 "^FPS:" "$OUT/perf/ed3_$IDX.txt" | awk '{print $2}')

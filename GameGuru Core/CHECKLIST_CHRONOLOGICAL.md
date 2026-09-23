@@ -282,6 +282,7 @@ DX12 ported them later (most in the 3.44–3.50 parity round, 2026-09-16/17).
 | 219 | **Object Library live preview** - hover a thumbnail and the static image is replaced by a live render: statics rotate, characters play their idle. Restored in DX12 with the engine's own render-to-texture, not the DX11 backbuffer-grab hack | L |
 | 220 | **The live preview is lit by its own rig, not by the level** - it looks the same whatever level is open, the framing matches the DX11 thumbnail, and a fast flick between adjacent thumbnails no longer leaves two objects superimposed | L |
 | 221 | **Normal mapping on a mesh whose DBO carries a tangent slot full of zeros** - the Character Creator zombie's striped vest renders lit instead of black. This is a LOADER fix: it applies to every mesh the engine loads, in levels as well as previews, so it is worth an eye anywhere a surface looked flat or unlit | U |
+| 222 | ⚠ **KNOWN DEFECT, not a fix — after a Test Level round trip, every level you load afterwards can lose up to 35% of its triangles** for the rest of the session. Only fires when *Graphics Quality (Test Game)* is below High; the shipped default is High. Workaround: restart MAX after testing, or leave that setting on High. Root cause named in `PREALPHA_REPORT_2026-09-23.md` §3.3 | U |
 
 ---
 

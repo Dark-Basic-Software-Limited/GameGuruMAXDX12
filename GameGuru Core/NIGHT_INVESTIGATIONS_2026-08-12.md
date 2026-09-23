@@ -13597,3 +13597,88 @@ and as the harness `SELECT_DEMO`-against-an-empty-list trap: **a test that canno
 modes apart reports the wrong one confidently.** C1–C4 never used the shots, so the verdict stands —
 but the shots from every fresh-launch sweep since the screenshot destination moved are worthless.
 
+---
+
+## 3.86 TEST GAME LEAVES THE QUALITY PRESET APPLIED FOR THE REST OF THE SESSION — 2026-09-23
+
+Found scoring the pre-alpha soak. Three steps, silent, and in the build today:
+
+1. open any level, **Test Level**, **ESC** back to the editor
+2. load a different level
+3. it renders with up to **35% of its triangles missing**, permanently for that process
+
+Operation Amazon **486602 → 315943** triangles, scene objects **1850 → 1671**. Not cheaper geometry:
+**179 objects are never created**, averaging ~950 triangles each, which is the size of a tree.
+
+### Root cause
+
+```
+M-GridEdit_part2.cpp:1045   if (pref.iTestGameGraphicsQuality != 2)
+M-GridEdit_part2.cpp:1046       SetGlobalGraphicsSettings( pref.iTestGameGraphicsQuality );
+...
+M-GridEdit_part2.cpp:1790   //PE: restore SetGlobalGraphicsSettings here. ...
+```
+
+**The restore is a comment**, sitting in the middle of a ~120-line block that restores every other
+field one at a time from `t.gamevisuals`. It is the one setting needing a FUNCTION CALL rather than
+a field copy, and it is the one that never got written. Grass alone is handled, saved at 1043 and
+restored at 1858. `ggtrees_global_params.lod_dist` therefore stays at the Test Game preset's value.
+
+★ **Third defect at this one call site.** 2.39 stopped the same preset stamping the level's authored
+shadow settings the moment a test game started. Same line, same shape: an apply with no restore.
+When a call site has already produced one "applied and never undone" bug, **audit everything else
+it writes** rather than fixing the instance.
+
+### The tree pool was a red herring, and the last row is what killed it
+
+| | lod_dist | pool built | renderable | POLYS |
+|---|---|---|---|---|
+| healthy | 3000 (HIGH) | 488 | 295 | 486602 |
+| after one Test Game round trip | **1000 (LOW)** | 116 | **101** | **315943** |
+| …then `SET_TREEPOOLCAP 0` | 1000 | 6000 | 6000 | **315943** |
+
+Uncapping built 6000 pooled trees and POLYS did not move one triangle. The pool was never the
+limiter; the LOD distance was. ★ **A plausible mechanism that explains the symptom is not the same
+as the mechanism** — uncapping was the one cheap test that could separate them, and without it I
+would have "fixed" the pool.
+
+### ★★★ A wrong explanation written into a comment stops anyone measuring it again
+
+`demo_soak_sweep.sh` recorded this as under-settling: *"the tree pool had not finished populating —
+it was the window, not the geometry."* That sat there from 09-19 and it is why the 09-20 pre-alpha
+report shipped without noticing. Refuted three ways, all cheap:
+
+- the WARM run settles **longer** (60 s + 3 samples 15 s apart) than the COLD run that reads
+  **higher** (30 s + 4 s apart)
+- all three samples are identical in both — `486602/486602/486602` against `315943/315943/315943`
+- the warm figures reproduce **bit-identically** against the 09-19 soak **on a different build**,
+  18 of 19 demos. A race does not do that.
+
+Comment corrected in the script.
+
+### Method: three probes, two refutations, one variable at a time
+
+| round | hypothesis | result |
+|---|---|---|
+| 1 | a level loaded Nth in a session loses geometry | **refuted** — 3rd load read the full 486602 |
+| 2 | prior VEGETATED levels starve it | **refuted** — after Aztec Teaser + Island Showdown + Horseshoe Bend it still read 486602, and `objs` came back to exactly its cold 1850 |
+| 3 | Test Game round trip | **confirmed** — one cycle on a DIFFERENT level, 315943, bit-exact with the soak |
+
+⚠ Round 1 changed two things at once (load count AND loading the subject first) so it could name
+neither; round 2 was the single-variable version. ★ **Round 1 also ran `SET_TREEPOOLCAP 0` in a
+HEALTHY session and read "no change" — a knob tested in the state where it has nothing to do proves
+nothing.** Same mistake as 3.84's first light sweep. Test a knob where the defect lives.
+
+### Scope, and why it is not fixed yet
+
+The apply is gated `!= 2` and the shipped default is High (2), so a default install never triggers
+it. It fires only when *Graphics Quality (Test Game)* is below High — exactly what a low-spec tester
+sets first. The pref lives in `%LOCALAPPDATA%\TGC\gamegurumax.pref`, **outside the build area**, so
+testers inherit nothing from us. ⚠ This machine has it at **Low**, so every POLYS figure in a SOAK
+run in this repo is a LOW-preset number. Fresh-launch sweeps relaunch per demo and are unaffected.
+
+Not fixed on release morning: the change sits in the editor↔game transition both sweeps run
+through, so landing it means shipping ungated code or re-running 2.5 h of sweeps. First thing after
+the pre-alpha ships. Fix shape: mirror grass (snapshot on entry, restore on exit), or re-assert the
+editor's own quality on return.
+
