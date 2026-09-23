@@ -14078,6 +14078,36 @@ outside, and that is still one sample. The supportable claim is "1-2 passes cost
 Per [[project-measuring-rules]] a single-cell delta needs an interleaved same-session A/B; this is
 a smoke test, not a benchmark, and it is recorded as one.
 
+### 3.90b What 2048 + blur 3 actually costs - measured, interleaved
+
+Lee picked **2048 + 3 passes** as the best-looking result and asked the cost against Auto + no blur.
+Interleaved A/B/C, three rounds, nine samples per cell, one session, camera pinned.
+
+| | GPU_BUSY_MS | FPS | VRAM first visit |
+|---|---|---|---|
+| Auto + Off | 1.808 (sd 0.076) | 209.2 (sd 13.0) | baseline |
+| 768 + 2 | 1.767 (sd 0.023) | 216.0 (sd 3.3) | **+6 to +14 MB** |
+| 2048 + 3 | 1.777 (sd 0.021) | 215.2 (sd 2.3) | **+91 to +107 MB** |
+
+**FRAME-TIME COST: NOT MEASURABLE ON THIS RIG.** C came out 0.031 ms FASTER and 6.1 fps HIGHER than
+A, which is physically impossible - A's round-2 dip (187, 187, 203 fps) inflated its spread. The
+within-cell sd is 13.0 fps against a between-cell difference of 6.1. ★ **When the cheapest setting
+measures as the slowest, the honest reading is "no signal", not "it is free".**
+
+★★★ **AND THE REASON MATTERS MORE THAN THE NUMBER: this machine cannot see this cost.** GPU busy is
+**1.8 ms inside a ~4.6 ms frame** - the GPU is idle roughly 60% of the time and the editor is
+CPU-bound here. A 28x increase in reflection pixels disappears into that headroom. The whole
+low-spec campaign exists for a **6-year-old AMD card**, and on a GPU-bound machine a full second
+scene render at 2048x1068 with 4x MSAA is exactly the kind of work that does show. **The right
+statement is "costs nothing measurable on the RX 9060 XT", never "costs nothing".**
+
+⚠ VRAM is only attributable on the FIRST visit to each cell: round 3's A read 2613.0 MB, ABOVE B,
+because the driver had not released C's allocation from round 2. Driver usage is sticky.
+
+The arithmetic predicted ~117 MiB for C; measured 91-107 MB, i.e. the estimate was HIGH - MSAA
+depth is evidently allocated more compactly than 32 B/px. Recorded because the estimate was quoted
+to Lee before the measurement existed.
+
 ### Context Lee should read his own sweep against
 
 DX11 renders this reflection at internal resolution / **2** with no MSAA, and its ocean shader has
