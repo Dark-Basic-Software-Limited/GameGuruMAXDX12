@@ -168,8 +168,22 @@ for demo in "${DEMOS[@]}"; do
   if ! wait_state "hub" 60; then echo "$demo|FAIL_HUB|" >> "$RESULTS"; echo "  FAIL: never reached hub"; continue; fi
   sleep 4
 
+  # 2026-09-23: the hub opens on MY GAMES whenever any user project exists - TESTPRO1/TESTPRO2 do
+  # now - and the demo library only populates while the Demo Games tab is rendering. Without this
+  # SELECT_DEMO matches an EMPTY g_LibraryFileList and every demo fails "not found (0 demos
+  # loaded)". The default flipped the moment Lee created his first project, so a sweep that worked
+  # before it existed stops working after. Navigate explicitly; never assume the hub default.
+  send "NAVIGATE hub.demo_games" 15 > /dev/null
+  sleep 5
+
   R=$(send "SELECT_DEMO $demo" 15)
-  if [[ "$R" != OK:* ]]; then echo "$demo|FAIL_SELECT|$R" >> "$RESULTS"; echo "  FAIL select"; continue; fi
+  if [[ "$R" != OK:* ]]; then
+    # one retry - the library fills on the tab first rendered frame, which can lag the reply
+    send "NAVIGATE hub.demo_games" 15 > /dev/null
+    sleep 6
+    R=$(send "SELECT_DEMO $demo" 15)
+  fi
+  if [[ "$R" != OK:* ]]; then echo "$demo|FAIL_SELECT|$R" >> "$RESULTS"; echo "  FAIL select: $R"; continue; fi
   sleep 3
 
   R=$(send "CLICK edit_game" 15)

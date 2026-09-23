@@ -276,6 +276,12 @@ DX12 ported them later (most in the 3.44–3.50 parity round, 2026-09-16/17).
 | 205 | **Standalone PLAY GAME loads a level and plays it** — ⚠ verify a **real mouse click** starts it; only a direct Lua call worked for me | U |
 | 214 | **Fog on billboard trees, grass and baked terrain matches the fog on the terrain under it** — set Horizon/Fog to a strong colour, Fog Opacity 100, then pull Fog Range in. Distant trees used to go solid fog colour over barely-tinted ground; they should now haze at the same rate. Added after the pre-alpha candidate — numbering continues past the absent set below | L |
 | 215 | **Terrain Bake keeps the near 3D trees** — on a vegetated level, tick Terrain Bake. The real tree models used to vanish and leave only the distant billboards; they should now stay, and untick/re-tick should return the level to exactly what it was (including far-tree shadows) | L |
+| 216 | **Planar reflection alignment** - an object meets its own reflection in a puddle instead of sitting beside it (a DX11 fix the port had dropped) | L |
+| 217 | **The Reflections checkbox loads TICKED** on a level whose author enabled it - it was loading off, so those levels shipped without reflections | L |
+| 218 | **A pre-2024 level keeps the quality settings its own visuals file states** - the old-file performance downgrade still applies to levels that expressed no preference, but no longer overwrites a key the author actually wrote down | L |
+| 219 | **Object Library live preview** - hover a thumbnail and the static image is replaced by a live render: statics rotate, characters play their idle. Restored in DX12 with the engine's own render-to-texture, not the DX11 backbuffer-grab hack | L |
+| 220 | **The live preview is lit by its own rig, not by the level** - it looks the same whatever level is open, the framing matches the DX11 thumbnail, and a fast flick between adjacent thumbnails no longer leaves two objects superimposed | L |
+| 221 | **Normal mapping on a mesh whose DBO carries a tangent slot full of zeros** - the Character Creator zombie's striped vest renders lit instead of black. This is a LOADER fix: it applies to every mesh the engine loads, in levels as well as previews, so it is worth an eye anywhere a surface looked flat or unlit | U |
 
 ---
 
@@ -296,7 +302,7 @@ DX12 ported them later (most in the 3.44–3.50 parity round, 2026-09-16/17).
 
 ## Where I'd start, if you only have an hour
 
-The **U** marks are the whole point of this list — 52 of them. In descending order of what I'd
+The **U** marks are the whole point of this list — 53 of them. In descending order of what I'd
 expect to find something:
 
 1. **#205 / Export Game** — standalone is the least-tested path in the build, and it is where I

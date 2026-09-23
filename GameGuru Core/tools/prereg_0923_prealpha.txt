@@ -1,0 +1,51 @@
+PRE-REGISTERED BEFORE THE 2026-09-23 PRE-ALPHA GATE SWEEP (written before the run started)
+
+Build: game 5af6e350 (3.84c tangent fix), engine 3c955028 (3.80 planar reflection).
+Machine: DESKTOP (RX 9060 XT), 4.2 h since boot, dred.txt PRESENT (as it was for every
+prior baseline in this repo - see tools/prealpha_clean.sh).
+
+This is the FIRST full gate sweep since 3.79. Everything from 3.80 to 3.84c is unproven against
+C1-C4. Changes in that window and what each predicts:
+
+  3.80  planar reflection UV           appearance only, reflective surfaces
+  3.81  Reflections checkbox loads ON  appearance; can only ADD a render pass, not geometry
+  3.81d old visuals file downgrade     see the C2 amendment below - THIS is the one that moves POLYS
+  3.82  honour explicitly-stated keys  same amendment
+  3.83  object library live preview    inactive unless a thumbnail is hovered; the sweep never
+                                       opens the library, so it must have NO effect at all
+  3.84  preview lighting/framing       as 3.83
+  3.84c DBO degenerate tangent stream  EVERY mesh the engine loads takes this path
+
+C2 IS AMENDED, carried forward verbatim from tools/prereg_0922_3.82.txt, which was written before
+3.82 and whose sweep never ran:
+
+  3.81d/3.82 stop the old-file performance downgrade from overwriting settings a level's own
+  visuals.ini states explicitly. MOST SHIPPED DEMOS HAVE PRE-2024 VISUALS FILES, so any demo whose
+  old file explicitly states shaderlevels.terrain/entities/vegetation/lighting now KEEPS its stated
+  level instead of being stamped LOW. Shaderlevels drive vegetation and object detail, so POLYS can
+  legitimately move.
+
+  PREDICTION: POLYS moves ONLY on demos whose embedded visuals.ini contains a shaderlevels key.
+  A move on a demo whose file states no shaderlevels key is NOT explained by this change and is a
+  real finding to investigate, not to rationalise.
+
+C2 IS **NOT** AMENDED FOR 3.84c, and this is the falsifiable part. 3.84c clears a wholly-degenerate
+tangent stream so CreateRenderData regenerates it. It replaces one XMFLOAT4 per vertex with another
+XMFLOAT4 per vertex:
+
+  POLYS  MUST NOT MOVE on any demo. Triangle count is untouched by a tangent frame.
+  VRAM   MUST NOT MOVE beyond run-to-run scatter. The buffer already existed; only its contents
+         change. If VRAM rises materially on a character-heavy demo, the fix is allocating a
+         SECOND stream rather than refilling the first, and that is a defect.
+  LOOK   MAY change - correct normal mapping where it was previously dead. Expected on characters.
+
+The three known non-deterministic demos remain Foggy Forest, The Mystery of Z Island and Aztec
+Game Kit Teaser (notes 3.74); the gate reads polysrange for those.
+
+C3 IS NOT AMENDED. 4096 MB, editor AND game columns. A demo that now loads at a higher quality
+level could plausibly approach it; exceeding it on a FRESH launch is a genuine regression from
+3.81d/3.82 and must be fixed or the change reconsidered.
+
+C1 19/19 and C4 19/19 expected unchanged.
+
+FPS is recorded, not gated. 4.2 h uptime - cross-day FPS comparison is not evidence (3.24b).

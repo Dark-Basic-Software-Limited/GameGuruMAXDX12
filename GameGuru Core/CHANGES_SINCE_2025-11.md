@@ -52,6 +52,9 @@ ported, and what DX12 built on its own.
 | ☐ | **Button fonts on a widescreen monitor** **[untested]** | run on ultrawide | buttons legible, not shrunk |
 | ☐ | **Save/Load menu on ultrawide** **[untested]** | click where two slot boxes meet | one click selects one slot, not two (DX11 6283) |
 | ☐ | **UI on a non-primary monitor** **[untested]** | run the game on a second monitor | UI stays on screen (DX11 6347) |
+| ☐ | **Object Library live preview** **[Lee]** | open the Object Library, hover any thumbnail | the static image is replaced by a live render - statics rotate slowly, characters play their idle. Move off and the static image returns |
+| ☐ | **Live preview looks the same in every level** **[Lee]** | hover the same object with two levels of very different lighting open | identical preview both times. It is lit by its own rig now, not by the level's Lighting and Ambient colours |
+| ☐ | **Live preview, fast flick** **[untested]** | drag the pointer quickly across a row of thumbnails, back and forth | one object at a time. Two superimposed objects means an old preview was not released |
 
 ## 3. Editor — visuals and the performance panel
 
@@ -75,6 +78,9 @@ Nearly all of this is DX12-only work that has no DX11 equivalent.
 | ☐ | **Gamma slider** **[untested]** | slide it | brightness changes. ⚠ the *level-load fade-in* is a separate thing and is **not** in this build |
 | ☐ | **Global Probe Brightness / probe markers** **[Lee]** | place a `%probe`, look at the balls | no circles on the cube faces (2.89), picking doesn't resize the ball (2.76), Brightness works and Range is gone (2.90) |
 | ☐ | **Env-probe capture** ⚠ **[conflicted]** | place a fresh probe, inspect its capture | my notes disagree with themselves on whether a probe still photographs its own marker. **Wants one deliberate eyeball.** |
+| ☐ | **Reflections load as the author left them** **[Lee]** | open a level that had Reflections ticked | the tickbox is still ticked and the reflections are there. It used to load off |
+| ☐ | **Planar reflection alignment** **[Lee]** | stand a crate at the edge of a puddle | the strut meets its own reflection at the waterline instead of sitting beside it |
+| ☐ | **A pre-2024 level keeps what its own settings file states** **[untested]** | load an older level that had, say, high vegetation detail | it is NOT stamped down to LOW any more. Levels that never stated a preference are still downgraded, which is the intended behaviour |
 
 ## 4. Behaviours and scripting
 
@@ -208,6 +214,10 @@ TAB TAB to see what they do.
 
 **Chest keys** now flag correctly, so a key taken out of a chest unlocks its door.
 
+**Object Library live preview** is back in DX12. Hover a thumbnail and the static picture becomes
+a live render - static props turn slowly, characters play their idle animation. It is lit by a rig
+of its own, so it looks the same whatever level you have open.
+
 ## Things that behave differently from the DX11 build you know
 
 - **Bullet holes on doors.** A non-static but immobile object no longer collects bullet decals
@@ -238,6 +248,13 @@ after a save reload.
 Plus, on the DX12 side: distant tree billboards restored, tree sway restored, bullet tracers
 restored, the selection outline restored, second-level loading fixed, and a long VRAM campaign that
 removed roughly **90 MB of growth per level load** — a long editing session no longer climbs.
+
+Since the 09-20 report: fog on billboard trees, grass and baked terrain now matches the fog on the
+terrain under them; Terrain Bake no longer deletes the near 3D trees; planar reflections line up;
+the Reflections tickbox survives a level load; an older level keeps the quality settings its own
+file states; the Object Library live preview is back; and a mesh whose model file carries an empty
+tangent slot is normal-mapped correctly instead of rendering flat and unlit - that last one is a
+loader fix, so it applies anywhere in the build, not just to previews.
 
 ## What we would most like you to hammer
 
