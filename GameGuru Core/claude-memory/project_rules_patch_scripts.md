@@ -74,3 +74,5 @@ function before choosing an insertion point; in a `#include`d part file, "file s
 the first function in that part.
 
 See also [[project-rules-environment]] and [[project-porting-clusters]].
+
+- ★★★ **THIRD INSTANCE, 2026-09-23 (notes 3.88), and this one cost a FALSE PASS, not a crash.** A probe's screenshot-path conversion used sed to turn backslashes into forward slashes, written inside a quoted heredoc. The heredoc collapsed the doubled backslash, sed died with "unterminated s command", and the run carried on to print a healthy-looking status line that was ALREADY TRUE BEFORE THE FIX — so a verification that captured nothing reported success. Use `tr`, which only warns, or write the file with a tool that never goes through the shell (the Write tool). ★★ **And make the failure loud**: the repaired probe prints "!! SCREENSHOT NOT SAVED" and returns non-zero. **A verification that cannot fail loudly is not a verification** — same family as the 0923 gate sweep validating one stale image 38 times.
