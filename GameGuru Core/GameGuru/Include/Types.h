@@ -3864,6 +3864,11 @@ struct visualstype
 	                         // bSuperQuickObjects is set. A level saved before 3.34 parses as 0,
 	                         // which the push site clamps back to 3.
 	int  iTerrainBakeResNear; // GGMAX 3.25l: Terrain Bake near-tier texture size, 256..8192
+	int  iReflectionWidth;    // GGMAX 3.89: Water Reflection Size - width in pixels of the
+	                          // planar reflection render target. 0 = Auto, the stock internal
+	                          // resolution / 4 (384x200 on a 1536x801 window). Otherwise
+	                          // 128..2048, height following the main camera's aspect. A level
+	                          // saved before 3.89 parses as 0, which is Auto, so it does not move.
 
 	bool bEnableTerrainChunkCulling;
 	bool bEnablePointShadowCulling;
@@ -4363,6 +4368,11 @@ struct visualsdatastoragetype
 	                         // bSuperQuickObjects is set. A level saved before 3.34 parses as 0,
 	                         // which the push site clamps back to 3.
 	int  iTerrainBakeResNear; // GGMAX 3.25l: Terrain Bake near-tier texture size, 256..8192
+	int  iReflectionWidth;    // GGMAX 3.89: Water Reflection Size - width in pixels of the
+	                          // planar reflection render target. 0 = Auto, the stock internal
+	                          // resolution / 4 (384x200 on a 1536x801 window). Otherwise
+	                          // 128..2048, height following the main camera's aspect. A level
+	                          // saved before 3.89 parses as 0, which is Auto, so it does not move.
 
 	bool bEnableTerrainChunkCulling;
 	bool bEnablePointShadowCulling;

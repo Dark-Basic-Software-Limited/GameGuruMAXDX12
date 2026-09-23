@@ -13872,3 +13872,100 @@ The bake is absent from the reflection **depth prepass** - `customDraw_Prepass_R
 After the clip fix that only matters for baked terrain ABOVE the mirror plane, which testpro2level
 does not have. It needs a third PSO with `desc.ps = nullptr` and its own test level.
 
+---
+
+## 3.89 WATER REFLECTION SIZE - a dial for the flat-water pixel swim - 2026-09-23
+
+Lee, on a new flat-water testpro2level: rotating the camera slightly makes the reflection crawl,
+"as though the texture read is sampling two texels side by side and they are so different that I
+see a flicker". He asked for a setting, explicitly NOT a detector - he judges the flicker by eye.
+
+### The number was already in hand
+
+A `DUMP_REFLECTION` taken for 3.88 had it:
+
+```
+main  w=1536.0 h=801.0  aspect=1.917603
+refl  w= 384.0 h=200.0  aspect=1.920000
+```
+
+The planar reflection target is **internal resolution / 4 in each axis**, hardcoded inline at
+`wiRenderPath3D.cpp:3443-3444` inside `setReflectionsEnabled`, and all four reflection targets
+inherit that desc. Magnified ~4x across a flat mirror, a small rotation moves each screen pixel's
+sample most of a texel - under-sampling shimmer, exactly what he describes.
+
+* **The aspect mismatch is a second, separate thing**: 801/4 = 200.25 truncates to 200, so the
+reflection renders at 1.9200 against the main's 1.9176. Recorded, not chased.
+
+### What shipped
+
+A **Water Reflection Size** slider under Texture Detail: `Auto (quarter of screen)`, 512, 768,
+1024, 1536, 2048. Per-level, `visuals.ReflectionWidth` in the .fpm, same scope as Terrain Bake
+Detail. `SET_REFLECTIONSIZE <0|128..2048>` for sweeping, and `DUMP_REFLECTION` gained a `REFLSIZE`
+line showing both stores, the engine global and the real target size.
+
+*** Auto is bit-for-bit the old behaviour, integer truncation included.** The setting is inert
+until touched, which is the whole point of a diagnostic dial: it must not be a behaviour change.
+
+* **Absolute widths, not a divider ladder.** A ladder cannot express ABOVE native, and going above
+native is the single most informative stop - if 2048 on a 1536-wide window still swims, resolution
+is not the cause and the dial has done its job. The Auto stop keeps the aspect-following default
+the ladder argument was really protecting.
+
+* **The label derives the height** (`1024 x 534`), it does not print `N x N` like Terrain Bake
+Detail. The reflection target is not square. A label that prints a square lies about the texture.
+
+### The engine edit, and why it was the smaller option
+
+Three lines: `wi::renderer::gg_reflection_width` declared beside `gg_shadow_res_steps`
+(`wiRenderer.h`), defined 0 (`wiRenderer.cpp`), read at the one sizing site. Row added to
+`WICKED_ENGINE_CHANGES.md`.
+
+* **A zero-engine-edit route existed and was the WORSE option.** `MasterRenderer` derives from
+`RenderPath3D` and could re-create the public targets itself - but that means copying the desc
+block into the game (a value silently RE-DERIVED in a second place, the 3.85 fog-shim shape) AND
+re-asserting it after all **seven** callers of `setReflectionsEnabled`, one of which is inside the
+engine's own `ResizeBuffers`. **Count the callers before choosing the "no engine change" path** -
+"game-side" is only cheaper if the game side is actually one place.
+
+* **The apply point is `MasterRenderer::Update`, not `ResizeBuffers`.** ResizeBuffers runs only on
+a window or resolution change, so the slider would have appeared dead - the exact complaint Texture
+Detail drew in 3.12/3.19. Update also covers level load, Test Game and the editorvisuals restore,
+which are WHOLE-STRUCT assignments that no per-field copy list ever sees.
+
+* **Two lazily-built reflection resources had to be nulled by hand.**
+`aerialperspectiveResources_reflection` and `volumetriccloudResources_reflection` are created only
+when invalid and are NOT cleared by `setReflectionsEnabled`'s off-branch, so they would have kept
+running at the old size against a resized buffer. (A window resize was already safe - ResizeBuffers
+calls DeleteGPUResources, which does clear them.) *** "Re-created on change" is a claim about
+EVERY resource in the set, and lazily-built ones are the exception that does not follow.**
+
+### Gate, all five steps
+
+| | |
+|---|---|
+| default | `rt=384x200` **unchanged** - the regression gate |
+| 1536 | `rt=1536x801` exact |
+| 1024 | `rt=1024x534` exact |
+| back to Auto | `rt=384x200` returns |
+| 99 | refused |
+
+`visuals`, `gamevisuals` and `engine` agree at every step, so the dual write and the one-frame push
+both work. * The dual write matters: the .fpm is saved FROM `gamevisuals`
+(`M-MapFile_part0.cpp:242`), so a control that writes only `t.visuals` works all session and never
+reaches the level file.
+
+### Two things the dial cannot settle, stated before the sweep
+
+1. **I think the quarter-res default is itself the bug.** Deliberately not changed - Lee asked for
+   the setting. Moving the shipped default has a real VRAM cost and is his call.
+2. **The slider cannot separate two causes.** The ocean path POINT-samples a 16-bit reflection
+   DEPTH at the same quarter resolution and feeds it into a hard lerp (`oceanSurfacePS.hlsl:72-76`,
+   `sampler_point_clamp` on the R16_UNORM from `wiRenderPath3D.cpp:3464`). The slider raises both
+   resolutions together. If bigger helps but does not cure it, that point tap is the next suspect,
+   not more resolution.
+
+VRAM, for the record: ~54 B/px across the four targets (4x MSAA R11G11B10 + 4x MSAA
+D32_FLOAT_S8X24 + resolved R11G11B10 + resolved R16_UNORM). 384x200 = 4 MiB, 1024x534 = 28 MiB,
+1536x801 = 63 MiB, 2048x1068 = 113 MiB. The 4x MSAA on the reflection is hardcoded and untouched.
+

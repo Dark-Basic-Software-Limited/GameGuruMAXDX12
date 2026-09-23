@@ -886,6 +886,40 @@ void MasterRenderer::Update(float dt)
 			wi::renderer::gg_shadow_res_steps = shs;
 		}
 
+		// ★★ GGMAX 3.89: Water Reflection Size -> the planar reflection target's width.
+		//
+		// THE SINGLE APPLY POINT, deliberately. The panel, the harness verb, Reset Visuals and
+		// the visuals.ini parser all write only the struct field; this block is the one place
+		// that reaches the engine. That is what makes Test Game, Play Game and the editorvisuals
+		// restore work for free - they are WHOLE-STRUCT assignments (M-GridEdit_part2.cpp:1041,
+		// :1733, :1738) that no per-field copy list knows about.
+		//
+		// NOT in ResizeBuffers: that only runs on a window or resolution change, so the slider
+		// would appear to do nothing - the exact complaint Texture Detail drew in 3.12/3.19.
+		{
+			int rw = t.visuals.iReflectionWidth;
+			if (rw != 0 && (rw < 128 || rw > 2048)) rw = 0;   // pre-3.89 levels parse as 0 = Auto
+			if (wi::renderer::gg_reflection_width != rw)
+			{
+				wi::renderer::gg_reflection_width = rw;
+				if (getReflectionsEnabled())
+				{
+					// ⚠ These two are built LAZILY in RenderPath3D::PreRender and ONLY WHEN INVALID,
+					// so they do not follow a re-create on their own - they would keep running at the
+					// old size against a differently sized reflection buffer. setReflectionsEnabled's
+					// off-branch clears only rtReflection, depthBuffer_Reflection and the tiled light
+					// resources, so an off/on toggle does not do it either. Null them here.
+					// (A window resize is already safe: ResizeBuffers calls DeleteGPUResources, which
+					// does clear both.)
+					aerialperspectiveResources_reflection = {};
+					volumetriccloudResources_reflection = {};
+					setReflectionsEnabled(true);
+				}
+				// Reflections off: nothing to re-create. The global is set, so the engine builds at
+				// the new size whenever the checkbox turns them back on.
+			}
+		}
+
 		// ★★★ GGMAX 3.34: Super Quick Objects -> which rung of the cut-down opaque shader.
 		//
 		// 3.31 pushed a bare 0/1 and all it ever did was collapse exotic material permutations

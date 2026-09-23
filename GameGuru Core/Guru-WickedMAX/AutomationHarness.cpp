@@ -4233,6 +4233,29 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 //                  plane problem; if they differ in scale terms, it is a projection problem.
 static bool AutoHarness_ReflectionCommands(const char* cmd, const char* arg, char* result, int resultSize)
 {
+	// GGMAX 3.89: SET_REFLECTIONSIZE <0|128..2048> - Water Reflection Size, for sweeping the
+	// planar reflection resolution without reaching for the panel. 0 = Auto (stock internal/4).
+	// ⚠ C1061: the main dispatch ladder is AT the MSVC nesting limit, so this verb SHARES
+	// this helper by widening its early-out. Never add an else-if arm for it.
+	if (_stricmp(cmd, "SET_REFLECTIONSIZE") == 0)
+	{
+		const int v = atoi(arg);
+		if (v != 0 && (v < 128 || v > 2048))
+		{
+			_snprintf(result, resultSize, "ERROR: SET_REFLECTIONSIZE %d out of range (0 = Auto/quarter of screen, otherwise 128..2048 WIDE - the height follows the main camera aspect)", v);
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		// ⚠ BOTH copies. The per-frame push in MasterRenderer::Update reads t.visuals and
+		// the Test Game return path restores from editorvisuals.
+		t.gamevisuals.iReflectionWidth = t.visuals.iReflectionWidth = v;
+		_snprintf(result, resultSize,
+			"OK: SET_REFLECTIONSIZE %d (0 = Auto = internal resolution / 4). The four reflection "
+			"targets are re-created by the push in MasterRenderer::Update, so this takes one frame "
+			"- run DUMP_REFLECTION and read the REFLSIZE line to confirm.", v);
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "DUMP_REFLECTION") != 0) return false;
 
 	extern MasterRenderer* master_renderer;
@@ -4304,6 +4327,21 @@ static bool AutoHarness_ReflectionCommands(const char* cmd, const char* arg, cha
 			t.gamevisuals.bReflectionsEnabled ? 1 : 0,
 			(int)t.visuals.shaderlevels.entities,
 			(master_renderer && master_renderer->getReflectionsEnabled()) ? 1 : 0);
+		// GGMAX 3.89: what size the reflection is actually being rendered at, and whether the
+		// two stores and the engine agree. visuals != engine means the push in
+		// MasterRenderer::Update has not run yet (it takes one frame) or reflections are off.
+		{
+			int rtw = 0, rth = 0, rts = 0, rtv = 0;
+			if (master_renderer && master_renderer->rtReflection.IsValid())
+			{
+				const wi::graphics::TextureDesc& rd = master_renderer->rtReflection.GetDesc();
+				rtw = (int)rd.width; rth = (int)rd.height; rts = (int)rd.sample_count; rtv = 1;
+			}
+			w += _snprintf(result + w, resultSize - w,
+				"  REFLSIZE visuals=%d gamevisuals=%d engine=%d (0 = Auto = internal/4)  rt=%dx%d samples=%d valid=%d\n",
+				t.visuals.iReflectionWidth, t.gamevisuals.iReflectionWidth,
+				wi::renderer::gg_reflection_width, rtw, rth, rts, rtv);
+		}
 		{
 			extern int g_ggVisualsGuardRan; extern char g_ggVisualsGuardCwd[512];
 			w += _snprintf(result + w, resultSize - w,

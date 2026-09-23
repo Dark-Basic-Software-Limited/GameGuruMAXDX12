@@ -815,6 +815,53 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Loads every texture at a fraction of its authored size. Half turns a 1024x1024 into a 512x512, Quarter into a 256x256. This is the one to reach for on a card short of video memory or memory bandwidth: it cuts texture memory about four times at Half and sixteen times at Quarter, and makes every texture read cheaper as well. Surfaces get softer up close, which is the whole trade. The change applies to the level you are looking at, terrain included - expect a short pause while every texture is rebuilt.");
 			}
 
+			// ★ GGMAX 3.89: WATER REFLECTION SIZE.
+			//
+			// The planar reflection target is sized in the engine at internal resolution / 4 -
+			// measured 384x200 on a 1536x801 window with DUMP_REFLECTION - and flat water swims
+			// when the camera rotates slightly, as though the sample were crossing two very
+			// different texels. This is the DIAL to find out, not a fix: index 0 is Auto and
+			// reproduces the stock /4 bit for bit, so no existing level moves until it is touched.
+			{
+				static const int kReflW[6] = { 0, 512, 768, 1024, 1536, 2048 };
+				int ridx = 0;
+				for (int i = 0; i < 6; i++) if (kReflW[i] == t.visuals.iReflectionWidth) { ridx = i; break; }
+				char rlbl[64];
+				if (kReflW[ridx] == 0)
+				{
+					sprintf_s(rlbl, sizeof(rlbl), "Auto (quarter of screen)");
+				}
+				else
+				{
+					// ⚠ The reflection target is NOT square - it follows the main camera's aspect
+					// (the measured 384x200 is 1.92). Derive the height rather than printing
+					// "N x N" as Terrain Bake Detail does, or the label lies about the texture.
+					int rh = 0;
+					if (master_renderer)
+					{
+						const int irx = (int)master_renderer->GetInternalResolution().x;
+						const int iry = (int)master_renderer->GetInternalResolution().y;
+						if (irx > 0) rh = (int)(((long long)kReflW[ridx] * iry) / irx);
+					}
+					if (rh > 0) sprintf_s(rlbl, sizeof(rlbl), "%d x %d", kReflW[ridx], rh);
+					else        sprintf_s(rlbl, sizeof(rlbl), "%d wide", kReflW[ridx]);
+				}
+				ImGui::Text("Water Reflection Size");
+				if (ImGui::SliderInt("##gg_reflection_width", &ridx, 0, 5, rlbl))
+				{
+					if (ridx < 0) ridx = 0;
+					if (ridx > 5) ridx = 5;
+					// ⚠ BOTH copies, in one statement. The .fpm is saved FROM gamevisuals
+					// (M-MapFile_part0.cpp:242), so a control that writes only t.visuals appears to
+					// work all session and never reaches the level file.
+					t.gamevisuals.iReflectionWidth = t.visuals.iReflectionWidth = kReflW[ridx];
+					g.projectmodified = 1;
+					// Live: the per-frame push in MasterRenderer::Update sees the change next frame and
+					// re-creates the four reflection targets. Nothing to call from here.
+				}
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip("How big the picture is that the water uses for its reflection. Auto is what the engine has always done - a quarter of your screen's width and height - and it is the first thing to try when still, flat water shimmers or crawls as you turn the camera slowly: at Auto that picture is being stretched four times, so neighbouring pixels in it can be very different from each other. Larger sizes make the reflection sharper and steadier. The cost is video memory and some frame rate, because the whole scene is drawn a second time into that bigger picture - the largest setting is around a hundred megabytes and is meant for finding out what is wrong rather than for shipping. Try one step up first. Only water and other mirror surfaces are affected.");
+			}
+
 			ImGui::PopItemWidth();
 		}
 
