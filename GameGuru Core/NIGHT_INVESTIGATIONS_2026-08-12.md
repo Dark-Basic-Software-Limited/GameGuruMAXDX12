@@ -14313,3 +14313,81 @@ character animation, ALL the body parts should be handled, and then the next fra
 skip" - was the correct invariant for all three. ★ A user describing the INVARIANT they expect,
 rather than the bug they see, is the most useful bug report there is.
 
+---
+
+## 3.94 The live preview is exempt from every animation throttle - 2026-09-23
+
+Lee, straight after confirming 3.93: hovering a character thumbnail in the Object Library "no
+longer produces animation" - two screenshots a minute apart, identical pose. His instruction: "any
+delayed or lowered animation stuff should be switched off so the characters can animate like they
+did before."
+
+### " NOT caused by 3.93 - EXPOSED by it
+
+The preview PARKS its object ~39,000 units above the editor camera (`master_part2.cpp:285`), and
+every animation throttle measures distance from the EDITOR camera:
+
+```
+period = 1 + (scale * 0.1) * (distance / 1000), clamped to 240
+  scale 25  (the shipped default), 39,000 units ->  98 frames = 1.6 s per pose
+  scale 100,                       39,000 units -> 391 -> clamped 240 = 4 s per pose
+```
+
+Before 3.93 the character's parts sat on DIFFERENT phases, so something moved most frames and the
+preview LOOKED animated while being internally incoherent. 3.93 gave them one shared phase, so they
+freeze together and it is visibly stopped. ★ **The throttle was always wrong here; 3.93 only
+removed the disguise.** "Animate like they did before" is not the target either - before was
+throttled-but-moving. Full rate is what the preview always needed.
+
+### ★★★ FIFTH instance of the rule this one feature keeps teaching
+
+**A PREVIEW IS ITS OWN SCENE, AND EVERY PARAMETER IT INHERITS FROM THE LEVEL CAN BE WRONG FOR IT.**
+Exposure, near and far planes, scissor and blend mode (3.83). Field of view (3.84). Now animation
+throttling. Every one of them was a level-wide value that happened to be reachable from the preview
+path. **The distance that matters for the preview is to the PREVIEW camera - measured 323.6 units
+in the verification below - not the 39,000 to the editor camera.**
+
+★ Worth asking of any future preview defect FIRST: which level-scoped value is this inheriting?
+
+### The census found FOUR throttles, not the two I had
+
+| # | throttle | catches the preview? |
+|---|---|---|
+| 1 | Reduction Scale, per-armature hold | **YES** |
+| 2 | the 1.29 30fps parity skip | **YES** |
+| 3 | `IsRenderable` cull (`wiScene.cpp:2709`) | no - `GrabBackBufferCopy` calls `ShowObject` before parking |
+| 4 | the 1.35 visibility pause (`wiScene.cpp:2717-2745`) | no - self-healing: `RenderCameraComponents` runs a full `UpdateVisibility` for the PREVIEW camera every frame, re-stamping `gg_last_visible_frame` |
+
+★ Two of four cleared themselves, but only because they were checked. This morning cost a day on a
+defect with three stacked causes; enumerating beats fixing the ones you happened to find.
+
+### The fix is game-side, and it cannot leak
+
+Both live throttles are published from ONE block, `master_part1.cpp:845-869`, inside
+`MasterRenderer::Update` - which runs BEFORE `__super::Update(dt)` and therefore before the
+animation jobs. Gating both on `GGObjectPreview_IsActive()` there is the whole change.
+
+★★ **Chosen over a per-armature exemption list precisely because it stores NOTHING per object.**
+A list would have needed clearing on every path that ends a preview - un-hover, eviction, level
+unload, Test Game entry, a crash - and a single missed path leaves one character permanently
+un-throttled, which nobody notices for months. A same-frame gate has no state to leak. ★ **When a
+fix needs teardown on N paths, look for the formulation that has no teardown at all.**
+
+⚠ **LOAD-BEARING: `redScale` must be zeroed too, not just the 30fps flag.** The CPU animation
+skip is nested under the 30fps flag, but the GPU skinning dispatch skip AND 3.92's streamout
+ping-pong gate read `gg_anim_reduction_scale` directly. Clearing only the flag would pose the
+character on the CPU and then skin it from a stale buffer - worse than the bug.
+
+### Verified
+
+| | engine scale | armatures held | preview |
+|---|---|---|---|
+| no preview | 100 | 13 | `active=0` |
+| hovering a character | **0** | **0** | `active=1`, `distToObj=323.6` |
+| moved off the thumbnail | **100** | 18 | `active=0` - **no leak** |
+
+Step C is the one that matters: the throttle comes back the instant the hover ends.
+
+⚠ NOT VISUALLY CONFIRMED - the numbers prove the exemption engages and clears. Only Lee's eye
+can say the character is animating again.
+

@@ -288,6 +288,7 @@ DX12 ported them later (most in the 3.44–3.50 parity round, 2026-09-16/17).
 | 225 | **Water Reflection Size** (Graphics and Performance, under Texture Detail) - Auto / 512 / 768 / 1024 / 1536 / 2048. The cure for a still pond that shimmers as you turn the camera. ⚠ ships defaulting to **1024**, which costs ~26 MiB per level | L |
 | 226 | **Water Reflection Blur** - 0-3 passes, softens the reflection instead of enlarging it. Ships defaulting to **2**. ⚠ affects every mirror surface, not only water | L |
 | 227 | **Reduction Scale no longer glitches distant characters** - tick Lower Animation, slide Reduction Scale to 100, watch a character in the distance past the 10 s settling period. It should step at a low, chunky rate but always as a WHOLE character - never two poses flickering, never the head and feet in different places | L |
+| 228 | **The Object Library live preview animates at full rate** - hover a character thumbnail with *Lower Animation & LUA Speed* ticked and Reduction Scale high. The preview must animate smoothly regardless: it is exempt from every animation throttle while it is on screen, and the throttle returns the moment you move off the thumbnail | U |
 
 ---
 

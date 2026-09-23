@@ -42,7 +42,26 @@ object position, backdrop visibility, lights — is already gone by then.
 ⚠ Give the camera entity **no TransformComponent** or `Scene::RunCameraUpdateSystem`
 (`wiScene.cpp:5843`) overwrites Eye/At/Up from it every frame.
 
-## ★★★ The recurring mistake: a preview is its own scene
+## ★★★ The recurring mistake: a preview is its own scene — FIVE instances now
+
+**Ask this FIRST of any preview defect: which level-scoped value is it inheriting?**
+exposure · near/far planes · scissor · blend mode (3.83) · field of view (3.84) ·
+**animation throttling (3.94)**.
+
+3.94: the preview parks its object ~39,000 units above the EDITOR camera, and every animation
+throttle measures from that camera - so Reduction Scale held the preview character to one pose
+every 98 frames at the shipped default, and 4 seconds at scale 100. **The distance that matters
+is to the PREVIEW camera (~324 units).** Fixed by gating both throttles on
+`GGObjectPreview_IsActive()` at their single publish point in `MasterRenderer::Update`, which
+runs before the animation jobs. ★★ **Chosen over a per-armature exemption list because it
+stores NOTHING per object and therefore cannot leak - when a fix would need teardown on N paths,
+look for the formulation with no teardown at all.** ⚠ Zero the reduction scale, not just the
+30fps flag: the GPU skinning skip and the 3.92 streamout gate read the scale directly.
+★ Not caused by 3.93, EXPOSED by it - before, the parts sat on different phases so it LOOKED
+animated while being incoherent.
+
+### The original four (3.83/3.84)
+
 
 **Every parameter it inherits from the level is a parameter that can be wrong for it.** Four
 defects, all this:

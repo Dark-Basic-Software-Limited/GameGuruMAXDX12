@@ -845,7 +845,39 @@ void MasterRenderer::Update(float dt)
 	{
 		extern bool bEnable30FpsAnimations;
 		extern float g_animThrottleFarDist;
-		wiScene::gg_anim30fps_enabled.store(bEnable30FpsAnimations ? 1u : 0u, std::memory_order_relaxed);
+		// ★★★ GGMAX 3.94: THE OBJECT LIBRARY LIVE PREVIEW IS EXEMPT FROM EVERY ANIMATION
+		// THROTTLE WHILE IT IS ON SCREEN.
+		//
+		// The preview PARKS its object ~39,000 units above the editor camera (master_part2.cpp:285)
+		// and every throttle here measures distance from the EDITOR camera. Reduction Scale's
+		// period is 1 + (scale*0.1)*(distance/1000), so at the shipped default scale 25 the preview
+		// character updated once every 98 frames - 1.6 s per pose - and at scale 100 it hit the
+		// 240-frame clamp, four seconds. Lee: hovering a character 'no longer produces animation'.
+		//
+		// ★ NOT caused by 3.93, EXPOSED by it. Before 3.93 the character's parts sat on different
+		// phases, so something moved most frames and it LOOKED animated while being internally
+		// incoherent. 3.93 gave them one shared phase, so they freeze together and it is visibly
+		// stopped. The throttle was always wrong here; full rate is what the preview always needed.
+		//
+		// ★★ FIFTH INSTANCE of the rule this feature keeps teaching: A PREVIEW IS ITS OWN SCENE,
+		// AND EVERY PARAMETER IT INHERITS FROM THE LEVEL CAN BE WRONG FOR IT. Previously exposure,
+		// near/far planes, scissor and blend mode (3.83) and field of view (3.84). The distance that
+		// matters for the preview is to the PREVIEW camera (~300 units), not the editor camera.
+		//
+		// Gated HERE and not with a per-armature exemption list, deliberately: this block is the one
+		// place both knobs are published, it runs inside MasterRenderer::Update BEFORE
+		// __super::Update(dt) and therefore before the animation jobs, and it stores NOTHING per
+		// object - so the exemption CANNOT LEAK. There is no path where a preview ends and a
+		// character is left permanently un-throttled, which a per-entity list would have risked.
+		//
+		// ⚠ LOAD-BEARING: redScale must be zeroed too, not just the 30fps flag. The CPU animation
+		// skip is nested under the 30fps flag, but the GPU skinning dispatch skip and the 3.92
+		// streamout ping-pong gate both read gg_anim_reduction_scale directly - clearing only the
+		// 30fps flag would leave the preview posed on the CPU and skinned from a stale buffer, which
+		// looks WORSE, not better.
+		extern bool GGObjectPreview_IsActive(void);
+		const bool bGGPreviewLive = GGObjectPreview_IsActive();
+		wiScene::gg_anim30fps_enabled.store((bEnable30FpsAnimations && !bGGPreviewLive) ? 1u : 0u, std::memory_order_relaxed);
 		static uint32_t s_ggAnimFrame = 0;
 		wiScene::gg_anim30fps_frame.store(++s_ggAnimFrame, std::memory_order_relaxed);
 		float fd = g_animThrottleFarDist;
@@ -859,7 +891,7 @@ void MasterRenderer::Update(float dt)
 		// slider. Drives BOTH the CPU animation skip and the skinning dispatch skip; see the
 		// note by gg_anim_reduction_scale in wiScene.cpp.
 		uint32_t redScale = 0;
-		if (bEnable30FpsAnimations)
+		if (bEnable30FpsAnimations && !bGGPreviewLive)   // GGMAX 3.94, see the note above
 		{
 			int rs = t.visuals.iAnimReductionScale;
 			if (rs < 1) rs = 1;
