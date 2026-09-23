@@ -14114,3 +14114,103 @@ DX11 renders this reflection at internal resolution / **2** with no MSAA, and it
 no reflection depth tap at all. DX12's Auto is a **quarter**. That is why the swim is a new
 complaint rather than something that was always there.
 
+---
+
+## 3.92 REDUCTION SCALE 100: the streamout ping-pong, and a SECOND cause still live - 2026-09-23
+
+Lee, on testpro2level with a camera start he saved for it: at Reduction Scale 100 a distant
+character "flicks between two animation frames rapidly... around 30 times in one second at 60fps",
+and his zoomed Test Game capture shows **the head and feet out of position**. His hypothesis: "the
+skipping of animation work is causing some parts of the character object to be updated but not
+others."
+
+**He is right, and there are TWO independent mechanisms. One is fixed here. One is not.**
+
+### CAUSE A - the skinning streamout ping-pong is ungated (FIXED)
+
+```
+wiScene.cpp:4950    std::swap(mesh.so_pos, mesh.so_pre);       every mesh, every frame, no test
+wiScene.cpp:4984    geometry.vb_pos_wind = mesh.so_pos...      the DRAW reads the post-swap half
+wiRenderer.cpp:6829 push.so_pos = mesh.so_pos.descriptor_uav   the DISPATCH writes the post-swap half
+wiRenderer.cpp:6811 if (...held...) continue;                  3.25 skips the dispatch
+```
+
+so_pos and so_pre are the two halves of ONE streamoutBuffer. Stock Wicked dispatches every skinned
+mesh every frame, so the swap is always matched and the second half is invisible. 3.25's Reduction
+Scale skips the dispatch - and the comment directly above that skip states the false premise in as
+many words: *"the dispatch would recompute vertices already in the streamout buffer"*.
+
+*** That is true of ONE buffer. There are two, and the one left alone is not the one being drawn.**
+
+That is why it alternates EVERY FRAME rather than holding then jumping: the pose is held underneath,
+but the renderer is handed the other half every other frame, and that half holds a pose one whole
+period old. At EVEN periods every go-frame lands on the same parity, so the other half is never
+rewritten again and freezes at an ancient pose while its partner advances - the gap grows without
+bound.
+
+*** FOURTH INSTANCE OF A FAMILY THIS ENGINE ALREADY FIXED ONCE.** GGMAX 1.37b gated the hair/grass
+ping-pong for exactly this reason (`wiHairParticle.cpp:484-490`). The skinning one never got it.
+**ANY double buffer whose producer can be skipped needs its swap gated on the producer's condition.**
+
+Fixed by gating the swap on the same per-armature decision the dispatch reads, through a new
+canonical `gg_anim_armature_held(scene, armatureID)` - not a third hand-rolled copy of the
+predicate, because duplicating it is how this family grows. `vb_pre` points at `so_pos` for a held
+mesh so it reports zero vertex velocity instead of a stale one (same follow-on as 1.37d).
+
+Verified - `meshes held` is a new DUMP_ANIMREDUCTION row:
+
+| scale | armatures held | meshes held |
+|---|---|---|
+| 1 (off) | 0 | 0 |
+| 25 | 258 | 258 |
+| 50 | 271 | 271 |
+| 100 | 274 | 274 |
+
+### *** CAUSE B - each body part has its OWN ARMATURE, and the prologue staggers them BY DESIGN
+
+**Found because the verification numbers were too neat.** `meshes held` counts MESHES and
+`armatures held` counts ARMATURES, and they matched EXACTLY at all three scales - which can only
+happen if each armature drives one mesh. That contradicts 3.25n's stated premise, so I checked it
+with `DUMP_SKIN` instead of accepting a number that agreed with me.
+
+285 skinned objects, 280 armatures. A Character Creator character at (885,3226):
+
+```
+adult_male_body_13_merc1    arma=15750  y=104
+adult_male_head_05_african  arma=15813  y=120
+adult_male_legs_12_merc1    arma=15816  y=77
+adult_male_feet_11_merc2    arma=15819  y=64
+hair_shell001               arma=15822  y=120
+merc_sunglasses             arma=15825  y=118
+```
+
+**Six parts, six DISTINCT armatures. Clusters where all parts share one armature: 0 of 45.**
+
+*** SO 3.25n's PREMISE IS FALSE FOR THIS CONTENT.** Its note says "head, body, legs are separate
+objects sharing ONE armature" and its fix - decide once per armature - is correct only under that
+premise. Each part having its own armature means the prologue's deliberate stagger,
+`(frame + ai*7) % period` (wiScene.cpp:2440), puts head, body, legs and feet on FOUR DIFFERENT
+PHASES by design, and their own AABB centres (head y=120, feet y=64) can put them in different
+PERIODS as well. At scale 100 and ~2000 units the period is 21 frames, so parts of one character
+can be a third of a second apart. **That is precisely the head-and-feet displacement Lee
+photographed, and 3.92 does not touch it.**
+
+Why it read as fixed at 50 in 3.25n and is back at 100: the stagger's amplitude IS the period,
+which doubles from 50 to 100. Lee's "two heads: confirmed gone" was a true observation at an
+amplitude small enough not to show.
+
+*** A FIX VERIFIED AGAINST THE WRONG PREMISE LOOKS LIKE A FIX.** 3.25n was checked by eye at one
+scale and by a held-armature census; neither could see that the unit it had chosen was not the unit
+the character is assembled from. The census counted HOW OFTEN work is skipped - which saturates by
+construction, because the 1000-unit eligibility cut-off is the same at every scale - and never
+measured HOW FAR APART the resulting poses are, which is the thing that hurts.
+
+**Not fixed here, deliberately.** The phase must be shared by every armature belonging to one
+character, and the ENGINE cannot know which those are - it sees 280 unrelated armatures. The GAME
+does: GG places a character as one entity whose parts are sub-objects. So the fix is a grouping key
+passed from the game into the prologue, and that is a design change, not a patch. Options, in
+preference order: (1) game supplies a character/group id per armature and the phase keys off that;
+(2) key the phase on a quantised world position, since parts are co-located - purely engine-side but
+a heuristic; (3) drop the stagger entirely, which trades the artefact for a frame-time spike every
+period, which is what the stagger exists to avoid.
+

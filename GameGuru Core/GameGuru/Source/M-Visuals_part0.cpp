@@ -201,11 +201,23 @@ void gg_visuals_reset_brutal_switches()
 	{
 		extern int gg_terrain_bake_res_near;
 		t.visuals.iTerrainBakeResNear = 8192;
-		// GGMAX 3.89: Water Reflection Size back to Auto. No engine push from here - the
-		// single apply point is the per-frame block in MasterRenderer::Update, which keeps
-		// this file free of any wi:: reference (it has none today).
-		t.visuals.iReflectionWidth = 0;
-		t.visuals.iReflectionBlur = 0;   // GGMAX 3.90
+		// GGMAX 3.91: Water Reflection Size 1024 + Blur 2 is now the DEFAULT, Lee's call after
+		// judging the sweep by eye. 3.89/3.90 shipped inert at Auto/Off; this is the behaviour
+		// change that turns them on.
+		//
+		// ⚠⚠ THIS FUNCTION RUNS PRE-PARSE ON EVERY LEVEL LOAD (called from visuals_load
+		// below as well as from Reset Visuals), so these values apply to EVERY LEVEL THAT DOES
+		// NOT STATE THE KEY - which is all existing content, the 19 shipped demos included.
+		// A level saved since 3.89 writes the key and keeps whatever it chose, Auto included.
+		//
+		// Cost this accepts, per level: ~+26 MiB of reflection targets (1024x534 at 58 B/px
+		// against 384x200), and every MIRROR surface softens, not only water - one shared
+		// reflection target, so the 3.80 crate-and-puddle case is in scope too.
+		// ⚠ Frame-time cost is UNMEASURED on a GPU-bound machine. The RX 9060 XT could not see
+		// it (1.8 ms busy in a 4.6 ms frame, notes 3.90b); the 6-year-old AMD card this campaign
+		// targets may well be able to. Re-measure there before this default is considered safe.
+		t.visuals.iReflectionWidth = 1024;
+		t.visuals.iReflectionBlur = 2;
 		gg_terrain_bake_res_near = 8192;
 	}
 	// Texture Detail is deliberately NOT pushed live here. GGSetTextureDivideLive re-creates

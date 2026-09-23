@@ -1,0 +1,46 @@
+PRE-REGISTERED BEFORE THE NEXT GATE SWEEP - written before any run, as the standing rule requires.
+
+Change: GGMAX 3.91 makes Water Reflection Size 1024 and Water Reflection Blur 2 the DEFAULT, in
+gg_visuals_reset_brutal_switches (M-Visuals_part0.cpp:219-220). Lee's call, after judging the 3.89
+size sweep and the 3.90 blur by eye.
+
+WHY THIS NEEDS A WRITTEN AMENDMENT: 3.89 and 3.90 both shipped INERT at their defaults, so neither
+could move the gate. This one is a real behaviour change, and because
+gg_visuals_reset_brutal_switches runs PRE-PARSE ON EVERY LEVEL LOAD (called from visuals_load:1297,
+not only from Reset Visuals), it applies to every level that does not state the key - which is all
+existing content, all 19 shipped demos included. Only a level saved since 3.89 carries the key and
+keeps its own choice.
+
+C3 VRAM IS AMENDED. PREDICTION, stated before the numbers exist:
+
+  Every demo should rise by ~+26 MiB of reflection render targets and nothing else. The four
+  reflection targets plus 3.90's blur temp are 58 bytes per pixel: 1024x534 = 30.2 MiB against
+  384x200 = 4.25 MiB.
+
+  The 0923 gate measured worst-case 3783.5 MB (Aztec Game Kit in Test Game) with 312.5 MB of
+  headroom under the 4096 MB min-spec limit, so the expected worst case is ~3810 MB and ~286 MB of
+  headroom. C3 STILL HAS TO PASS - the 4 GB limit is not negotiable and is not being amended. If
+  any demo exceeds 4096 MB on a FRESH launch, this default must be reconsidered, not the gate.
+
+  A rise materially LARGER than ~26 MiB per demo is NOT explained by this change and is a real
+  finding. A demo that does not rise at all means the default is not reaching it - check whether
+  that level states visuals.ReflectionWidth explicitly.
+
+C2 GEOMETRY IS NOT AMENDED. A reflection target resize touches no geometry. POLYS must be identical
+on all 19. If POLYS moves, something other than the reflection changed and it must be investigated.
+
+C1 19/19 and C4 19/19 expected unchanged.
+
+FPS IS NOT GATED, and for this change that is doing real work rather than being a formality. The
+frame-time cost of 1024 + blur 2 could NOT be measured on this machine: notes 3.90b records GPU
+busy at 1.8 ms inside a ~4.6 ms frame, i.e. the editor is CPU-bound here with ~60% GPU idle, and an
+18x increase in reflection pixels disappears into that headroom. The interleaved A/B/C returned the
+CHEAPEST setting as the slowest, which is a no-signal result, not a free one.
+
+  ** THE OPEN RISK, STATED PLAINLY: the whole low-spec campaign exists for a 6-year-old AMD card,
+  and a second full scene render at 1024x534 with 4x MSAA is exactly the work a GPU-bound machine
+  feels. This default is UNVERIFIED on the hardware it matters for. A sweep on the RX 9060 XT
+  cannot close that question however green it comes back.
+
+Also accepted by this default, and not a defect: every MIRROR surface softens, not only water.
+There is one shared planar reflection target, so the 3.80 crate-and-puddle case is blurred too.

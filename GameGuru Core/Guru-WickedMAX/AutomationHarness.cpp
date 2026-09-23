@@ -6512,6 +6512,17 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			t.visuals.iAnimReductionScale, bEnable30FpsAnimations ? 1 : 0,
 			ascale, (int)asc.armatures.GetCount(), wi::scene::gg_anim_armatures_skipped,
 			wi::scene::gg_anim_reduction_grace, wi::scene::gg_anim_reduction_resets);
+		// GGMAX 3.92: the number that proves the streamout ping-pong gate is live. 0 while
+		// Reduction Scale is off or the post-load grace is running; several hundred once it
+		// engages. If armatures are being HELD but this reads 0, the gate is not running and
+		// every held mesh is alternating between two poses a period apart.
+		// ⚠ Advance `w`, do NOT append at strlen(result). The distance loop below writes at
+		// result + w, so a block that appends without moving the shared cursor is OVERWRITTEN by
+		// the very next statement. That is exactly what happened on the first 3.92 build: this row
+		// was printed and erased, the dump looked normal, and the verification proved nothing.
+		w += _snprintf(result + w, resultSize - w,
+			"  meshes held      : %u   (streamout swap suppressed this frame - GGMAX 3.92)\n",
+			wi::scene::gg_anim_meshes_held.load(std::memory_order_relaxed));
 		const float samples[6] = { 250.0f, 499.0f, 500.0f, 1000.0f, 2000.0f, 5000.0f };
 		for (int i = 0; i < 6 && w < (int)resultSize - 128; i++)
 		{
