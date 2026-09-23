@@ -13779,3 +13779,96 @@ come back with post-processing ON where it previously came back OFF. FPS and VRA
 round trip in that sweep are not comparable to the 0923 run. The fresh-launch gate is unaffected —
 nothing on the level-load path changed. Amend in writing before re-running.
 
+---
+
+## 3.88 TERRAIN BAKE KILLS THE PLANAR REFLECTION — 2026-09-23 — FIXED, Lee-confirmed
+
+Lee, on testpro2level with the camera on a puddle reflecting a crate: tick **Terrain Bake** and the
+reflection is gone. Untick it and it is back. Total Objects 1283 -> 658.
+
+### The enable chain was perfectly healthy, and that was the clue
+
+`DUMP_REFLECTION` taken in both states is **byte-identical** - same plane `n=(0,1,0) w=-4.3023`,
+same mirror camera (eye y 59.24 -> -50.64, correctly reflected), same clip plane, same matrices,
+`REFLSTATE visuals=1 gamevisuals=1 renderer=1`, all four `IsRequestPlanarReflection` requesters.
+**Nothing is disabled.** And `1283 - 625 baked chunks = 658` exactly, so the bake removed the
+terrain entities and nothing else - no repeat of the 3.73 tree-pool loss.
+
+*** "Feature X disappeared" has two shapes and they need different instruments: the feature was
+TURNED OFF, or the feature ran and produced nothing.** One byte-identical dump ruled out the whole
+first family in a single command and sent me straight to pass content.
+
+### Cause: the bake draws into the reflection pass and is the only shader that does not clip
+
+The engine calls the opaque hook **twice a frame, and tells the hook which pass it is**:
+
+```
+wiRenderPath3D.cpp:1642   customDraw_Opaque(&camera_reflection.frustum, 1, cmd);   reflection
+wiRenderPath3D.cpp:1891   customDraw_Opaque(&camera->frustum,           0, cmd);   main
+```
+
+`master_part1.cpp:600-604`:
+
+```cpp
+GGTrees_Draw      (frustum, mode, cmd);   // takes mode
+GGTerrainBake_Draw(frustum,       cmd);   // DROPS it
+if (ggterrain_use_wicked_terrain) return;
+GGTerrain_Draw    (frustum, mode, cmd);   // takes mode
+```
+
+| shader | SV_ClipDistance0 |
+|---|---|
+| **GGTerrainBakeVS.hlsl** | **0** |
+| GGTerrainVS.hlsl | 1 |
+| GGTerrainPrepassRefVS.hlsl | 1 |
+| GGTreesVS.hlsl | 2 |
+
+The reflection camera carries a clip plane at the mirror height (`CameraComponent::Reflect`,
+`wiScene_Components.cpp:2809`) and that is what discards everything below the water. With the real
+terrain the ground is engine ObjectComponents and the engine object VS clips it. Baked, nothing
+does - and the bake rasterizes `CullMode::NONE`, so from a reflection eye *below* the puddle the
+ground underside is drawn, wins the reverse-Z `GREATER_EQUAL` test against the reflected scene
+behind it, and paints over it.
+
+**Fix**: two lines in `GGTerrainBakeVS.hlsl` - a `float clip : SV_ClipDistance0` output and
+`OUT.clip = dot( pos, g_xCamera_ClipPlane );`. Free in the main pass, where `clipPlane` defaults to
+(0,0,0,0) so the distance is 0 and `SV_ClipDistance` only clips on negative. Safe in the shared VS
+because a PS input signature only has to be a SUBSET of the VS output, so neither bake PS changes.
+No engine change. Proved the shader recompiled by the **.cso SIZE**: 9516 -> 9816 bytes, md5 moved.
+
+*** THIRD time this rule has been paid for: a clip belongs to a FAMILY - prepass, colour, shadow,
+envprobe, reflection - and must land in all of them in the same edit.** The bake shader joined the
+family in 3.25 and never got it. * The cheap detector is one grep: **count `SV_ClipDistance0`
+across every VS in the family and look for the zero.** It named this in one command.
+
+* **A draw that drops the `mode` argument its siblings take is a defect waiting to happen** - the
+engine is telling the hook which pass it is in, and one call site throws that away.
+
+### WARNING - my verification produced NOTHING and reported success anyway
+
+The automated check saved **no screenshots**. The path conversion was
+`sed 's|\\|/|g'` written inside a `<< 'EOF'` heredoc, which collapses it to
+`s|\|/|g` - *unterminated `s' command* - and the run carried on printing `planar_visible=1`,
+which was already true BEFORE the fix and proves nothing at all.
+
+**Third instance of this heredoc trap, and writing the script to a FILE does not save you** - the
+collapse happens in the heredoc that writes the file. Use `tr`, which only warns, or write the
+file with a tool that never goes through the shell. The script now also prints
+`!! SCREENSHOT NOT SAVED` and returns non-zero instead of continuing.
+
+*** A verification that cannot fail loudly is not a verification.** This fix is confirmed by Lee
+looking at it, not by my instrument, and it is recorded that way on purpose.
+
+Calibration for whoever measures this next: the reflection is a DARK feature on a dark floor and
+**mean luminance is the wrong statistic** - 23.58 -> 22.32 across the toggle, a 5% move that reads
+as noise. **std is the discriminator**: 3.76 with the reflection, 2.29 without. `vgrad` looked
+promising and does **not** discriminate (2.00 vs 1.98, dither). All three are printed by
+`scratchpad/reflstat.py` with that written beside them so nobody reaches for the wrong one.
+
+### Still open, separate commit
+
+The bake is absent from the reflection **depth prepass** - `customDraw_Prepass_Reflections`
+(`master_part1.cpp:590-593`) has nothing above its `if (ggterrain_use_wicked_terrain) return;`.
+After the clip fix that only matters for baked terrain ABOVE the mirror plane, which testpro2level
+does not have. It needs a third PSO with `desc.ps = nullptr` and its own test level.
+

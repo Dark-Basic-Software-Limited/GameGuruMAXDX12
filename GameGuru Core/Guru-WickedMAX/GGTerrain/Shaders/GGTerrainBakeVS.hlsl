@@ -34,6 +34,7 @@ struct VertexOut
 	float3 worldPos : TEXCOORD0;
 	float3 normal   : TEXCOORD1;
 	float2 uv       : TEXCOORD2;
+	float clip      : SV_ClipDistance0;   // GGMAX 3.88 - see main(); sibling GGTerrainVS.hlsl:22
 };
 
 [RootSignature(GAMEGURU_ROOTSIGNATURE)]
@@ -45,5 +46,31 @@ VertexOut main( VertexIn IN )
 	OUT.worldPos = IN.position;
 	OUT.normal   = IN.normal;
 	OUT.uv       = IN.uv;
+	// GGMAX 3.88: THE REFLECTION PASS DRAWS THIS SHADER TOO, AND IT WAS THE ONLY ONE IN THE
+	// FAMILY NOT CLIPPING.
+	//
+	// wiRenderPath3D.cpp:1642 calls customDraw_Opaque a SECOND time each frame with the planar-
+	// reflection camera and mode 1, against the main-camera call at :1891 with mode 0. In GG's
+	// lambda (master_part1.cpp:600-604) GGTrees_Draw and GGTerrain_Draw both take `mode`;
+	// GGTerrainBake_Draw DROPS it, so the baked ground is drawn into the reflection with no idea
+	// it is in one. The reflection camera carries a clip plane at the mirror height
+	// (CameraComponent::Reflect, wiScene_Components.cpp:2809) and the bake rasterizes
+	// CullMode::NONE, so from a reflection eye BELOW the water the ground's underside is drawn,
+	// wins the reverse-Z GREATER_EQUAL test against the reflected scene behind it, and paints
+	// over it. Lee's symptom: tick Terrain Bake and the puddle stops reflecting, while the whole
+	// reflection ENABLE chain still reports healthy - DUMP_REFLECTION is byte-identical across
+	// the toggle, because nothing is disabled. Only the CONTENT of the reflection is destroyed.
+	//
+	// GGTerrainVS.hlsl:33, GGTerrainPrepassRefVS.hlsl:27 and GGTreesVS.hlsl:64 have always done
+	// this. The bake shader joined the family in 3.25 and never got it.
+	// ★ A clip belongs to a FAMILY - prepass, colour, shadow, envprobe, reflection - and must
+	//   land in all of them in the same edit. Third time this rule has been paid for.
+	//
+	// Free in the main pass: CameraComponent::clipPlane defaults to (0,0,0,0)
+	// (wiScene_Components.h:1492), so the dot is 0 there and SV_ClipDistance only clips on
+	// NEGATIVE. Safe in the shared VS: a PS input signature only has to be a SUBSET of the VS
+	// output and SV_ClipDistance is a system value, so neither bake PS changes. Do NOT split the
+	// file to add this - see the header above.
+	OUT.clip     = dot( pos, g_xCamera_ClipPlane );
 	return OUT;
 }
