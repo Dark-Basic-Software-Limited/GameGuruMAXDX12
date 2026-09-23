@@ -14214,3 +14214,94 @@ preference order: (1) game supplies a character/group id per armature and the ph
 a heuristic; (3) drop the stagger entirely, which trades the artefact for a frame-time spike every
 period, which is what the stagger exists to avoid.
 
+---
+
+## 3.93 One Reduction Scale decision per CHARACTER, keyed on the shared world pivot - 2026-09-23
+
+3.92 fixed cause A (the ungated streamout ping-pong) and NAMED cause B: a character's parts are
+separate armatures, and the prologue staggers armatures by phase on purpose, so head, body, legs
+and feet were put on different frames by design. This closes cause B.
+
+Lee picked the position-derived key from the three options. ⚠ He chose it believing it needed no
+engine change; it does - the prologue IS engine code - and he was told before it was built. What it
+avoids is the game-to-engine data channel option 1 needed. It is engine-only, no game changes.
+
+### The key needs no quantisation, so there is no seam to tune
+
+The worry going in was the grid seam: a character spans ~40 units, so any cell size splits the
+unlucky ones and the bug returns intermittently, position-dependent - worse than a uniform artefact
+because it reads as "sometimes it glitches".
+
+**There is no grid.** Each armature is attached to its part object
+(`wickedcalls_part0.cpp:973`), and all six part objects of a character are PLACED at the same world
+position - only their geometry differs. That is exactly why their AABB centres differ (head y=120,
+feet y=64, which is what fed the old per-part period) while their pivots do not.
+
+Verified independently from `DUMP_SKIN` before writing any code - `ARM[n]` lines already carried
+`armaPos`, joined to `SKINOBJ` by the armature entity:
+
+```
+280 ARM records, 285 SKINOBJ, 0 orphans
+DISTINCT PIVOTS: 94        group sizes {1:55, 2:1, 3:2, 5:15, 6:20, 27:1}
+
+the photographed character -> pivot (885.8, 53.7, 3223.0)
+    adult_male_body_13_merc1     arma=15750
+    adult_male_head_05_african   arma=15813
+    adult_male_legs_12_merc1     arma=15816
+    adult_male_feet_11_merc2     arma=15819
+    hair_shell001                arma=15822
+    merc_sunglasses              arma=15825
+```
+
+Six armatures, one pivot, span 0.0. ★ **The best fix for a seam is a key that has no cells.**
+
+A 0.25-unit tolerance pass remains as insurance against a future placement being re-derived per
+part. It fires on nothing in this level.
+
+### Two more desync sources fixed in the same edit, because the phase alone was not enough
+
+- **The period now comes from the group MINIMUM**, not each part's own distance. Per-part AABB
+  centres differ by up to 57 units, so a character could straddle a period boundary and split even
+  with a shared phase. ★ **Fixing the phase without the period would have been a partial cure
+  presented as a cure - which is precisely how 3.25n got recorded as fixed.**
+- **The phase key is a hash of the group's LOWEST ENTITY id, not `ai * 7`.** Two independent bugs
+  in that old key: 7 shares a factor with common periods, so at period 21 it reached 3 phases of 21
+  and at period 7 exactly ONE - every armature in that distance band firing on the same frame,
+  the opposite of spreading load. And `Entity_Remove` is swap-with-last, so an INDEX-keyed phase
+  reshuffles every armature whenever an unrelated one is deleted.
+
+Instanced armatures (driven by more than one object) are never grouped: a template parked at
+100,000 with its live copy in the player's hands has no single world position. 5 of 280 here, all
+single-mesh weapons.
+
+### Verified
+
+| scale | armatures held | meshes held | pivot groups |
+|---|---|---|---|
+| 1 (off) | 0 | 0 | 98 of 280, largest 19 |
+| 25 | 252 | 252 | 98 of 280 |
+| 50 | 266 | 266 | 98 of 280 |
+| 100 | 277 | 277 | 98 of 280 |
+
+Held counts stayed in range (3.92 read 0/258/271/274), so grouping changed WHEN, not WHICH, which
+was the constraint. The live 98/19 differs from my offline 94/27 because the live code excludes
+instanced templates from grouping, which splits the parked pile - expected, and the live number is
+authoritative. GPU busy 4.280 ms and CPU frame 4.433 ms against 4.317 / 144.7 fps on the 3.92
+build: the grouping cost is not measurable. ⚠ Single samples - "not measurable", not "free".
+
+### ★★★ The instrument that should have existed in 3.25n
+
+`DUMP_ANIMREDUCTION` now prints **`pivot groups : N of M armatures, largest L`**. That is the
+PREMISE as a number. If a content type ever breaks the shared-pivot assumption, N climbs toward the
+armature count and the wobbly head shows up as a number before anyone has to photograph it.
+
+3.25n recorded "a character is several objects sharing ONE armature" as a fact in a code comment.
+It was false, it survived two rounds of verification because both rounds tested the CONSEQUENCE and
+not the PREMISE, and the comment then actively steered the next reader wrong - I had to delete it
+in this change. ★ **When a fix rests on a claim about how content is built, print the claim as a
+number and keep printing it.** A premise with no instrument is a premise nobody can notice going
+stale.
+
+⚠ NOT VISUALLY CONFIRMED. The numbers prove the parts of a character now share one period and one
+phase. Only Lee's eye can say the head and feet are back where they belong.
+

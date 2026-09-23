@@ -6523,6 +6523,13 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		w += _snprintf(result + w, resultSize - w,
 			"  meshes held      : %u   (streamout swap suppressed this frame - GGMAX 3.92)\n",
 			wi::scene::gg_anim_meshes_held.load(std::memory_order_relaxed));
+		// GGMAX 3.93: the premise, as a number. A character's parts are separate armatures that
+		// share a world PIVOT, and the phase is keyed on that group so they cannot desync. If
+		// `groups` ever climbs toward the armature count, the premise has broken for some content
+		// type and the wobbly head is back - visible here before anyone has to photograph it.
+		w += _snprintf(result + w, resultSize - w,
+			"  pivot groups     : %u of %u armatures, largest %u   (a character is ~6 armatures at one pivot - GGMAX 3.93)\n",
+			wi::scene::gg_anim_groups, (unsigned)asc.armatures.GetCount(), wi::scene::gg_anim_group_largest);
 		const float samples[6] = { 250.0f, 499.0f, 500.0f, 1000.0f, 2000.0f, 5000.0f };
 		for (int i = 0; i < 6 && w < (int)resultSize - 128; i++)
 		{
