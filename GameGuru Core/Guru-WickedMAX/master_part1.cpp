@@ -1079,7 +1079,19 @@ void MasterRenderer::Update(float dt)
 	{
 		extern int g_animVisPauseFrames;
 		extern float g_animVisPauseNearDist;
-		uint32_t vp = (g_animVisPauseFrames < 0) ? 0u : (uint32_t)g_animVisPauseFrames;
+		// ★ GGMAX 3.94b: the live preview is exempt from this one too.
+		//
+		// It does NOT bite today - but only by ACCIDENT. Its 2000-unit near guard cannot protect an
+		// object parked 39,000 units away; what saves it is that RenderCameraComponents runs a full
+		// UpdateVisibility for the PREVIEW camera each frame, which re-stamps gg_last_visible_frame
+		// (wiRenderer.cpp:4777). So the preview is immune as a SIDE EFFECT of an unrelated pass, and
+		// the first frames of a hover - before that pass has run once - are unverified.
+		//
+		// ★★ An immunity you get by accident is not a property you have. Lee's instruction was
+		// categorical - 'any delayed or lowered animation stuff should be switched off' - and this
+		// costs one condition, so cover it rather than depend on a coincidence holding.
+		extern bool GGObjectPreview_IsActive(void);
+		uint32_t vp = (g_animVisPauseFrames < 0 || GGObjectPreview_IsActive()) ? 0u : (uint32_t)g_animVisPauseFrames;
 		wiScene::gg_anim_vis_pause_frames.store(vp, std::memory_order_relaxed);
 		float nd = g_animVisPauseNearDist;
 		if (nd < 0.0f) nd = 0.0f;

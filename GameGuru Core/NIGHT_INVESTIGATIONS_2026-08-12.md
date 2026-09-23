@@ -14388,6 +14388,14 @@ character on the CPU and then skin it from a stale buffer - worse than the bug.
 
 Step C is the one that matters: the throttle comes back the instant the hover ends.
 
+### 3.94b The fourth mechanism, covered because its immunity was accidental
+
+The full census landed after 3.94 shipped and found the **1.35 frustum-visibility pause** (`wiScene.cpp:2717-2744`) also reaches the preview in principle: it sits OUTSIDE the tick-box block, defaults on (`g_animVisPauseFrames = 3`), and its 2000-unit near guard cannot protect an object 39,000 units away.
+
+It does not bite today - but only because `RenderCameraComponents` runs a full `UpdateVisibility` for the PREVIEW camera each frame, which re-stamps `gg_last_visible_frame`. ★★ **An immunity you get as a side effect of an unrelated pass is not a property you have** - and the first frames of a hover, before that pass has run once, were never verified. Gated for one condition at its own publish point (`master_part1.cpp:1083`), which is in the same `MasterRenderer::Update` and still ahead of the animation jobs.
+
+Also worth knowing, and NOT fixed here: mechanism 3, the `IsRenderable` animation cull, is governed by an engine **static** `bEnableAnimationCulling = 1` (`wiScene.cpp:2592`) that SHADOWS the game global of the same name (`wickedcalls_part0.cpp:172`) which the panel checkbox (`M-GridEditB_part24.cpp:310`) writes. Nothing mirrors the game value into the engine, so **that checkbox controls nothing**. Pre-existing, unrelated to the preview, and its own ticket - recorded here so it is not lost.
+
 ⚠ NOT VISUALLY CONFIRMED - the numbers prove the exemption engages and clears. Only Lee's eye
 can say the character is animating again.
 
