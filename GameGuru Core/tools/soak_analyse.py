@@ -6,12 +6,23 @@
 #   - the cumulative question: does VRAM climb with LOAD ORDER, or only with level content?
 import re, sys, os
 
-OUT = os.path.dirname(os.path.abspath(__file__)) + "/soak0919"
+# 2026-09-23: OUT was hardcoded to tools/soak0919, a directory that no longer exists, and the
+# reference file was a hard open() - so this refused to run on any later soak. Both are now
+# optional: pass the run directory as argv[1], and a missing reference simply drops the POLYS
+# comparison (sweepgate.sh scores POLYS for a soak run anyway, advisory, against the curated
+# table it already owns - one reference, one place).
+#   usage: soak_analyse.py [run_dir] [reference_file]
+OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__file__)) + "/soak0919"
+OUT = OUT.rstrip("/\\")
+REFPATH = sys.argv[2] if len(sys.argv) > 2 else OUT + "/reference_0826b.txt"
 REF = {}
-for ln in open(OUT + "/reference_0826b.txt"):
-    m = re.match(r"(.+?)\s+edVRAM=([\d.]+)\s+gmVRAM=([\d.]+)\s+POLYS:\s*(\d+)", ln.strip())
-    if m:
-        REF[m.group(1).strip()] = (float(m.group(2)), float(m.group(3)), int(m.group(4)))
+if os.path.exists(REFPATH):
+    for ln in open(REFPATH):
+        m = re.match(r"(.+?)\s+edVRAM=([\d.]+)\s+gmVRAM=([\d.]+)\s+POLYS:\s*(\d+)", ln.strip())
+        if m:
+            REF[m.group(1).strip()] = (float(m.group(2)), float(m.group(3)), int(m.group(4)))
+else:
+    print("(no reference file at %s - POLYS and dVRAM columns are skipped)" % REFPATH)
 
 rows, restarts = [], []
 for ln in open(OUT + "/results.txt"):
@@ -98,7 +109,7 @@ if polydiff:
     for d, p, q in polydiff:
         print("   %-31s soak %-10d ref %-10d  %+d" % (d, p, q, p - q))
 else:
-    print("POLYS vs 0826b reference    : identical on every demo compared")
+    print("POLYS vs reference          : %s" % ("identical on every demo compared" if REF else "no reference loaded - see sweepgate.sh"))
 
 # --- the cumulative question -------------------------------------------------
 # Regress editor VRAM on LOAD ORDER. Level content is the dominant term and is not ordered,

@@ -16,6 +16,33 @@ that FPS is meaningless.
 (LOAD / POLYS / VRAM / GAME) are unaffected — the gate excludes FPS on purpose.
 
 
+## 0923 — PRE-ALPHA GATE, 3.84c (game `5af6e350`, engine `3c955028`) — CLEAN 19/19
+
+The first full gate sweep since 3.79. Pre-registered in `tools/prereg_0923_prealpha.txt` before the
+run; raw in `tools/sweep_0923_prealpha_3.84c.txt`.
+
+C1 19/19 · C2 **POLYS identical to the 0825 reference on all 19** (18 exact, Aztec Teaser in range)
+· C3 worst 3783.5 MB, Aztec Game Kit in Test Game, **headroom 312.5 MB** · C4 19/19.
+
+★ **Two pre-registered predictions, both settled:**
+
+- **3.84c must not move POLYS or VRAM.** It did not. The tangent fix swaps one XMFLOAT4 per vertex
+  for another, so a move would have meant it was allocating a SECOND stream instead of refilling
+  the first. Geometry bit-identical and the worst-case VRAM is within 0.1% of the 09-20 figure.
+- **3.81d/3.82 MAY move POLYS** on any demo whose pre-2024 visuals file states a `shaderlevels`
+  key — C2 was amended to allow it. **Nothing moved.** So either no shipped demo states one, or the
+  stated value already equals what the downgrade produced. I could not tell which: the `.fpm`
+  archives are encrypted, so the embedded `visuals.ini` cannot be read from outside the app.
+  Either way the change is exercised only by USER levels, which is where Lee confirmed it.
+
+⚠⚠ **THE SHOTS FROM THIS RUN ARE WORTHLESS — all 38 are one stale 2026-09-18 image.** `grab_shot`
+looked only in `Max/Files/screenshots` and `SCREENSHOT` writes to `Max/screenshots`, so `ls -t`
+matched an old file and it was copied out 38 times. **A blank-frame check over them PASSED**,
+because it checked one good old frame 38 times — a vacuous test passes. Caught only because four
+different levels reported the same luminance std to two decimals. Fixed the same day: both
+directories are searched, newest wins, and a shot older than the run start is refused with a
+message instead of copied. C1–C4 never used the shots, so the verdict above stands.
+
 ## 0826b — 3.24 (game `f3fc33a8`) — GATE CLEAN 19/19, POLYS identical again
 
 C1 19/19 · C2 **POLYS identical to the 0825 reference on all 19** · C3 worst 3974.8 MB

@@ -13561,3 +13561,39 @@ in the loader and applies to every mesh the engine loads.
 
 `tangents len=[0.000..0.000] zeroLen=4298` became `len=[1.000..1.000] zeroLen=0`, and the vest
 renders matching the DX11 thumbnail.
+
+---
+
+## 3.85 The pre-alpha gate sweep, and a test that passed on one stale image — 2026-09-23
+
+**Gate: CLEAN 19/19.** C1 19/19 · C2 POLYS identical to the 0825 reference on all 19 · C3 worst
+3783.5 MB (Aztec Game Kit in Test Game), headroom 312.5 MB · C4 19/19. First full sweep since 3.79,
+pre-registered in `tools/prereg_0923_prealpha.txt`, raw in `tools/sweep_0923_prealpha_3.84c.txt`,
+written up in `DEMO_FPS_SWEEP.md`.
+
+Both pre-registered predictions settled: **3.84c moved neither POLYS nor VRAM**, which is what had
+to be true if it refills the tangent stream rather than allocating a second one; and the amendment
+allowing 3.81d/3.82 to move POLYS **never fired** — no shipped demo's geometry changed, so that
+change is exercised only by user levels.
+
+### ★★★ A vacuous test PASSES, and it passes loudly
+
+After the run I checked all 38 screenshots for blank frames by luminance variance. **0 of 38 blank.**
+The number was meaningless: `grab_shot` looked only in `Max/Files/screenshots` while `SCREENSHOT`
+writes to `Max/screenshots`, so `ls -t` matched a **stale 2026-09-18 file** and copied that same
+image out 38 times. I had validated one good old frame thirty-eight times and was about to report it
+as coverage.
+
+★ **What caught it was not suspicion, it was a coincidence too strong to be real**: four different
+levels reported the same luminance std to two decimal places. An identical statistic across inputs
+that cannot be identical is the cheapest detector there is — `md5sum | sort -u | wc -l` said 1.
+
+★ **The fix must make the failure LOUD.** Searching both directories is half of it; the other half
+is refusing a file older than the run started, with a printed reason, instead of silently copying
+it. A missing screenshot should read as missing, not as a passing check.
+
+This is the same family as the 09-19 finding that `sweepgate.sh` C2 was silently checking 17 of 19,
+and as the harness `SELECT_DEMO`-against-an-empty-list trap: **a test that cannot tell its failure
+modes apart reports the wrong one confidently.** C1–C4 never used the shots, so the verdict stands —
+but the shots from every fresh-launch sweep since the screenshot destination moved are worthless.
+

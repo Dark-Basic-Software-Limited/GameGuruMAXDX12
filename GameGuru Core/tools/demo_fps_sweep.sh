@@ -40,7 +40,14 @@
 # Usage: demo_fps_sweep.sh [RUNTAG] [first-demo-index]
 #   RUNTAG defaults to 0806; index lets a crashed run resume part-way through the list.
 D="/d/DEV/BUILD/GameGuru Wicked MAX Build Area/Max"
-SHOTS="$D/Files/screenshots"
+# 2026-09-23: was "$D/Files/screenshots" alone. SCREENSHOT writes to "$D/screenshots", so the
+# glob below matched a STALE 2026-09-18 file and grab_shot copied that ONE image out 38 times.
+# ALL 38 shots of the 0923 gate run are bit-identical - and a blank-frame check over them
+# passed, because it was checking one good old frame 38 times. A vacuous test PASSES.
+# Caught only because four different levels reported the same luminance std to 2 decimals.
+# Search BOTH directories, newest wins, exactly as demo_soak_sweep.sh already does.
+SHOTS="$D/screenshots"
+SHOTS_ALT="$D/Files/screenshots"
 TAG="${1:-0806}"
 START_AT="${2:-0}"
 # 2026-09-20: was hardcoded to a worktree path that no longer exists. $1 is already the run
@@ -58,6 +65,7 @@ RESULTS="$OUT/results_$TAG.txt"
 GG_UPHOURS=$(powershell.exe -NoProfile -Command "\$b=(Get-CimInstance Win32_OperatingSystem).LastBootUpTime; '{0:N1}' -f ((Get-Date)-\$b).TotalHours" 2>/dev/null | tr -d '\r')
 [ -z "$GG_UPHOURS" ] && GG_UPHOURS="unknown"
 echo "### machine: ${GG_UPHOURS}h since boot"
+SWEEP_T0=$(date +%s)
 if [ "$GG_UPHOURS" != "unknown" ] && awk "BEGIN{exit !($GG_UPHOURS > 6)}"; then
   echo "### \u26a0 ${GG_UPHOURS}h uptime. FINE for the gate (C1-C4 exclude FPS), but do NOT compare"
   echo "###   this run's FPS columns to another sweep - reboot first if that is the intent."
@@ -129,8 +137,13 @@ wait_prep_clear() {
 grab_shot() { # $1 = destination basename
   send "SCREENSHOT" 25 > /dev/null
   sleep 3
-  local newest=$(ls -t "$SHOTS"/sc_*.png 2>/dev/null | head -1)
-  if [ -n "$newest" ]; then cp "$newest" "$OUT/shots$TAG/$1.png" 2>/dev/null; fi
+  local newest=$(ls -t "$SHOTS"/sc_*.png "$SHOTS_ALT"/sc_*.png 2>/dev/null | head -1)
+  # A shot older than this sweep started is a stale file, not this demo's frame. Copying it
+  # anyway is what made the 0923 run's 38 shots identical, so refuse instead and say so.
+  if [ -z "$newest" ]; then echo "  !! no screenshot found in $SHOTS or $SHOTS_ALT"; return; fi
+  if [ -n "$SWEEP_T0" ] && [ "$(stat -c %Y "$newest" 2>/dev/null || echo 0)" -lt "$SWEEP_T0" ]; then
+    echo "  !! newest screenshot predates this run - not copying ($(basename "$newest"))"; return; fi
+  cp "$newest" "$OUT/shots$TAG/$1.png" 2>/dev/null
 }
 
 DEMOS=(
