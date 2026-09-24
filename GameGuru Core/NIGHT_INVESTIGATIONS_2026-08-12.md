@@ -14686,8 +14686,9 @@ all, hence all sky. The sky is black with stars because 3.97 turns the preview's
 combo change, never per frame). Verified: Blue showroom and Grey studio fill the frame; None shows
 the flat fallback.
 
-⚠ **Noted, not changed:** with **None** the fallback is 3.83's flat blue stand-in; DX11 showed a
-light grey (0.32 x 2.5). Lee's call.
+**3.99b (Lee's call): None now uses DX11's light grey** - CreateBackdropObject's untextured 0.32 x 2.5
+= 0.8, replacing 3.83's blue stand-in. Measured in the full-size preview: backdrop pixels 193/255 grey,
+the value predicted through the tonemap.
 
 ★ **Test the STATE, not an identity that stands in for it** - the same shape as a cache keyed on a
 pointer that gets freed and reallocated at the same address.

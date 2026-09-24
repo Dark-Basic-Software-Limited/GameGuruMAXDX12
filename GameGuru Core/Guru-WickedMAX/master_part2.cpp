@@ -198,12 +198,14 @@ namespace GGObjectPreview
 	static const float PREVIEW_ZNEAR = 1.0f;
 	static const float PREVIEW_ZFAR = 60000.0f;
 
-	// The flat stand-in for the DX11 backdrop image, used only when the plane has no
-	// base-colour texture. Picked to sit where the shipped library thumbnails sit: a
-	// desaturated blue that a grey or brown object reads clearly against.
-	static const float PREVIEW_BACKDROP_R = 0.106f;
-	static const float PREVIEW_BACKDROP_G = 0.208f;
-	static const float PREVIEW_BACKDROP_B = 0.361f;
+	// The flat backdrop colour, used when the plane has no base-colour texture - which is what
+	// choosing 'None' in the Static Image combo gives. GGMAX 3.99b (Lee's call): DX11's own value,
+	// CreateBackdropObject's untextured default 0.32 boosted x2.5 for the unlit shader = 0.8 grey,
+	// replacing 3.83's desaturated-blue stand-in. Through the tonemap it lands ~193/255 in both
+	// engines (DX11 ran the same ACES curve on a grey, where its missing colour matrices change nothing).
+	static const float PREVIEW_BACKDROP_R = 0.32f * 2.5f;
+	static const float PREVIEW_BACKDROP_G = 0.32f * 2.5f;
+	static const float PREVIEW_BACKDROP_B = 0.32f * 2.5f;
 	static int s_backdropDiag = 0;   // 0 untested, 1 had a texture, 2 flat colour applied
 	static int s_backdropFixes = 0;  // 3.99: times the backdrop material had to be corrected
 
