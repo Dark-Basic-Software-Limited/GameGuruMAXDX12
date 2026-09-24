@@ -14802,3 +14802,14 @@ synthesised "dun-dun-DUNNN" on the reveal, end card BUGS GUARANTEED. Source and 
 ⚠ The first cut used the ATTACHMENT order, which differed from Lee's A-F in five of six places; the
 labelled files turned up in Downloads and the video was rebuilt in his order. ★ When someone says
 their files are labelled, find the labels before assuming an order.
+
+---
+
+## Tester triage kit - 2026-09-24, last entry before the external test period
+
+Reports from the external testers are logged and triaged in **`TESTER_TRIAGE.md`**: the build's
+identity (game code `7e4fe3b0`, engine `680a30b0`, exe / pdb / `skinningCS.cso` md5s), what to ask
+every reporter, the known issues, a symptom -> first-suspect -> first-check map and the report log.
+Repro helpers live in `tools/harness/` (`open_demo.sh "<demo>" testgame`, `open_project_level.sh`).
+Each fix during the test period: a section here, a checklist row, one commit, and its hash in the
+report log.
