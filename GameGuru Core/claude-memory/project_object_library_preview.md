@@ -147,3 +147,6 @@ content ships its thumbnails. The preview render target is now exactly what a re
   PROVISIONAL until Lee judges them. Harness: `SET_OBJPREVIEW_LIGHT k abs fov studio amb env mod freeze`.
 - The Pistol Ammo black contents were NOT lighting - see [[project-rules-rendering-dx12]] (skinned
   normal in float). `visObj=7` answered: subject + backdrop + the editor's 5000 km floor box.
+- **3.99**: the full-size preview REBUILDS the backdrop under the SAME object id, so 3.83's id-keyed
+  fix skipped it; the transparent plane was overdrawn by the sky wherever no ground lay behind it.
+  Now the material STATE is checked every call. ★ A guard keyed on an ID cannot see a rebuild under that ID.

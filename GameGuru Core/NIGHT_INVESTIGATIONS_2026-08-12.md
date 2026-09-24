@@ -14648,3 +14648,46 @@ by ~2x at matched angles (buildings want 0.7x, props 1.3-1.5x), so no single DX1
 them all. A regeneration pass would make the thumbnail and the hover the same picture by
 construction. It needs the GPU->CPU readback that thumbnail-to-disk has lacked since the port
 (3.83) - the preview render target is already exactly what it would read.
+
+---
+
+## 3.99 The full-size Object Library Preview showed the sky instead of its backdrop - 2026-09-24
+
+Lee: pressing the fullscreen button on Pistol Ammo opened the Object Library Preview on black
+(with faint stars) where the chosen backdrop - Grey studio, the grid floor in its thumbnail - should
+be. Reproduced on Angelic Staff: the Blue showroom image drew in the LOWER half of the frame only,
+cut dead straight across the centre, sky above.
+
+### Four theories eliminated by measurement, not argument
+
+| theory | test | result |
+|---|---|---|
+| preview camera aimed differently from the plane | dump the angles Submit receives and the camera's own forward | pitch 40.2 deg, forward points EXACTLY at the plane centre |
+| the 3.97 studio frame override | switch it off live | identical |
+| image alpha | read the DDS alpha channels | 255 everywhere |
+| backdrop drawn from stale skinning (3.98's lesson) | dump skinned / streamout per visible object | not skinned |
+
+Then re-applying the backdrop (`SET_OBJPREVIEW` with a backdrop mode, which Stops and re-holds it)
+made the WHOLE image appear. So the plane and camera were right; its material was not.
+
+### ★★★ Cause: a guard keyed on an ID cannot see an object rebuilt under the same ID
+
+The full-size preview calls `CreateBackdropObject(bForceRecreate = true)` - on open and on every
+change of the Static Image combo - which DELETES the plane and builds a new one under the SAME
+object id. `GGObjectPreview_HoldBackdrop` (3.83) applied its opaque/unlit fix only when the id
+CHANGED, so the rebuilt plane kept GameGuru's own transparent material. A transparent object writes
+no depth, and the sky is drawn after the transparents wherever depth is still empty - so the plane
+survived only where the level's ground (y = 0) lay behind it inside the 60000 far plane. At 40 deg
+of pitch that boundary ran across the frame centre; for Pistol Ammo nothing lay behind the plane at
+all, hence all sky. The sky is black with stars because 3.97 turns the preview's sun off.
+
+**Fix:** the backdrop's material state is CHECKED on every call and corrected only when wrong
+(`backdropFixes` in DUMP_OBJPREVIEW counts corrections: 2 on open - hover then rebuild - and +1 per
+combo change, never per frame). Verified: Blue showroom and Grey studio fill the frame; None shows
+the flat fallback.
+
+⚠ **Noted, not changed:** with **None** the fallback is 3.83's flat blue stand-in; DX11 showed a
+light grey (0.32 x 2.5). Lee's call.
+
+★ **Test the STATE, not an identity that stands in for it** - the same shape as a cache keyed on a
+pointer that gets freed and reallocated at the same address.

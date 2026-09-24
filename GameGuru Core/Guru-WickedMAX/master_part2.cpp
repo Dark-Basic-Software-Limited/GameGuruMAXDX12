@@ -205,6 +205,7 @@ namespace GGObjectPreview
 	static const float PREVIEW_BACKDROP_G = 0.208f;
 	static const float PREVIEW_BACKDROP_B = 0.361f;
 	static int s_backdropDiag = 0;   // 0 untested, 1 had a texture, 2 flat colour applied
+	static int s_backdropFixes = 0;  // 3.99: times the backdrop material had to be corrected
 
 	// 3.97 the studio sky cube. Tiny and generated, NOT a skybank cube: those are 32 MB of BC6H
 	// each, and a thumbnail is not worth 32 MB of a 4 GB budget with ~300 MB of headroom.
@@ -212,6 +213,7 @@ namespace GGObjectPreview
 	static int s_studioCubeIndex = -1;		// bindless SRV index, -1 = not built
 	static float s_studioCubeBuiltScale = -1.0f;
 	static int s_studioFrames = 0;			// frames the override has actually been applied (diagnostic)
+	static float s_subAng[3] = { 0, 0, 0 };	// 3.99 diag: angles handed to Submit (GG camera 0)
 }
 
 // Is a live preview currently being driven? (used by the image-id override and by the
@@ -247,9 +249,17 @@ void GGObjectPreview_ParkObject(int ggObject, float px, float py, float pz, floa
 void GGObjectPreview_HoldBackdrop(int backdropObject)
 {
 	using namespace GGObjectPreview;
-	const bool bNew = (s_backdropObject != backdropObject);
+	// ★★★ GGMAX 3.99: checked on EVERY call, not only when the object id changes.
+	// The full-size Object Library Preview calls CreateBackdropObject(bForceRecreate = true), which
+	// DELETES the plane and builds a new one under the SAME object id - so an 'is this a new id'
+	// test skipped the rebuilt plane and it kept GameGuru's own transparent material. A transparent
+	// plane writes no depth, and the sky is drawn after the transparents wherever depth is still
+	// empty: the plane survived only where the level's ground lay behind it inside the far plane.
+	// Measured on the Angelic Staff - a dead-straight cut across the frame centre, sky above; on
+	// Pistol Ammo nothing lay behind it at all, so the whole preview was the sunless starry sky.
+	// ★ A guard keyed on an ID cannot see an object rebuilt under the same ID. Test the STATE.
 	s_backdropObject = backdropObject;
-	if (!bNew || backdropObject <= 0 || ObjectExist(backdropObject) != 1) return;
+	if (backdropObject <= 0 || ObjectExist(backdropObject) != 1) return;
 
 	// Does the plane actually carry its backdrop image in DX12? TextureObject() feeds the
 	// legacy DBP image layer, which the DX12 port no longer wires into Wicked materials.
@@ -270,22 +280,25 @@ void GGObjectPreview_HoldBackdrop(int backdropObject)
 	// the material carries FILTER_TRANSPARENT and GetBlendMode() returns BLENDMODE_ALPHA
 	// regardless of userBlendMode - and the backdrop images have no usable alpha, so a
 	// perfectly resident texture blended away to nothing and the preview sat on black.
-	mat->shaderType = wi::scene::MaterialComponent::SHADERTYPE_UNLIT;
-	mat->userBlendMode = wi::enums::BLENDMODE_OPAQUE;
-	mat->SetAlphaRef(1.0f);
-
-	if (bHasTexture && gg_objpreview_backdrop == 1)
+	// 3.99: only touch the material when it is not already in the wanted state, so running this
+	// every frame costs a few compares and never re-uploads a material that is already right.
+	const bool bTextured = bHasTexture && gg_objpreview_backdrop == 1;
+	const XMFLOAT4 want = bTextured ? XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f)	// the image comes through untinted
+		: XMFLOAT4(PREVIEW_BACKDROP_R, PREVIEW_BACKDROP_G, PREVIEW_BACKDROP_B, 1.0f);
+	s_backdropDiag = bTextured ? 1 : 2;
+	const XMFLOAT4 bc = mat->baseColor;
+	if (mat->shaderType != wi::scene::MaterialComponent::SHADERTYPE_UNLIT
+		|| mat->userBlendMode != wi::enums::BLENDMODE_OPAQUE
+		|| mat->alphaRef != 1.0f
+		|| bc.x != want.x || bc.y != want.y || bc.z != want.z || bc.w != want.w)
 	{
-		// keep what the object's fpe asked for; white base colour so the image comes through
-		mat->SetBaseColor(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
-		s_backdropDiag = 1;
+		mat->shaderType = wi::scene::MaterialComponent::SHADERTYPE_UNLIT;
+		mat->userBlendMode = wi::enums::BLENDMODE_OPAQUE;
+		mat->SetAlphaRef(1.0f);
+		mat->SetBaseColor(want);
+		mat->SetDirty(true);
+		s_backdropFixes++;
 	}
-	else
-	{
-		mat->SetBaseColor(XMFLOAT4(PREVIEW_BACKDROP_R, PREVIEW_BACKDROP_G, PREVIEW_BACKDROP_B, 1.0f));
-		s_backdropDiag = 2;
-	}
-	mat->SetDirty(true);
 }
 
 // Give the parked object back. Split out of Stop() because the A->B hover switch has to do
@@ -600,6 +613,7 @@ void GGObjectPreview_Submit(int imageId, int width, int height,
 	camera_transform.RotateRollPitchYaw(XMFLOAT3((float)(angX * dDegToRad), (float)(angY * dDegToRad), (float)(angZ * dDegToRad)));
 	camera_transform.UpdateTransform();
 	cam->TransformCamera(camera_transform);
+	s_subAng[0] = angX; s_subAng[1] = angY; s_subAng[2] = angZ;
 	cam->jitter = XMFLOAT2(0, 0);		// TAA jitter would make a still preview shimmer
 
 	// ⚠ A CameraComponent's scissor defaults to all zeros, and the shader camera derives
@@ -935,6 +949,14 @@ void GGObjectPreview_DebugStatus(char* buf, int bufsize)
 				gg_objpreview_studio, s_studioCubeIndex, s_studioFrames, gg_objpreview_lightint, gg_objpreview_ambient, gg_objpreview_envscale,
 				gg_objpreview_modulate, gg_objpreview_freeze);
 	}
+	{
+		// 3.99: the preview camera's own forward, next to the angles it was built from, so a backdrop
+		// placed along GG camera 0's forward can be checked against where the preview really looks.
+		const size_t used = strlen(buf);
+		if (cam && used + 120 < (size_t)bufsize)
+			_snprintf(buf + used, bufsize - used, " subAng=(%.1f,%.1f,%.1f) camAt=(%.3f,%.3f,%.3f) camUp=(%.3f,%.3f,%.3f) backdropFixes=%d",
+				s_subAng[0], s_subAng[1], s_subAng[2], cam->At.x, cam->At.y, cam->At.z, cam->Up.x, cam->Up.y, cam->Up.z, s_backdropFixes);
+	}
 	buf[bufsize - 1] = 0;
 }
 
@@ -1124,9 +1146,18 @@ void GGObjectPreview_DumpMaterials(char* result, int resultSize)
 				const wi::scene::MeshComponent* om = scene.meshes.GetComponent(oc.meshID);
 				int st = -1;
 				if (om && !om->subsets.empty()) { const wi::scene::MaterialComponent* omat = scene.materials.GetComponent(om->subsets[0].materialID); if (omat) st = (int)omat->shaderType; }
-				fprintf(f, "  [%d] ent=%llu obj='%s' mesh='%s' centre=(%.0f,%.0f,%.0f) half=(%.1f,%.1f,%.1f) verts=%d shader=%d\n",
+				fprintf(f, "  [%d] ent=%llu obj='%s' mesh='%s' centre=(%.0f,%.0f,%.0f) half=(%.1f,%.1f,%.1f) verts=%d shader=%d skinned=%d so_pos=%d armature=%llu held=%d\n",
 					(int)vi, (unsigned long long)oe, on ? on->name.c_str() : "?", mn ? mn->name.c_str() : "?",
-					c.x, c.y, c.z, h.x, h.y, h.z, om ? (int)om->vertex_positions.size() : -1, st);
+					c.x, c.y, c.z, h.x, h.y, h.z, om ? (int)om->vertex_positions.size() : -1, st,
+					(om && om->armatureID != wi::ecs::INVALID_ENTITY) ? 1 : 0, (om && om->so_pos.IsValid()) ? 1 : 0,
+					om ? (unsigned long long)om->armatureID : 0ull,
+					[&]() -> int {
+						// the 3.25 Reduction Scale gate skips the skinning dispatch for a held armature
+						if (!om || om->armatureID == wi::ecs::INVALID_ENTITY) return -1;
+						if (wi::scene::gg_anim_armature_update.empty()) return 0;
+						const size_t gai = scene.armatures.GetIndex(om->armatureID);
+						return (gai < wi::scene::gg_anim_armature_update.size() && wi::scene::gg_anim_armature_update[gai] == 0) ? 1 : 0;
+					}());
 			}
 		}
 	}
