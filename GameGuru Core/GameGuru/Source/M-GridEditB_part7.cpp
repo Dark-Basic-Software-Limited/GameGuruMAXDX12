@@ -341,7 +341,11 @@
 				}
 
 				// rotation mode
-				if (bRotateBackBuffer && !bBackBufferAnimated)
+				// GGMAX 3.97b: SET_OBJPREVIEW_LIGHT can freeze the turntable so the live preview sits at the
+				// SAME angle the DX11 thumbnail was generated at (the hover's starting angle). Without it a
+				// parity measurement compares the front of an object against its back. Harness-only.
+				extern int gg_objpreview_freeze;
+				if (bRotateBackBuffer && !bBackBufferAnimated && !gg_objpreview_freeze)
 				{
 					if (bNeedZRotation)
 					{

@@ -66,7 +66,7 @@
 > it for 4 days. ★ The tree pool explained it perfectly and was NOT it. ⚠ Every SOAK POLYS number in this
 > repo is a LOW-preset figure.
 
-> ★★★ **[Object Library live preview](project_object_library_preview.md)** — restored DX12 3.83 with the
+> ★★★ **[Object Library live preview](project_object_library_preview.md)** — 3.97/3.98 (09-24): the preview has its OWN frame constants + a DX12 lighting stage; static DBO props are SKINNED (SKINDUMMY) — black -Z faces were half-precision skinned normals. Restored DX12 3.83 with the
 > engine's native **`CameraComponent::render_to_texture`** (zero engine edits). ★ Reach for that before
 > hand-rolling any offscreen scene render. ★ A preview is its OWN scene — exposure, far plane, scissor,
 > blend mode and FOV inherited from the level were ALL wrong for it. ⚠ `BindCommonResources` without

@@ -77,3 +77,10 @@ metadata:
   would predict a long hold then a jump. That mismatch says the DECISION is fine and something
   downstream is alternating. Also fix the velocity twin (`vb_pre`) or a motionless held mesh
   reports a large constant vertex velocity.
+
+- ★★★ **Static DBO props are SKINNED** (a one-bone `SKINDUMMY` armature), so they draw the skinning
+  compute's output (`so_nor`), NOT their mesh buffers - rebuilding or recomputing a prop's normals
+  changes nothing on screen. 3.98: `skinningCS` carried the normal in half and an EXACTLY (0,0,-1)
+  normal came out zero -> NaN -> black face in every level (Pistol Ammo contents). Now float.
+  ★ When rebuilding the data changes nothing, find what the shader actually reads.
+  ★ A health check must test `x == x` - NaN fails every < and > and reads as healthy.

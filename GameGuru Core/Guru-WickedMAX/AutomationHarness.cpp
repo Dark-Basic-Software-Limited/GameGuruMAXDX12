@@ -3427,11 +3427,19 @@ static bool AutoHarness_MouseCommands(const char* cmd, const char* arg, char* re
 		// SET_OBJPREVIEW_LIGHT <k> [absIntensity] [fovDeg] - k is the distance-scaled light
 		// preview is up. Does not restart the pass, so intensity can be swept against ONE live
 		// hover. 0 = leave whatever WickedCall_EnableThumbLight created (8 cd / 2900).
+		// 3.97: [studio 0|1] [ambient] [envscale] appended - the preview's own environment. The
+		// light model is now a FIXED energy: pass k=0 and the energy as absIntensity.
 		extern float gg_objpreview_lightk;
 		extern float gg_objpreview_lightint;
 		extern float gg_objpreview_fovdeg;
-		float lk = -1.0f, li = -1.0f, fv = -1.0f;
-		const int got = (arg && arg[0]) ? sscanf_s(arg, "%f %f %f", &lk, &li, &fv) : 0;
+		extern int gg_objpreview_studio;
+		extern float gg_objpreview_ambient;
+		extern float gg_objpreview_envscale;
+		extern float gg_objpreview_modulate;
+		extern int gg_objpreview_freeze;
+		// 3.97b: [modulate] [freeze 0|1] appended.
+		float lk = -1.0f, li = -1.0f, fv = -1.0f, am = -1.0f, es = -1.0f, md = -1.0f; int st2 = -1, fz = -1;
+		const int got = (arg && arg[0]) ? sscanf_s(arg, "%f %f %f %d %f %f %f %d", &lk, &li, &fv, &st2, &am, &es, &md, &fz) : 0;
 		if (got < 1)
 		{
 			_snprintf(result, resultSize,
@@ -3442,10 +3450,15 @@ static bool AutoHarness_MouseCommands(const char* cmd, const char* arg, char* re
 		{
 			gg_objpreview_lightk = lk;
 			if (got >= 2) gg_objpreview_lightint = li;
-			if (got >= 3) gg_objpreview_fovdeg = fv;
+			if (got >= 3 && fv > 0.0f) gg_objpreview_fovdeg = fv;
+			if (got >= 4 && st2 >= 0) gg_objpreview_studio = st2;
+			if (got >= 5 && am >= 0.0f) gg_objpreview_ambient = am;
+			if (got >= 6 && es >= 0.0f) gg_objpreview_envscale = es;
+			if (got >= 7 && md >= 0.0f) gg_objpreview_modulate = md;
+			if (got >= 8 && fz >= 0) gg_objpreview_freeze = fz;
 			_snprintf(result, resultSize,
-				"OK: SET_OBJPREVIEW_LIGHT k=%.2f (intensity = k*d^2) abs=%.1f fov=%.1f",
-				gg_objpreview_lightk, gg_objpreview_lightint, gg_objpreview_fovdeg);
+				"OK: SET_OBJPREVIEW_LIGHT k=%.5f abs=%.2f fov=%.1f studio=%d ambient=%.3f envscale=%.3f modulate=%.3f freeze=%d",
+				gg_objpreview_lightk, gg_objpreview_lightint, gg_objpreview_fovdeg, gg_objpreview_studio, gg_objpreview_ambient, gg_objpreview_envscale, gg_objpreview_modulate, gg_objpreview_freeze);
 		}
 		result[resultSize - 1] = 0;
 		return true;
@@ -3470,11 +3483,31 @@ static bool AutoHarness_MouseCommands(const char* cmd, const char* arg, char* re
 		{
 			gg_objpreview_metal = mv;
 			if (got >= 2) gg_objpreview_rough = rv;
-			if (got >= 3) gg_objpreview_bounce = bv;
+			if (got >= 3) { gg_objpreview_bounce = bv; extern float gg_objpreview_stage[4][3]; gg_objpreview_stage[3][2] = bv; }	// 3.98: IS the stage bounce
 			if (got >= 4) gg_objpreview_unlit = uv2;
 			_snprintf(result, resultSize, "OK: SET_OBJPREVIEW_MAT metalness %.2f roughness %.2f bounce %.2f unlit %d",
 				gg_objpreview_metal, gg_objpreview_rough, gg_objpreview_bounce, gg_objpreview_unlit);
 		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_OBJPREVIEW_STAGE") == 0)
+	{
+		// 3.98 SET_OBJPREVIEW_STAGE <0..3> <azimuthDeg> <elevationDeg> <strength>  (0 key 1 fill 2 rim 3 bounce)
+		//      SET_OBJPREVIEW_STAGE 4 <softbox>   - studio-sky softbox strength (0 = plain gradient)
+		extern float gg_objpreview_stage[4][3];
+		extern float gg_objpreview_softbox;
+		int li = -1; float a0 = 0, a1 = 0, a2 = 0;
+		const int got = (arg && arg[0]) ? sscanf_s(arg, "%d %f %f %f", &li, &a0, &a1, &a2) : 0;
+		if (got >= 4 && li >= 0 && li <= 3) { gg_objpreview_stage[li][0] = a0; gg_objpreview_stage[li][1] = a1; gg_objpreview_stage[li][2] = a2; }
+		else if (got >= 2 && li == 4) { gg_objpreview_softbox = a0; }
+		else if (got >= 2 && li == 5) { extern int gg_objpreview_meshfix; gg_objpreview_meshfix = (int)a0; }	// 5 <1|2|3> one-shot mesh repair
+		_snprintf(result, resultSize, "%s: SET_OBJPREVIEW_STAGE key(%.0f,%.0f,%.2f) fill(%.0f,%.0f,%.2f) rim(%.0f,%.0f,%.2f) bounce(%.0f,%.0f,%.2f) softbox %.2f",
+			(got >= 2) ? "OK" : "USAGE <0..3> az el strength | 4 softbox",
+			gg_objpreview_stage[0][0], gg_objpreview_stage[0][1], gg_objpreview_stage[0][2],
+			gg_objpreview_stage[1][0], gg_objpreview_stage[1][1], gg_objpreview_stage[1][2],
+			gg_objpreview_stage[2][0], gg_objpreview_stage[2][1], gg_objpreview_stage[2][2],
+			gg_objpreview_stage[3][0], gg_objpreview_stage[3][1], gg_objpreview_stage[3][2], gg_objpreview_softbox);
 		result[resultSize - 1] = 0;
 		return true;
 	}
@@ -3495,7 +3528,7 @@ static bool AutoHarness_MouseCommands(const char* cmd, const char* arg, char* re
 		extern float BackBufferRotateY;
 		extern bool GGObjectPreview_IsActive(void);
 		extern void GGObjectPreview_DebugStatus(char* buf, int bufsize);
-		char st[512]; st[0] = 0;
+		char st[1024]; st[0] = 0;   // 3.97: 512 truncated the studio fields
 		GGObjectPreview_DebugStatus(st, sizeof(st));
 		extern bool ImGui_DX12_IsInitialized();
 		_snprintf(result, resultSize,

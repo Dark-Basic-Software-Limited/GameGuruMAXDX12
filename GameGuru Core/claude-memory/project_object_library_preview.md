@@ -132,3 +132,18 @@ Notes: `NIGHT_INVESTIGATIONS_2026-08-12.md` §3.83.
 Thumbnail **generation to disk**, snapshot mode and particle-thumb mode remain disabled in DX12 —
 they need a GPU→CPU readback that does not exist yet. Only bites imported/user content; stock
 content ships its thumbnails. The preview render target is now exactly what a readback would read.
+
+## 3.97 / 3.98 (2026-09-24) - the preview owns its environment; a DX12 lighting stage
+
+- **3.97**: every render-to-texture camera drew with the MAIN view's FrameCB (ambient, sun, fog,
+  global probe, local probes). Engine hook `wi::gg_rtt_frame_override` gives the preview camera a
+  COPY; `GGObjectPreview_FrameOverride` replaces every level input and swaps in a generated 32x32
+  studio sky cube. Also: the old `k*d^2` key assumed inverse-square falloff this fork does not have
+  (2.10 DX11 window falloff) - large objects got 365 units and went white. Now a fixed energy.
+- **The DX11 thumbnails are NOT one target**: at matched angles, buildings need 0.7x and props 1.3-1.5x.
+  Lee decided: stop chasing them, build a DX12 lighting stage.
+- **3.98 stage**: key/fill/rim/bounce placed around the SUBJECT in the camera frame
+  (`gg_objpreview_stage`, `SET_OBJPREVIEW_STAGE`), plus softboxes in the studio cube. Defaults
+  PROVISIONAL until Lee judges them. Harness: `SET_OBJPREVIEW_LIGHT k abs fov studio amb env mod freeze`.
+- The Pistol Ammo black contents were NOT lighting - see [[project-rules-rendering-dx12]] (skinned
+  normal in float). `visObj=7` answered: subject + backdrop + the editor's 5000 km floor box.

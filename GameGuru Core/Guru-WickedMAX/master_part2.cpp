@@ -85,8 +85,61 @@ int gg_objpreview_backdrop = 1;
 // ⚠ The response saturates HARD at the top: above k ~0.01 every value is pixel-identical, so a
 // sweep that starts too high reads as a dead knob. It cost a whole run reading a flat line as
 // 'the override is not being applied'.
-float gg_objpreview_lightk = 0.00013f;  // intensity = k * d^2, matched to the DX11 thumbnails
-float gg_objpreview_lightint = 0.0f;   // >0 overrides the above with an absolute value
+//
+// ⚠⚠⚠ SUPERSEDED 3.97 - THE k*d^2 MODEL WAS WRONG FOR THIS ENGINE, AND IT TURNED A BUILDING WHITE.
+// It assumed a point light falls off as 1/d^2. This fork does not: 2.10 put the DX11 falloff
+// back, energy * (1 - d^2/r^2)^2 with NO inverse-square term (lightingHF.hlsli
+// attenuation_pointlight, OPTION_BIT_GG_DX11_LIGHT_FALLOFF). With the range scaled to 6d the window
+// term is ~0.92 at every size, so the light a subject receives IS the intensity - and k*d^2 made
+// it grow with the square of the object's size. A building framed at d = 1677 got 365 units and
+// every face saturated; a small prop at d = 60 got 0.47. One object calibrated, the rest of the
+// library wrong in both directions. ★ A calibration is only as general as the physics it
+// assumes - check the falloff before fitting a constant to a single object.
+//
+// Now: a FIXED intensity (the window term does the only distance work there is to do). lightk is
+// kept as an experiment knob - >0 brings the old k*d^2 back.
+float gg_objpreview_lightk = 0.0f;     // >0 = old k*d^2 model (experiments only)
+float gg_objpreview_lightint = 4.0f;   // key light energy, DX11 units; fill is 0.45 of this
+
+// ★★★ 3.97 THE PREVIEW OWNS ITS WHOLE ENVIRONMENT, NOT JUST ITS LIGHTS.
+// The preview camera used to draw with the level's frame constants: the level's ambient, its sun,
+// its fog, its global probe, its local probes. Lee's rebuilt testpro2level carries an ambient of
+// 0.608 where the 3.84 calibration level had 0, so the same library item changed brightness with
+// the level loaded behind it. A thumbnail is a product shot: it should look the same everywhere.
+// GGObjectPreview_FrameOverride (below) hands the preview camera its own copy of the frame
+// constants through the engine's gg_rtt_frame_override hook, with every level input replaced by
+// a fixed studio value. 0 = inherit the level exactly as before (A/B only).
+int gg_objpreview_studio = 1;
+// Flat ambient added on top of the studio cube's own (weather.ambient replacement), linear.
+float gg_objpreview_ambient = 0.0f;
+// Brightness of the generated studio sky cube, which feeds BOTH the ambient (its 1x1 mip, per
+// face) and the reflections metals depend on. Rebuilt on change - it is 32x32 per face.
+float gg_objpreview_envscale = 0.35f;
+// 3.97b ONE brightness modulation for the whole rig - key, fill and the studio cube together -
+// so parity with the DX11 thumbnails is a single number rather than three that drift apart.
+// The three values above are the rig's SHAPE; this is its level.
+float gg_objpreview_modulate = 1.0f;
+// Harness-only: hold the turntable at the hover's starting angle (see M-GridEditB_part7.cpp).
+int gg_objpreview_freeze = 0;
+
+// ★★★ 3.98 THE LIGHTING STAGE. Four lights placed around the SUBJECT in the CAMERA's frame, so
+// as the turntable spins each face passes through key, fill and rim in turn instead of meeting
+// one flat front light. Per light: azimuth (deg, 0 = at the camera, +90 = camera right,
+// 180 = behind the subject), elevation (deg above the horizontal), and strength as a
+// multiple of gg_objpreview_lightint * gg_objpreview_modulate. Strength 0 = light off.
+// Distance is the camera's own distance, so the stage scales with the object like the framing.
+float gg_objpreview_stage[4][3] = {
+	{  45.0f, 50.0f, 1.00f },	// KEY  - high and to the right: lights tops and interiors (the ammo box)
+	{ -60.0f, 15.0f, 0.35f },	// FILL - low on the other side, keeps the shadow side readable
+	{ 150.0f, 45.0f, 0.90f },	// RIM  - behind and above: separates the silhouette from the backdrop
+	{   0.0f,-40.0f, 0.00f },	// BOUNCE - from below the camera, off by default
+};
+// Softboxes in the studio sky, as a multiple of their built-in strength. A glossy surface shows
+// what it REFLECTS; with only a smooth grey gradient to reflect, the pistol-ammo box read as
+// lacklustre. 0 = the plain gradient of 3.97.
+float gg_objpreview_softbox = 1.0f;
+// 3.98 diagnostic, harness-only: one-shot mesh repair on the parked preview object (see Submit).
+int gg_objpreview_meshfix = 0;
 // Framing. DX11 rendered the thumbnail with the EDITOR's fixed 45 (-> PI/3 vertical), not
 // the level's camera FOV, and every distance constant in GrabBackBufferCopy was fitted to
 // that. Passing the level's FOV made every object 1.39x too large.
@@ -106,6 +159,9 @@ float gg_objpreview_bounce = 0.0f;
 // lighting term). Splits 'the lighting is wrong' from 'the texture sample is black'.
 int gg_objpreview_unlit = 0;
 
+// 3.97: the engine's per-camera frame-constant hook (wiRenderPath3D.cpp).
+namespace wi { extern bool (*gg_rtt_frame_override)(wi::ecs::Entity cameraEntity, const FrameCB& src, FrameCB& dst); }
+
 namespace GGObjectPreview
 {
 	static wi::ecs::Entity			s_camEntity = 0;		// scene CameraComponent that does the render
@@ -124,6 +180,7 @@ namespace GGObjectPreview
 	static int						s_litLights = 0;		// lights forced into the MAIN visibility this frame
 	static int						s_evictions = 0;		// times a predecessor had to be un-parked
 	static wi::ecs::Entity			s_bounceLight = 0;		// module-owned bounce fill from below-front
+	static wi::ecs::Entity			s_rimLight = 0;			// 3.98 module-owned rim light
 
 	// ★ The engine's own framing reference. DX11 rendered the thumbnail at a FIXED 1920x1017
 	// (Master::ForceRender's USEFIXEDBACKBUFFERSIZE viewport / MakeBitmap(99,1920,1017)) and
@@ -148,6 +205,13 @@ namespace GGObjectPreview
 	static const float PREVIEW_BACKDROP_G = 0.208f;
 	static const float PREVIEW_BACKDROP_B = 0.361f;
 	static int s_backdropDiag = 0;   // 0 untested, 1 had a texture, 2 flat colour applied
+
+	// 3.97 the studio sky cube. Tiny and generated, NOT a skybank cube: those are 32 MB of BC6H
+	// each, and a thumbnail is not worth 32 MB of a 4 GB budget with ~300 MB of headroom.
+	static wi::graphics::Texture s_studioCube;
+	static int s_studioCubeIndex = -1;		// bindless SRV index, -1 = not built
+	static float s_studioCubeBuiltScale = -1.0f;
+	static int s_studioFrames = 0;			// frames the override has actually been applied (diagnostic)
 }
 
 // Is a live preview currently being driven? (used by the image-id override and by the
@@ -258,6 +322,11 @@ void GGObjectPreview_Stop(void)
 		wi::scene::GetScene().Entity_Remove(s_bounceLight);
 		s_bounceLight = 0;
 	}
+	if (s_rimLight != 0)
+	{
+		wi::scene::GetScene().Entity_Remove(s_rimLight);
+		s_rimLight = 0;
+	}
 	if (s_camEntity != 0)
 	{
 		wi::scene::CameraComponent* cam = wi::scene::GetScene().cameras.GetComponent(s_camEntity);
@@ -297,9 +366,9 @@ void GGObjectPreview_PreVisibility(void)
 	if (!s_active) return;
 	extern wi::ecs::Entity g_entityThumbLight, g_entityThumbLight2;
 	wi::scene::Scene& scene = wi::scene::GetScene();
-	const wi::ecs::Entity le[3] = { g_entityThumbLight, g_entityThumbLight2, s_bounceLight };
+	const wi::ecs::Entity le[4] = { g_entityThumbLight, g_entityThumbLight2, s_bounceLight, s_rimLight };
 	s_litLights = 0;
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 4; ++i)
 	{
 		if (!le[i]) continue;
 		const size_t idx = scene.lights.GetIndex(le[i]);
@@ -312,6 +381,152 @@ void GGObjectPreview_PreVisibility(void)
 	}
 }
 
+// ============================================================================ 3.97 STUDIO
+// The radiance of the studio 'sky', by direction: a bright soft top, a mid horizon, a dark
+// floor. Neutral grey on purpose - the backdrop already supplies the blue, and a tinted sky
+// would tint every thumbnail in the library.
+static void GGObjectPreview_StudioRadiance(float x, float y, float z, float out[3])
+{
+	const float len = sqrtf(x*x + y*y + z*z);
+	const float t = (len > 0.0f) ? (y / len) : 0.0f;
+	const float top = 1.0f, horizon = 0.55f, floorv = 0.18f;
+	float v;
+	if (t >= 0.0f) v = horizon + (top - horizon) * powf(t, 0.6f);
+	else           v = horizon + (floorv - horizon) * powf(-t, 0.5f);
+	// 3.98 softboxes. The preview camera always looks along +Z (GrabBackBufferCopy frames it with
+	// RotateCamera(0,0,0) then MoveCamera back), so a world-fixed cube is camera-fixed in effect:
+	// -Z is BEHIND the camera, which is what camera-facing surfaces reflect.
+	if (gg_objpreview_softbox > 0.0f && len > 0.0f)
+	{
+		const float nx = x / len, ny = y / len, nz = z / len;
+		static const float box[3][4] = {
+			{  0.55f, 0.65f, -0.52f, 2.5f },	// key side, upper right behind the camera
+			{ -0.75f, 0.35f, -0.55f, 1.0f },	// fill side, left
+			{  0.00f, 1.00f,  0.25f, 1.8f },	// overhead
+		};
+		for (int b = 0; b < 3; ++b)
+		{
+			const float bl = sqrtf(box[b][0]*box[b][0] + box[b][1]*box[b][1] + box[b][2]*box[b][2]);
+			const float c = (nx*box[b][0] + ny*box[b][1] + nz*box[b][2]) / bl;
+			if (c > 0.0f) v += box[b][3] * gg_objpreview_softbox * powf(c, 12.0f);
+		}
+	}
+	v *= gg_objpreview_envscale * gg_objpreview_modulate;
+	out[0] = v; out[1] = v; out[2] = v;
+}
+
+// Build (or rebuild) the studio cube. MAIN THREAD ONLY - called from Submit, which runs inside
+// GrabBackBufferCopy on the game loop, per the resource-creation rule.
+static void GGObjectPreview_EnsureStudioCube(void)
+{
+	using namespace GGObjectPreview;
+	static float s_builtSoftbox = -1.0f;
+	if (s_studioCube.IsValid() && s_studioCubeBuiltScale == gg_objpreview_envscale * gg_objpreview_modulate
+		&& s_builtSoftbox == gg_objpreview_softbox) return;
+	s_builtSoftbox = gg_objpreview_softbox;
+	wi::graphics::GraphicsDevice* device = wi::graphics::GetDevice();
+	if (!device) return;
+	const int N = 32, MIPS = 6;			// 32,16,8,4,2,1 - the 1x1 is what GetAmbient reads
+	// mip 0 evaluated per texel, then each mip a 2x2 box of the one above, so the 1x1 is the
+	// face AVERAGE (a true ambient) rather than whatever sits at the face centre.
+	static std::vector<float> texels[6][6];
+	for (int f = 0; f < 6; ++f)
+	{
+		texels[f][0].assign((size_t)N * N * 4, 1.0f);
+		for (int y = 0; y < N; ++y)
+		for (int x = 0; x < N; ++x)
+		{
+			const float u = 2.0f * (x + 0.5f) / N - 1.0f;
+			const float v = 2.0f * (y + 0.5f) / N - 1.0f;
+			float d[3];
+			switch (f)	// D3D cube face order +X -X +Y -Y +Z -Z
+			{
+			case 0: d[0] =  1; d[1] = -v; d[2] = -u; break;
+			case 1: d[0] = -1; d[1] = -v; d[2] =  u; break;
+			case 2: d[0] =  u; d[1] =  1; d[2] =  v; break;
+			case 3: d[0] =  u; d[1] = -1; d[2] = -v; break;
+			case 4: d[0] =  u; d[1] = -v; d[2] =  1; break;
+			default: d[0] = -u; d[1] = -v; d[2] = -1; break;
+			}
+			float c[3];
+			GGObjectPreview_StudioRadiance(d[0], d[1], d[2], c);
+			float* p = &texels[f][0][((size_t)y * N + x) * 4];
+			p[0] = c[0]; p[1] = c[1]; p[2] = c[2]; p[3] = 1.0f;
+		}
+		for (int m = 1; m < MIPS; ++m)
+		{
+			const int S = N >> m, P2 = N >> (m - 1);
+			texels[f][m].assign((size_t)S * S * 4, 1.0f);
+			const std::vector<float>& a = texels[f][m - 1];
+			for (int y = 0; y < S; ++y)
+			for (int x = 0; x < S; ++x)
+			for (int ch = 0; ch < 4; ++ch)
+			{
+				const float sum = a[((size_t)(2*y) * P2 + 2*x) * 4 + ch] + a[((size_t)(2*y) * P2 + 2*x + 1) * 4 + ch]
+				              + a[((size_t)(2*y + 1) * P2 + 2*x) * 4 + ch] + a[((size_t)(2*y + 1) * P2 + 2*x + 1) * 4 + ch];
+				texels[f][m][((size_t)y * S + x) * 4 + ch] = sum * 0.25f;
+			}
+		}
+	}
+	wi::graphics::SubresourceData init[6 * 6];
+	for (int f = 0; f < 6; ++f)
+	for (int m = 0; m < MIPS; ++m)
+	{
+		const int S = N >> m;
+		wi::graphics::SubresourceData& sd = init[f * MIPS + m];	// D3D12 subresource = mip + slice * mips
+		sd.data_ptr = texels[f][m].data();
+		sd.row_pitch = (uint32_t)(S * 4 * sizeof(float));
+		sd.slice_pitch = (uint32_t)(S * S * 4 * sizeof(float));
+	}
+	wi::graphics::TextureDesc desc;
+	desc.type = wi::graphics::TextureDesc::Type::TEXTURE_2D;
+	desc.width = N; desc.height = N; desc.array_size = 6; desc.mip_levels = MIPS;
+	desc.format = wi::graphics::Format::R32G32B32A32_FLOAT;
+	desc.bind_flags = wi::graphics::BindFlag::SHADER_RESOURCE;
+	desc.misc_flags = wi::graphics::ResourceMiscFlag::TEXTURECUBE;
+	desc.layout = wi::graphics::ResourceState::SHADER_RESOURCE;
+	wi::graphics::Texture cube;
+	if (!device->CreateTexture(&desc, init, &cube)) return;
+	device->SetName(&cube, "GGMax ObjectPreview StudioCube");
+	s_studioCube = cube;		// the old one (if any) is released by the device's deferred destroy
+	s_studioCubeIndex = device->GetDescriptorIndex(&s_studioCube, wi::graphics::SubresourceType::SRV);
+	s_studioCubeBuiltScale = gg_objpreview_envscale * gg_objpreview_modulate;
+}
+
+// The engine calls this from the preview camera's render job with a copy of this frame's
+// constants (wiRenderPath3D.cpp, gg_rtt_frame_override). Every value below would otherwise come
+// from the LEVEL. ⚠ dst is write-combined upload memory: read src, only WRITE dst.
+// ⚠ Job thread: touches nothing but plain module state that the main thread sets.
+static bool GGObjectPreview_FrameOverride(wi::ecs::Entity cameraEntity, const FrameCB& src, FrameCB& dst)
+{
+	using namespace GGObjectPreview;
+	if (!gg_objpreview_studio || !s_active || cameraEntity != s_camEntity) return false;
+
+	// the level's sun, and any other directional light, lights everything at any distance
+	dst.directional_lights = 0;
+	// local env probes - none can reach y=39000, but the list is emptied rather than trusted
+	dst.probes = 0;
+	// the global probe is a capture of the LEVEL (sky or interior); swap in the studio cube
+	dst.scene.globalprobe = s_studioCubeIndex;
+	dst.scene.gg_envprobe_brightness = 1.0f;
+	dst.scene.gg_probeonlyglobal = 1;
+	dst.scene.ddgi.probe_buffer = -1;
+	// flat ambient: THE value that turned the building white (0.608 in testpro2level)
+	dst.scene.weather.ambient = wi::math::pack_half3(gg_objpreview_ambient, gg_objpreview_ambient, gg_objpreview_ambient);
+	dst.scene.weather.sun_color = wi::math::pack_half3(0.0f, 0.0f, 0.0f);
+	// fog: off three ways, because the two fog paths read different fields (fogHF.hlsli) -
+	// and the BACKDROP is 21200 units out, so a level's fog was greying the background too
+	dst.scene.weather.fog.density = 0.0f;
+	dst.scene.weather.fog.start = 1.0e9f;
+	dst.scene.weather.gg_fog_opacity = 0.0f;
+	dst.texture_volumetricclouds_shadow_index = -1;
+	dst.options = src.options & ~(uint32_t)(OPTION_BIT_HEIGHT_FOG | OPTION_BIT_VXGI_ENABLED
+		| OPTION_BIT_VXGI_REFLECTIONS_ENABLED | OPTION_BIT_SURFELGI_ENABLED | OPTION_BIT_RAYTRACED_SHADOWS
+		| OPTION_BIT_SHADOW_MASK | OPTION_BIT_DISABLE_ALBEDO_MAPS | OPTION_BIT_FORCE_DIFFUSE_LIGHTING
+		| OPTION_BIT_VOLUMETRICCLOUDS_CAST_SHADOW);
+	s_studioFrames++;
+	return true;
+}
 // Called once per frame from GrabBackBufferCopy with the camera GG's own framing maths worked
 // out. Position/angles are GG camera space, which maps 1:1 onto Wicked world space through the
 // same TransformComponent recipe master_part0.cpp:531 uses for the editor camera.
@@ -346,6 +561,11 @@ void GGObjectPreview_Submit(int imageId, int width, int height,
 	if (height > 2048) height = 2048;
 
 	wi::scene::Scene& scene = wi::scene::GetScene();
+
+	// 3.97: the studio environment. The hook is a plain pointer the engine checks per camera, so
+	// registering it every submit costs nothing and survives anything that might reset it.
+	wi::gg_rtt_frame_override = GGObjectPreview_FrameOverride;
+	if (gg_objpreview_studio) GGObjectPreview_EnsureStudioCube();
 
 	// (re)create the camera entity. Checked EVERY submit, not just once: a level load clears
 	// the scene and the entity goes with it, and a stale handle would silently render nothing.
@@ -399,18 +619,16 @@ void GGObjectPreview_Submit(int imageId, int width, int height,
 	cam->render_to_texture.resolution = XMUINT2((uint32_t)width, (uint32_t)height);
 	cam->render_to_texture.sample_count = 1;
 
-	// ★ Light the preview ourselves. Re-applied EVERY submit, not once:
-	// WickedCall_EnableThumbLight destroys and recreates both lights on every hover, so anything
-	// set once is thrown away immediately.
+	// ★★★ 3.98 THE LIGHTING STAGE. Re-applied EVERY submit: WickedCall_EnableThumbLight destroys
+	// and recreates the two thumb lights on every hover, so anything set once is thrown away.
 	//
-	// Key sits at the camera, lifted and pushed left, so the camera-facing side is lit with some
-	// modelling rather than flat-on (defect 2). Fill sits opposite and dimmer, to keep the far
-	// side off pure black. Both scale with the framing distance, which is the whole point.
+	// 3.84-3.97 put a key almost ON the camera axis (0.45d right, 0.35d up) - every face the camera
+	// could see was lit nearly head-on, so a turning object never changed its shading, and anything
+	// facing UP (the cartridges inside the pistol-ammo box) got almost nothing. Lights now sit on a
+	// sphere around the SUBJECT, placed in the camera's own frame (gg_objpreview_stage), so the
+	// stage stays put while the turntable carries each face through it.
 	{
 		extern wi::ecs::Entity g_entityThumbLight, g_entityThumbLight2;
-		// The camera->object direction is the camera's own forward vector, which the angles
-		// already give us; GrabBackBufferCopy framed the camera ON the object, so the
-		// distance is BackBufferCamMove (fCamMove * 2) - see the framing block there.
 		extern float BackBufferCamMove;
 		float d = BackBufferCamMove * 0.5f;
 		if (!(d > 1.0f)) d = 60.0f;
@@ -418,56 +636,93 @@ void GGObjectPreview_Submit(int imageId, int width, int height,
 		const float cyaw = cosf((float)(angY * dDegToRad)), syaw = sinf((float)(angY * dDegToRad));
 		// left-handed forward for GG's RotateRollPitchYaw(pitch, yaw, roll)
 		const float fwdx = cpitch * syaw, fwdy = -spitch, fwdz = cpitch * cyaw;
-		const float dx0 = -fwdx * d, dy0 = -fwdy * d, dz0 = -fwdz * d;  // object -> camera
-		const float intensity = (gg_objpreview_lightint > 0.0f)
-			? gg_objpreview_lightint
-			: gg_objpreview_lightk * d * d;
-		// a right-ish vector in the ground plane, from the camera->object direction
-		const float hx = -dz0, hz = dx0;
-		const float hl = sqrtf(hx*hx + hz*hz) > 0.001f ? sqrtf(hx*hx + hz*hz) : 1.0f;
-		const float rx = hx / hl, rz = hz / hl;
-		// ★ The third light. Key and fill both sit ABOVE the camera, so a subject leaning away
-		// from them - a hunched zombie, a crouching character, the underside of anything -
-		// receives nothing, and with the level's ambient at (0,0,0) that is pure black rather
-		// than dark. This is the floor bounce a real studio gets for free.
-		if (gg_objpreview_bounce > 0.0f && s_bounceLight == 0)
+		// The subject: on the view ray at the camera's distance to the parked object, which is where
+		// GrabBackBufferCopy pointed the camera. d is only the fallback.
+		float dcam = d;
+		if (s_parkedObject > 0 && ObjectExist(s_parkedObject) == 1)
 		{
-			s_bounceLight = wi::ecs::CreateEntity();
-			scene.lights.Create(s_bounceLight);
-			scene.transforms.Create(s_bounceLight);
+			const float ox = ObjectPositionX(s_parkedObject) - camX;
+			const float oy = ObjectPositionY(s_parkedObject) - camY;
+			const float oz = ObjectPositionZ(s_parkedObject) - camZ;
+			const float od = sqrtf(ox*ox + oy*oy + oz*oz);
+			if (od > 1.0f) dcam = od;
 		}
-		else if (gg_objpreview_bounce <= 0.0f && s_bounceLight != 0)
+		const float tx = camX + fwdx * dcam, ty = camY + fwdy * dcam, tz = camZ + fwdz * dcam;
+		// camera frame in the ground plane: b = subject -> camera, r = camera right (LH: up x forward)
+		float bx = -fwdx, bz = -fwdz;
+		const float bl = sqrtf(bx*bx + bz*bz);
+		if (bl > 0.001f) { bx /= bl; bz /= bl; } else { bx = 0.0f; bz = -1.0f; }
+		const float rx = -bz, rz = bx;
+		// 3.97: FIXED energy - see gg_objpreview_lightint for why k*d^2 was wrong here.
+		const float intensity = (gg_objpreview_lightk > 0.0f)
+			? gg_objpreview_lightk * d * d
+			: gg_objpreview_lightint * gg_objpreview_modulate;
+		// module-owned lights exist only while their strength is non-zero
+		wi::ecs::Entity* owned[2] = { &s_rimLight, &s_bounceLight };
+		const float ownedMul[2] = { gg_objpreview_stage[2][2], gg_objpreview_stage[3][2] };
+		for (int k = 0; k < 2; ++k)
 		{
-			scene.Entity_Remove(s_bounceLight);
-			s_bounceLight = 0;
+			if (ownedMul[k] > 0.0f && *owned[k] == 0)
+			{
+				*owned[k] = wi::ecs::CreateEntity();
+				scene.lights.Create(*owned[k]);
+				scene.transforms.Create(*owned[k]);
+			}
+			else if (ownedMul[k] <= 0.0f && *owned[k] != 0)
+			{
+				scene.Entity_Remove(*owned[k]);
+				*owned[k] = 0;
+			}
 		}
-		const struct { wi::ecs::Entity e; float ox, oy, oz, mul; } rig[3] = {
-			{ g_entityThumbLight,   rx * d * 0.45f,  d * 0.35f, rz * d * 0.45f, 1.00f },  // key, high and right
-			{ g_entityThumbLight2, -rx * d * 0.70f,  d * 0.20f, -rz * d * 0.70f, 0.45f }, // fill, opposite
-			{ s_bounceLight,        rx * d * 0.10f, -d * 0.45f, rz * d * 0.10f, gg_objpreview_bounce }, // bounce, below front
-		};
-		for (int i = 0; i < 3; ++i)
+		const wi::ecs::Entity rig[4] = { g_entityThumbLight, g_entityThumbLight2, s_rimLight, s_bounceLight };
+		for (int i = 0; i < 4; ++i)
 		{
-			if (!rig[i].e) continue;
-			wi::scene::LightComponent* lc = scene.lights.GetComponent(rig[i].e);
+			if (!rig[i]) continue;
+			const float az = gg_objpreview_stage[i][0] * (float)dDegToRad;
+			const float el = gg_objpreview_stage[i][1] * (float)dDegToRad;
+			const float ce = cosf(el);
+			const float lx = (bx * cosf(az) + rx * sinf(az)) * ce;
+			const float ly = sinf(el);
+			const float lz = (bz * cosf(az) + rz * sinf(az)) * ce;
+			wi::scene::LightComponent* lc = scene.lights.GetComponent(rig[i]);
 			if (lc)
 			{
 				lc->type = wi::scene::LightComponent::POINT;
 				lc->color = XMFLOAT3(1.0f, 0.98f, 0.95f);
-				lc->intensity = intensity * rig[i].mul;
-				lc->range = d * 6.0f;   // 2900 was a fixed range and large objects framed well beyond it
+				lc->intensity = intensity * gg_objpreview_stage[i][2];
+				// DX11 falloff: (1 - D^2/r^2)^2. r = 3D gives 0.79 at the subject centre at EVERY scale,
+				// with a gentle near-to-far fall across the object itself.
+				lc->range = dcam * 3.0f;
 				lc->SetCastShadow(false);
 			}
-			wi::scene::TransformComponent* lt = scene.transforms.GetComponent(rig[i].e);
+			wi::scene::TransformComponent* lt = scene.transforms.GetComponent(rig[i]);
 			if (lt)
 			{
 				lt->ClearTransform();
-				lt->Translate(XMFLOAT3(camX + rig[i].ox, camY + rig[i].oy, camZ + rig[i].oz));
+				lt->Translate(XMFLOAT3(tx + lx * dcam, ty + ly * dcam, tz + lz * dcam));
 				lt->SetDirty();
 			}
 		}
 	}
-
+	// 3.98 diagnostic: rebuild the parked object's GPU mesh data once (gg_objpreview_meshfix).
+	if (gg_objpreview_meshfix > 0 && s_parkedObject > 0 && ObjectExist(s_parkedObject) == 1)
+	{
+		sObject* pO = GetObjectData(s_parkedObject);
+		if (pO && pO->ppMeshList)
+		{
+			for (int m = 0; m < pO->iMeshCount; ++m)
+			{
+				sMesh* pM = pO->ppMeshList[m];
+				if (!pM) continue;
+				wi::scene::MeshComponent* me = scene.meshes.GetComponent(pM->wickedmeshindex);
+				if (!me) continue;
+				if (gg_objpreview_meshfix == 2) me->ComputeNormals(wi::scene::MeshComponent::COMPUTE_NORMALS::COMPUTE_NORMALS_HARD);
+				if (gg_objpreview_meshfix == 3) me->ComputeNormals(wi::scene::MeshComponent::COMPUTE_NORMALS::COMPUTE_NORMALS_SMOOTH_FAST);
+				me->CreateRenderData();
+			}
+		}
+		gg_objpreview_meshfix = 0;
+	}
 	// Material override on the parked object's subsets, re-applied every submit because the
 	// object is reloaded on every fresh hover.
 	if ((gg_objpreview_metal >= 0.0f || gg_objpreview_rough >= 0.0f || gg_objpreview_unlit) && s_parkedObject > 0
@@ -672,6 +927,14 @@ void GGObjectPreview_DebugStatus(char* buf, int bufsize)
 		lwx, lwy, lwz, lobjdist,
 		tl ? tl->color.x : -1.0f, tl ? tl->color.y : -1.0f, tl ? tl->color.z : -1.0f,
 		wx ? wx->ambient.x : -1.0f, wx ? wx->ambient.y : -1.0f, wx ? wx->ambient.z : -1.0f);
+	{
+		// 3.97: the level ambient above is what the preview would have inherited; say what it gets.
+		const size_t used = strlen(buf);
+		if (used + 96 < (size_t)bufsize)
+			_snprintf(buf + used, bufsize - used, " studio=%d cube=%d studioFrames=%d key=%.2f amb=%.3f env=%.2f mod=%.3f freeze=%d",
+				gg_objpreview_studio, s_studioCubeIndex, s_studioFrames, gg_objpreview_lightint, gg_objpreview_ambient, gg_objpreview_envscale,
+				gg_objpreview_modulate, gg_objpreview_freeze);
+	}
 	buf[bufsize - 1] = 0;
 }
 
@@ -721,11 +984,12 @@ void GGObjectPreview_DumpMaterials(char* result, int resultSize)
 			// every direction, which is uniform black that no amount of light can lift - exactly
 			// what the torso does while its own texture and material read as perfect.
 			float normLenLo = 9e9f, normLenHi = -9e9f;
-			int normZero = 0;
+			int normZero = 0, normNaN = 0;	// 3.98: NaN fails every < and >, so it read as HEALTHY before
 			for (size_t ni = 0; ni < mesh->vertex_normals.size(); ++ni)
 			{
 				const XMFLOAT3& nv = mesh->vertex_normals[ni];
 				const float len = sqrtf(nv.x*nv.x + nv.y*nv.y + nv.z*nv.z);
+				if (!(len == len)) { normNaN++; continue; }
 				if (len < normLenLo) normLenLo = len;
 				if (len > normLenHi) normLenHi = len;
 				if (len < 0.001f) normZero++;
@@ -754,15 +1018,61 @@ void GGObjectPreview_DumpMaterials(char* result, int resultSize)
 				(u0hi >= u0lo) ? u0lo : 0.0f, (u0hi >= u0lo) ? u0hi : 0.0f,
 				(u0hi >= u0lo) ? v0lo : 0.0f, (u0hi >= u0lo) ? v0hi : 0.0f,
 				(mesh->vertex_uvset_0.empty() || (u0hi - u0lo) < 0.001f) ? "   <== UV0 EMPTY/DEGENERATE" : "");
-			fprintf(f, "          normals=%d len=[%.3f..%.3f] zeroLen=%d tangents=%d%s\n",
+			fprintf(f, "          normals=%d len=[%.3f..%.3f] zeroLen=%d NaN=%d tangents=%d%s\n",
 				(int)mesh->vertex_normals.size(),
 				(normLenHi >= normLenLo) ? normLenLo : 0.0f, (normLenHi >= normLenLo) ? normLenHi : 0.0f,
-				normZero, (int)mesh->vertex_tangents.size(),
-				(mesh->vertex_normals.empty() || normZero > 0) ? "   <== NORMALS MISSING/ZERO" : "");
+				normZero, normNaN, (int)mesh->vertex_tangents.size(),
+				(mesh->vertex_normals.empty() || normZero > 0 || normNaN > 0) ? "   <== NORMALS MISSING/ZERO/NaN" : "");
 			fprintf(f, "          tangents len=[%.3f..%.3f] zeroLen=%d nan=%d%s\n",
 				(tanLenHi >= tanLenLo) ? tanLenLo : 0.0f, (tanLenHi >= tanLenLo) ? tanLenHi : 0.0f,
 				tanZero, tanNaN,
 				(mesh->vertex_tangents.empty() || tanZero > 0 || tanNaN > 0) ? "   <== TANGENT FRAME DEGENERATE" : "");
+			// 3.98: skinning facts. A skinned mesh draws its SKINNED normals (so_nor), accumulated in
+			// half precision in skinningCS - a tiny bone scale underflows the normal to zero while the
+			// float position survives. Weights, bone scales and a per-vertex table say which.
+			{
+				int noWeight = 0; float wmin = 9e9f, wmax = -9e9f;
+				for (size_t wi2 = 0; wi2 < mesh->vertex_boneweights.size(); ++wi2)
+				{
+					const XMFLOAT4& w4 = mesh->vertex_boneweights[wi2];
+					const float ws = w4.x + w4.y + w4.z + w4.w;
+					if (ws < 0.01f) noWeight++;
+					if (ws < wmin) wmin = ws; if (ws > wmax) wmax = ws;
+				}
+				fprintf(f, "          SKINNING: armatureID=%llu boneidx=%d boneweights=%d weightSum=[%.3f..%.3f] noWeight=%d so_pos=%d so_nor=%d so_tan=%d\n",
+					(unsigned long long)mesh->armatureID, (int)mesh->vertex_boneindices.size(), (int)mesh->vertex_boneweights.size(),
+					mesh->vertex_boneweights.empty() ? 0.0f : wmin, mesh->vertex_boneweights.empty() ? 0.0f : wmax, noWeight,
+					mesh->so_pos.IsValid() ? 1 : 0, mesh->so_nor.IsValid() ? 1 : 0, mesh->so_tan.IsValid() ? 1 : 0);
+				const wi::scene::ArmatureComponent* arm = (mesh->armatureID != wi::ecs::INVALID_ENTITY) ? scene.armatures.GetComponent(mesh->armatureID) : nullptr;
+				if (arm)
+				{
+					fprintf(f, "          armature: bones=%d boneData=%d\n", (int)arm->boneCollection.size(), (int)arm->boneData.size());
+					for (size_t bi = 0; bi < arm->boneData.size() && bi < 16; ++bi)
+					{
+						const ShaderTransform& st = arm->boneData[bi];
+						// rows of the 3x4: column lengths of the 3x3 are the bone's scale
+						const float sx = sqrtf(st.mat0.x*st.mat0.x + st.mat1.x*st.mat1.x + st.mat2.x*st.mat2.x);
+						const float sy = sqrtf(st.mat0.y*st.mat0.y + st.mat1.y*st.mat1.y + st.mat2.y*st.mat2.y);
+						const float sz = sqrtf(st.mat0.z*st.mat0.z + st.mat1.z*st.mat1.z + st.mat2.z*st.mat2.z);
+						const wi::scene::NameComponent* bn = (bi < arm->boneCollection.size()) ? scene.names.GetComponent(arm->boneCollection[bi]) : nullptr;
+						fprintf(f, "            bone %d '%s' scale=(%.6g, %.6g, %.6g)%s\n", (int)bi, bn ? bn->name.c_str() : "?", sx, sy, sz,
+							(sx < 1e-3f || sy < 1e-3f || sz < 1e-3f) ? "   <== TINY: half-precision normal skinning underflows" : "");
+					}
+				}
+				if (mesh->vertex_positions.size() <= 300)
+				{
+					for (size_t vi = 0; vi < mesh->vertex_positions.size(); ++vi)
+					{
+						const XMFLOAT3 p3 = mesh->vertex_positions[vi];
+						const XMFLOAT3 n3 = (vi < mesh->vertex_normals.size()) ? mesh->vertex_normals[vi] : XMFLOAT3(0, 0, 0);
+						const XMFLOAT2 uv = (vi < mesh->vertex_uvset_0.size()) ? mesh->vertex_uvset_0[vi] : XMFLOAT2(0, 0);
+						const XMUINT4 bi4 = (vi < mesh->vertex_boneindices.size()) ? mesh->vertex_boneindices[vi] : XMUINT4(0, 0, 0, 0);
+						const XMFLOAT4 bw4 = (vi < mesh->vertex_boneweights.size()) ? mesh->vertex_boneweights[vi] : XMFLOAT4(0, 0, 0, 0);
+						fprintf(f, "            v%3d pos=(%.3f,%.3f,%.3f) nor=(%.3f,%.3f,%.3f) uv=(%.3f,%.3f) bones=(%u,%u,%u,%u) w=(%.2f,%.2f,%.2f,%.2f)\n",
+							(int)vi, p3.x, p3.y, p3.z, n3.x, n3.y, n3.z, uv.x, uv.y, bi4.x, bi4.y, bi4.z, bi4.w, bw4.x, bw4.y, bw4.z, bw4.w);
+					}
+				}
+			}
 			for (size_t si = 0; si < mesh->subsets.size(); ++si)
 			{
 				subsets++;
@@ -789,6 +1099,34 @@ void GGObjectPreview_DumpMaterials(char* result, int resultSize)
 						(t2 < 13) ? slotName[t2] : "?",
 						bValid ? "RESIDENT" : "ABSENT", (int)tex.uvset, tex.name.c_str());
 				}
+			}
+		}
+	}
+	// 3.98: every object the PREVIEW camera's own visibility pass kept. Subject + backdrop is 2;
+	// visObj has read 7..12 since 3.84, and anything else sitting at the park point renders INSIDE
+	// or around the subject. Name, mesh, world AABB centre/size and the material's shader type.
+	{
+		wi::scene::CameraComponent* pcam = (s_camEntity != 0) ? scene.cameras.GetComponent(s_camEntity) : nullptr;
+		if (pcam && pcam->render_to_texture.visibility)
+		{
+			const wi::renderer::Visibility& vis = *(const wi::renderer::Visibility*)pcam->render_to_texture.visibility.get();
+			fprintf(f, "\nPREVIEW CAMERA SEES %d objects:\n", (int)vis.visibleObjects.size());
+			for (size_t vi = 0; vi < vis.visibleObjects.size(); ++vi)
+			{
+				const uint32_t oi = vis.visibleObjects[vi];
+				if (oi >= scene.objects.GetCount()) continue;
+				const wi::ecs::Entity oe = scene.objects.GetEntity(oi);
+				const wi::scene::ObjectComponent& oc = scene.objects[oi];
+				const wi::scene::NameComponent* on = scene.names.GetComponent(oe);
+				const wi::scene::NameComponent* mn = scene.names.GetComponent(oc.meshID);
+				const wi::primitive::AABB& ab = scene.aabb_objects[oi];
+				const XMFLOAT3 c = ab.getCenter(), h = ab.getHalfWidth();
+				const wi::scene::MeshComponent* om = scene.meshes.GetComponent(oc.meshID);
+				int st = -1;
+				if (om && !om->subsets.empty()) { const wi::scene::MaterialComponent* omat = scene.materials.GetComponent(om->subsets[0].materialID); if (omat) st = (int)omat->shaderType; }
+				fprintf(f, "  [%d] ent=%llu obj='%s' mesh='%s' centre=(%.0f,%.0f,%.0f) half=(%.1f,%.1f,%.1f) verts=%d shader=%d\n",
+					(int)vi, (unsigned long long)oe, on ? on->name.c_str() : "?", mn ? mn->name.c_str() : "?",
+					c.x, c.y, c.z, h.x, h.y, h.z, om ? (int)om->vertex_positions.size() : -1, st);
 			}
 		}
 	}

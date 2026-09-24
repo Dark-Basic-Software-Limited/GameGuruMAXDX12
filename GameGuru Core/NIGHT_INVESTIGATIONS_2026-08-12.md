@@ -14531,3 +14531,107 @@ a wrong one. ★ **Honour BOM and line endings as FOUND; never assume them per-f
 that does this correctly is in every other patch script from this session, and I hand-rolled a
 worse one here.
 
+---
+
+## 3.97 The live preview owns its whole environment - and the k*d^2 light was wrong - 2026-09-24
+
+Lee's rebuilt testpro2level: hovering *Building - Diagonal Wall Lowered Porch* in the Object Library
+showed it pure white. His brief: find out whether texture or lighting, fix it, then make the preview
+stable, consistent and close to the DX11 thumbnails, free of anything inherited from the level or
+from earlier previews.
+
+**Lighting, not texture.** Forcing the preview object unlit showed every texture resident and
+correct. Two causes stacked:
+
+1. **The preview light grew with the square of the object's size.** 3.84b set
+   `intensity = k * d^2`, assuming inverse-square falloff. This fork does not have one: 2.10 put the
+   DX11 falloff back, `energy * (1 - d^2/r^2)^2`, and with the range scaled to 6d the window term is
+   ~0.92 at every size. So what a subject receives IS the intensity: the building (d = 1677) got 365,
+   a small prop (d = 60) got 0.47. One object calibrated, the rest of the library wrong in both
+   directions. ★ **A calibration is only as general as the physics it assumes.** Now a fixed energy.
+2. **The preview inherited the level's ambient** - 0.608 in the rebuilt testpro2level, 0 in the
+   level 3.84 was calibrated in.
+
+### ★★★ The fix: the preview camera gets its own frame constants
+
+Every render-to-texture camera draws with the main view's FrameCB: one ambient, one sun, one fog,
+one global probe, one set of local probes. The main view cannot change for the preview's sake - it
+is visible around the library the whole time. So a small engine hook (`gg_rtt_frame_override`,
+engine delta row 3.97) hands the preview camera a COPY, and the game replaces every level input: no
+directional lights, no local probes, no DDGI, fog off three ways (the backdrop 21200 units out was
+being fogged too), a fixed ambient, and a **generated studio sky cube** (32x32 per face, ~0.5 MB)
+in place of the level's global probe - the skybank cubes are 32 MB of BC6H each, too much for a
+thumbnail on a 4 GB budget with ~300 MB of headroom.
+
+Result on the building: blown pixels **16.4% -> 0%**, p99 255 -> 165.8 against the DX11 static's 145.5.
+
+### The DX11 thumbnails are not a single target
+
+Lee asked for a modulation to remove the remaining difference. Measured properly - turntable
+FROZEN at the thumbnail's own angle (the first attempt compared the front of an object against its
+back), subject pixels found as whatever CHANGES between two light strengths (the backdrop is unlit)
+- the parity multiplier per object was:
+
+| objects | parity multiplier |
+|---|---|
+| 3 Buildings Collection houses | 0.69 - 0.73 |
+| 2 fence posts, a door, 3 military items | 1.30 - 1.53 |
+
+A 2x disagreement between groups at matched angles. Two explanations were tested and REFUTED: the
+tonemap (DX11 ran ACES without its colour matrices - inverting ours and re-applying DX11's barely
+moves the gap) and object size (a model built on DX11's 2900-unit thumb-light range fitted four
+objects, then mispredicted a fifth of the same size). Lee's decision: do not chase the old
+thumbnails - build a proper DX12 lighting stage instead (3.98).
+
+★ **A reference set is only a target if it is internally consistent.** Check that before fitting to it.
+
+---
+
+## 3.98 A DX12 lighting stage - and the black faces were never lighting - 2026-09-24
+
+Test piece, Lee's choice: *Pistol Ammo*. It looked lacklustre turning in the preview, and the
+cartridges visible inside the box in the DX11 thumbnail were black in DX12.
+
+### The stage
+
+Four lights placed around the SUBJECT in the CAMERA's frame (`gg_objpreview_stage`, azimuth /
+elevation / strength each): key high and right (45, 50, 1.0), fill low left (-60, 15, 0.35), rim
+behind and above (150, 45, 0.9), bounce off. The old key sat almost on the camera axis, so a turning
+object never changed its shading and nothing facing UP was lit. Plus three **softboxes** in the
+studio sky, because a glossy surface shows what it reflects and a smooth grey gradient gives it
+nothing. All live-tunable: `SET_OBJPREVIEW_STAGE <0..3> az el strength`, `SET_OBJPREVIEW_STAGE 4
+<softbox>`. ⚠ Defaults are PROVISIONAL - Lee has not judged them yet.
+
+### The black cartridges - a data path, not the light
+
+Found by elimination, each step a measurement:
+
+- **Albedo** debug view: cartridges and tray present. **Normal** debug view: that face EXACTLY black,
+  a NaN normal. Tangent, handedness and world position on the same pixels: all valid.
+- One strong light swept through 11 directions around the frozen box: that face moved by **exactly
+  zero**. No light reaches a NaN normal.
+- The CPU mesh: 216 unit normals, none NaN - ⚠ the dump's normal check had counted zero-length but
+  not NaN, and a NaN fails every < and >, so it read as healthy. Fixed.
+- Rebuilding the mesh's GPU buffers, and recomputing hard normals: **no change**. So the normal the
+  shader reads is not the mesh's own.
+- It showed in the **main level view** too - not a preview defect.
+- The preview camera sees exactly 3 objects (subject, backdrop, the editor's 5000 km floor box) -
+  nothing foreign parked inside the box.
+- The mesh is **SKINNED**: GameGuru gives static DBO props a one-bone `SKINDUMMY` armature, so the
+  shader draws the skinning compute's output, not the mesh buffer. That is why rebuilding the mesh
+  changed nothing.
+- UV-overlaying all 72 triangles on the texture: the whole "contents" is ONE quad, triangles 62/63,
+  and its six vertices have a normal of EXACTLY (0,0,-1). The lid, exactly (0,1,0), rendered fine.
+
+**Fix (engine delta 3.98):** carry the skinned normal and its accumulator in float in
+`skinningCS.hlsl`. The .cso recompiled (9772 -> 9264 bytes); the black-normal pixels on that face
+went from 455 (100%) to none, and the lit preview now shows the brass cartridges and blue tray the
+DX11 thumbnail has. An animated character checked afterwards renders and animates normally.
+
+⚠ **Scope is wider than one ammo box.** Any skinned mesh - which includes static props via
+SKINDUMMY - with exactly-(0,0,-1) normals drew those faces black in every level. How many stock
+objects that is has NOT been counted.
+
+★★ **When rebuilding the data changes nothing, the shader is not reading that data.** Find what it
+IS reading before theorising about the data - here, the skinning output.
+★ **A health check that cannot see NaN reports NaN as healthy.** Test `x == x`.
