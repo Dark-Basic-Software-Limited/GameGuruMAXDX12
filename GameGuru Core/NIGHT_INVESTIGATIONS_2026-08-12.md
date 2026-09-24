@@ -14758,3 +14758,27 @@ remains exercised only by hand. Export Game is still untested since 08-16.
    mapbank`), not the build area. Correct and intended, but a tester who edits a demo, saves, and
    reopens "the demo" from Demo Games gets the ORIGINAL back, while their edited copy sits under My
    Games. Worth one line in the tester notes.
+
+---
+
+## ★★★ LEE SIGN-OFF FOR THE TESTER BUILD - 2026-09-24 evening
+
+Lee: "Right I am happy with this." He is making a MANUAL build for a small group of external human
+testers from game `1e8cb135` / engine `680a30b0` (everything through 3.101). The next session opens
+with THEIR results.
+
+**When the tester reports arrive, triage them against what is already known before investigating:**
+
+- Known and recorded, not regressions: standalone PLAY GAME holds 950-1520 MB more VRAM than Test
+  Game on the same level (09-20 §3.6); Operation Amazon ships baked at the MED terrain preset (3.101);
+  editing a shipped demo saves to Documents, not over the demo (3.101); the 1024 + blur 2 reflection
+  default is unverified on a low-end AMD card (3.91).
+- Least-tested paths - weight reports here highest: PLAY GAME standalone and Export Game (hand-tested
+  only; the overnight PLAY GAME phase tested nothing), and anything at the two ends of the
+  CHECKLIST timeline (65 of 213 items never exercised as of 09-20).
+- New since the last tester-facing state and worth watching: 3.98 float skinned normals touch EVERY
+  skinned mesh, and static DBO props are skinned (SKINDUMMY) - any shading change on props or
+  characters traces there first. 3.97 gives the library preview its own frame constants through an
+  engine hook - preview-only by construction.
+- Ask for: the exact level and object, a screenshot, `Guru-Crash.log` / `dred_report.txt` if anything
+  crashed or hung, and the GPU model - baselines here are all from the RX 9060 XT.
