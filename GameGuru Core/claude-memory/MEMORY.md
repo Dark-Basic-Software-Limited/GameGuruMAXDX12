@@ -1,13 +1,6 @@
 # GameGuruMAX Project Memory
 
-> ★★★ **RESUMING 2026-09-24? Read `GameGuru Core/RESUME_2026-09-24.md` FIRST** — the pre-alpha gate is
-> effectively CLEAN (0923b: 19/19, 296.7 MB headroom) and three decisions are waiting: run
-> `prealpha_clean.sh --apply`, fix §3.86 (Test Game leaves the terrain/tree LOD unrestored — 35% of
-> geometry gone for the rest of the session), and re-measure the new 1024+blur2 reflection default on
-> the AMD card, which this rig is too GPU-idle to judge.
-> ⚠ Two instruments corrected: Z Island's POLYS spread is **4120, not 528**, and the gate's
-> `polysrange` hatch samples only 3 times so it fails on luck; and **cross-run driver VRAM cannot
-> resolve ~27 MB** — 7 of 19 demos went DOWN after a change that can only add memory.
+> ★★★ **RESUMING? Read `GameGuru Core/RESUME_2026-09-24.md` FIRST** — 09-24 evening: gate effectively CLEAN (0924), everything pushed, Lee preparing a MANUAL tester build. §3.86 CLOSED by 3.96 (soak confirmed). Open decisions: two levels baked at a downgraded terrain preset; Lee does file cleanup himself.
 
 > **Resuming work? Read [Next action immediate](project_next_action_immediate.md) FIRST** — current state, next step, do-not list.
 > ⚠⚠ **TWO MACHINES since 08-31** — run ``[ -d /d/DEV/BUILDS ] && echo LAPTOP || echo DESKTOP`` before trusting any path, GPU or perf number. **DESKTOP = RX 9060 XT, the primary box and the source of every recorded FPS/VRAM baseline**; LAPTOP = GTX 1050, set up 08-31 and unused since, where those baselines are INVALID. Full table: [Machine migration](project_machine_migration.md).
@@ -60,7 +53,7 @@
 > one check — this was found because a counter matched too exactly.
 > [Rendering rules](project_rules_rendering_dx12.md) · [Debugging habits](project_rules_debugging.md)
 
-> ★★★ **[Test Game never restores the quality preset](project_testgame_preset_not_restored.md)** — **OPEN 09-23**.
+> ★★★ **[Test Game never restores the quality preset](project_testgame_preset_not_restored.md)** — **CLOSED 3.96 (09-24), soak-confirmed**.
 > Test Level → ESC → load another level = up to **35% of its triangles gone** for the rest of the session.
 > The restore at `M-GridEdit_part2.cpp:1790` is a **comment**. ★ A wrong explanation in a script comment hid
 > it for 4 days. ★ The tree pool explained it perfectly and was NOT it. ⚠ Every SOAK POLYS number in this

@@ -14692,3 +14692,69 @@ the value predicted through the tonemap.
 
 ★ **Test the STATE, not an identity that stands in for it** - the same shape as a cache keyed on a
 pointer that gets freed and reallocated at the same address.
+
+---
+
+## 3.100 Switch Escape generates a working nav mesh - verified in-game - 2026-09-24
+
+Lee dropped a zombie into Switch Escape and it "could not find" a nav mesh. Checked on the SHIPPED
+demo (Demo Games tab -> editor -> Test Game), querying from inside the game with the same Lua API
+the zombie behaviours use (`RDIsWithinMesh`, `RDFindPath`) through `RUN_LUA`:
+
+| check | result |
+|---|---|
+| player position (26, 37, 99) on the mesh | yes - within AND over, mesh surface y = 2.9 (the floor) |
+| 4000 x 4000 grid at 100 spacing around the player | 129 of 1681 points on the mesh (~1.3 M sq units of floor) |
+| a path from the player to every on-mesh grid point | 106 of 128 reachable; the other 22 are disconnected pockets |
+| "Disable Navmesh Generation" (`visuals.EnableZeroNavMeshMode`, same flag as the terrain panel's "Do Not Generate Navmesh") | OFF in all three copies (shipped, writable area, My Games) |
+| does dropping a character force a rebuild? | yes - characters feed the static-arrangement hash (position, angle, scale) and widen the build area |
+
+**Generation works.** The zombie behaviours test `RDIsWithinMesh` at the ZOMBIE's own position
+(master interpreter condition `withinnavmesh`), so "could not find one" means that spot is not
+walkable nav mesh (furniture top, outside the building, or an unconnected pocket) - not that no mesh
+was built. Lee: "All good."
+
+★ Tools worth knowing: `RUN_LUA return ...` queries the live game; `PRESS_ESCAPE` (not
+`PRESS_KEY ESCAPE`) leaves Test Game; the nav builder's own error log (`tileLog`) is compiled OUT, so
+a failed build is silent - query the mesh, do not wait for a message.
+
+---
+
+## 3.101 Overnight pre-alpha run 0924 - results (written up 2026-09-24 evening)
+
+Pre-registered in `tools/prereg_0924_overnight.txt`; raw in `tools/sweep_0924_overnight.txt` and
+`tools/soak_0924_overnight.txt`. Game `7297f435` (3.96).
+
+**Gate: effectively CLEAN, identical to 0923b.** C1 19/19, C3 worst 3799.3 MB (Aztec Game Kit in
+Test Game), headroom 296.7 MB, C4 19/19. C2's only miss is Z Island at 320304 - the SAME value as
+0923b and inside that demo's measured spread (317344..321464, 12 samples, notes 3.95). The prediction
+that the fresh gate would not move was correct: every other POLYS value matched exactly.
+
+**Soak: the pre-registered 3.96 prediction CONFIRMED, exactly.** After a Test Game round trip the
+following levels now load at their full fresh-launch geometry:
+
+| demo | soak 0923 (before 3.96) | soak 0924 (after) | fresh launch |
+|---|---|---|---|
+| Operation Amazon | 315943 | **486602** | 486602 |
+| RPG Template | 351661 | **540778** | 540778 |
+| Foggy Forest | 1065175 | **1248844** | 1248844 |
+
+⚠ Soak VRAM is ADVISORY (sequential-load accumulation, notes 3.66): Operation Amazon reads 4192 MB
+editor / 4236 MB game in the soak, as it did before (4176 / 4216). With the geometry restored it is
++16..20 MB; RPG Template +95 MB. A fresh launch of each is under 4096.
+
+⚠ **Phase 2 (PLAY GAME standalone on 4 demos) TESTED NOTHING.** Every attempt returned "Not in
+storyboard or hub view, cannot Play Game" - the harness verb needs the storyboard, and the script
+drove it from the editor. The crash log md5 was unchanged, but that is a vacuous pass. PLAY GAME
+remains exercised only by hand. Export Game is still untested since 08-16.
+
+### Content findings from the overnight audit (for Lee, not acted on)
+
+1. **Two levels are already baked at a downgraded terrain preset.** 3.96 stops the mutation happening
+   again; it does not repair levels it already happened to. `operation amazon` (SHIPPED) carries
+   exactly the MED signature (32 / 16.0 / 0.75 / 1 / 0.62); `testpro2level` carried LOW. Resetting
+   them is a content edit - Lee's decision.
+2. **Editing a shipped demo saves to the writable area** (`Documents/GameGuruApps/GameGuruMAX/Files/
+   mapbank`), not the build area. Correct and intended, but a tester who edits a demo, saves, and
+   reopens "the demo" from Demo Games gets the ORIGINAL back, while their edited copy sits under My
+   Games. Worth one line in the tester notes.

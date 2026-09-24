@@ -1,0 +1,34 @@
+PRE-REGISTERED BEFORE THE 2026-09-24 OVERNIGHT PRE-ALPHA RUN (written before any run started)
+
+Build: game 7297f435, engine 38c13913. DESKTOP (RX 9060 XT), 24.2 h since boot, dred.txt armed.
+Tag 0924. Lee is asleep; he returns Thursday to prepare the pre-alpha for internal testers.
+
+WHAT CHANGED SINCE THE 0923b GATE (which was effectively clean, 296.7 MB headroom):
+  3.96 - Test Game now RESTORES the terrain and tree performance params on the way back, so the
+         quality preset can no longer leak into the editor or be written into the level by a
+         later File>Save. Closes 3.86.
+
+C1/C2/C3/C4 ARE ALL PREDICTED UNCHANGED FROM 0923b, and here is the reasoning, stated before the
+numbers exist:
+
+  The FRESH-LAUNCH gate relaunches MAX for every demo and measures POLYS/VRAM in the EDITOR
+  BEFORE it enters Test Game. 3.96 only acts on the way BACK from Test Game. So on this sweep it
+  should be invisible: C2 identical to 0923b, C3 within normal scatter of 3799.3 MB worst case.
+
+  A C2 MOVE ON THE FRESH SWEEP WOULD NOT BE EXPLAINED BY 3.96 and is a real finding.
+
+  THE SOAK IS DIFFERENT AND IS WHERE 3.96 SHOULD SHOW. The single-session soak walks all 19 demos
+  through editor -> Test Game -> editor in ONE launch, so before 3.96 every demo after the first
+  was loaded with the LOW preset still applied. PREDICTION: soak POLYS should now be HIGHER than
+  the 0923 soak on the vegetated demos, and closer to the fresh-launch figures. Specifically
+  Operation Amazon 315943 -> nearer 486602, and RPG Template 351661 -> nearer 540778.
+  If the soak POLYS does NOT move, 3.96 is not doing what the save test says it does.
+
+  ⚠ That makes the soak's POLYS column NOT comparable to the 0919 or 0923 soaks. Amended in
+  writing, here, before the run.
+
+FPS is recorded, not gated, and at 24.2 h uptime is not comparable across runs (3.24b).
+
+NOT DOING, ON LEE'S EXPLICIT INSTRUCTION: no file cleanup of any kind. prealpha_clean.sh will NOT
+be run, not even in dry-run-then-apply form. Any test that must write a shipped demo backs it up
+first and restores it afterwards with an md5 check.

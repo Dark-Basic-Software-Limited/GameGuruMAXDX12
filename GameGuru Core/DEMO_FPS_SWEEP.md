@@ -16,6 +16,14 @@ that FPS is meaningless.
 (LOAD / POLYS / VRAM / GAME) are unaffected — the gate excludes FPS on purpose.
 
 
+## 0924 - OVERNIGHT GATE + SOAK after 3.96 (game `7297f435`)
+
+Gate: C1 19/19 · C2 18/19 exact, Z Island 320304 (identical to 0923b, inside its measured spread) ·
+C3 worst **3799.3 MB**, headroom **296.7 MB** · C4 19/19 - effectively CLEAN. Soak: 3.96 confirmed -
+Operation Amazon 486602, RPG Template 540778, Foggy Forest 1248844, all now equal to their fresh-launch
+POLYS (they read 315943 / 351661 / 1065175 before). PLAY GAME phase tested nothing (harness needs the
+storyboard). Full write-up notes 3.101; raw `tools/sweep_0924_overnight.txt`, `tools/soak_0924_overnight.txt`.
+
 ## 0923b — PRE-ALPHA GATE after 3.87-3.94b (game `66b3dd7c`, engine `38c13913`)
 
 C1 19/19 · C2 **18 of 19 exact or in-range; the 19th is Z Island's own non-determinism, re-measured
