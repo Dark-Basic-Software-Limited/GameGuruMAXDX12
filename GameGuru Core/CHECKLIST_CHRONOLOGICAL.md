@@ -290,7 +290,7 @@ DX12 ported them later (most in the 3.44–3.50 parity round, 2026-09-16/17).
 | 227 | **Reduction Scale no longer glitches distant characters** - tick Lower Animation, slide Reduction Scale to 100, watch a character in the distance past the 10 s settling period. It should step at a low, chunky rate but always as a WHOLE character - never two poses flickering, never the head and feet in different places | L |
 | 228 | **The Object Library live preview animates at full rate** - hover a character thumbnail with *Lower Animation & LUA Speed* ticked and Reduction Scale high. The preview must animate smoothly regardless: it is exempt from every animation throttle while it is on screen, and the throttle returns the moment you move off the thumbnail | U |
 | 229 | **Library previews no longer take their lighting from the level** - hover a large object (a Buildings Collection house) in a bright level and in a dark one: it must look the same in both and never white-out. The loaded level's fog, sun and ambient must not change the preview | U |
-| 230 | **Box contents / flat -Z faces are no longer black** - place *Pistol Ammo* (Max Collection > Weapons) in a level and look into the open end: brass cartridges and a blue tray, not a black hole. Same in the library preview | U |
+| 230 | **Box contents / flat -Z faces are no longer black** - place *Pistol Ammo* (Max Collection > Weapons) in a level and look into the open end: brass cartridges and a blue tray, not a black hole. Same in the library preview | L |
 
 ---
 

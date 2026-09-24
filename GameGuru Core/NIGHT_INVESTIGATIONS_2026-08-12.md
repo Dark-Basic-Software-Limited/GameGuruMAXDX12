@@ -14635,3 +14635,16 @@ objects that is has NOT been counted.
 ★★ **When rebuilding the data changes nothing, the shader is not reading that data.** Find what it
 IS reading before theorising about the data - here, the skinning output.
 ★ **A health check that cannot see NaN reports NaN as healthy.** Test `x == x`.
+
+### ★ LEE-CONFIRMED 2026-09-24 18:47 - "It works great now"
+
+The Pistol Ammo box's cartridges and blue tray render in the full-size Object Library Preview (his
+screenshot at 18:47), under the 3.98 stage.
+
+**NICE TO HAVE, recorded at Lee's request, NOT scheduled:** regenerate the library thumbnails
+under the DX12 stage for a DX12 release, so the static thumbnail and the live preview line up
+exactly. 3.97 measured why they cannot line up today - the DX11 thumbnails disagree with EACH OTHER
+by ~2x at matched angles (buildings want 0.7x, props 1.3-1.5x), so no single DX12 stage can match
+them all. A regeneration pass would make the thumbnail and the hover the same picture by
+construction. It needs the GPU->CPU readback that thumbnail-to-disk has lacked since the port
+(3.83) - the preview render target is already exactly what it would read.
