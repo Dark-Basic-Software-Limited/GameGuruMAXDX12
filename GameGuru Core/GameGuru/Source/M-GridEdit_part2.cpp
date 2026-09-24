@@ -1041,6 +1041,31 @@ void editor_previewmapormultiplayer_initcode ( int iUseVRTest )
 	t.visuals = t.gamevisuals;
 
 	gggrass_save_params = gggrass_global_params;
+	// ★★★ GGMAX 3.96: SNAPSHOT THE TERRAIN AND TREE PARAMS TOO - THE PRESET BELOW STAMPS
+	// THEM AND THEY WERE NEVER PUT BACK, AND THEY ARE SAVED INTO THE LEVEL FILE.
+	//
+	// GRASS was snapshotted here from the start and restored on the way out. Terrain and trees
+	// were not, and SetGlobalGraphicsSettings dials all three (M-GridEdit_part0.cpp:1775-1777).
+	//
+	// ⚠⚠ THIS IS NOT COSMETIC - IT REACHES DISK. Measured end to end on Switch Escape:
+	// load the shipped level, one Test Level round trip, File>Save, and five of six terrain
+	// fields in the level's ggterrain.dat had changed to the LOW preset's values:
+	//     segments_per_chunk 64 -> 16     segment_size 8.0 -> 16.0
+	//     detailScale 0.586464 -> 0.5     detailLimit 0 -> 2     tilingPower 0.56 -> 0.68
+	// The chain is SetGlobalGraphicsSettings -> GGTerrain_SetPerformanceMode writes the GLOBAL
+	// params -> CheckParams copies global to local (GGTerrain_part0.cpp:3539/3577/3612) ->
+	// GGTerrain_SaveSettings serialises the LOCALS (:5769). A tester who tests their level and
+	// saves bakes the downgrade in permanently, and nothing tells them.
+	//
+	// ★ It had already happened to Lee's own testpro2level, which carried the LOW signature on
+	// all six fields while NOT ONE of the 21 shipped demos did. That mismatch is what turned a
+	// suspicion into a measurement.
+	{
+		ggterrain_save_params = GGTerrain::ggterrain_global_params;
+		ggterrain_save_render_params = GGTerrain::ggterrain_global_render_params;
+		ggterrain_save_render_params2 = GGTerrain::ggterrain_global_render_params2;
+		ggtrees_save_params = GGTrees::ggtrees_global_params;
+	}
 
 	// GGMAX 3.87: THE TEST GAME QUALITY PRESET MUST NOT DESTROY THE LEVEL'S AUTHORED POST PROCESSING.
 	//
@@ -1898,6 +1923,16 @@ void editor_previewmapormultiplayer_afterloopcode ( int iUseVRTest )
 	t.visuals.fLevelDifficulty = t.gamevisuals.fLevelDifficulty;
 	
 	gggrass_global_params = gggrass_save_params;
+	// GGMAX 3.96: and put terrain and trees back, so the editor returns to the level's OWN
+	// settings and a later File>Save writes what the author had rather than the Test Game preset.
+	// This is also what restores ggtrees lod_dist 1000 -> 3000, i.e. the 35% of triangles that
+	// went missing from every level loaded after a test game (notes 3.86).
+	{
+		GGTerrain::ggterrain_global_params = ggterrain_save_params;
+		GGTerrain::ggterrain_global_render_params = ggterrain_save_render_params;
+		GGTerrain::ggterrain_global_render_params2 = ggterrain_save_render_params2;
+		GGTrees::ggtrees_global_params = ggtrees_save_params;
+	}
 
 	for (int iL = 0; iL < 32; iL++) 
 	{

@@ -253,6 +253,12 @@ extern GGTerrainExtraParams ggterrain_extra_params;
 extern GGTerrainParams ggterrain_global_params; 
 extern GGTerrainRenderParams ggterrain_global_render_params;
 extern GGTerrainRenderParams2 ggterrain_global_render_params2;
+// GGMAX 3.96: Test Game round-trip snapshot. The quality preset stamps the globals above and
+// nothing put them back, and they are serialised into the level by GGTerrain_SaveSettings - so a
+// File>Save after a test game silently rewrote the level's terrain settings to the preset's.
+extern GGTerrainParams ggterrain_save_params;
+extern GGTerrainRenderParams ggterrain_save_render_params;
+extern GGTerrainRenderParams2 ggterrain_save_render_params2;
 extern int ggterrain_draw_enabled;
 extern int ggterrain_render_reference;
 extern int ggterrain_use_wicked_terrain;

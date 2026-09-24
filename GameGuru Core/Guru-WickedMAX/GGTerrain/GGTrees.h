@@ -78,6 +78,9 @@ namespace GGTrees
 	};
 
 	extern GGTreesParams ggtrees_global_params; // modify this anywhere
+	// GGMAX 3.96: Test Game round-trip snapshot - restoring this is what puts lod_dist back to
+	// 3000 instead of leaving it at the preset's 1000 for the rest of the session.
+	extern GGTreesParams ggtrees_save_params;
 	extern int g_treePoolStressFrames; // debug: force pool rescan for N frames (SET_TREES stress)
 	extern uint32_t g_treePoolSize;    // perf knob: effective tree pool size (nearest-N drawn); applies on next pool setup (level reload). Lower = fewer trees + big CPU win.
 

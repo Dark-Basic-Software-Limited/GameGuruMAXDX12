@@ -743,7 +743,14 @@ struct TerrainVertex
 #define GGTERRAIN_CHUNK_FUTURE_VISIBLE   0x08
 
 GGTerrainExtraParams ggterrain_extra_params; // Carefully modify this one anywhere, used in back and fourth communication
-GGTerrainParams ggterrain_global_params; // Modify this one anywhere
+GGTerrainParams ggterrain_global_params;
+// GGMAX 3.96: snapshot taken on Test Game ENTRY and restored on the way back, so the quality
+// preset the test game applies cannot survive into the editor - and cannot be written into the
+// level by a later File>Save. Measured: 5 of 6 fields in a saved ggterrain.dat had changed to
+// the LOW preset without the author touching anything. See M-GridEdit_part2.cpp.
+GGTerrainParams ggterrain_save_params;
+GGTerrainRenderParams ggterrain_save_render_params;
+GGTerrainRenderParams2 ggterrain_save_render_params2; // Modify this one anywhere
 GGTerrainRenderParams ggterrain_global_render_params; // Modify this one anywhere
 GGTerrainRenderParams2 ggterrain_global_render_params2; // Modify this one anywhere
 

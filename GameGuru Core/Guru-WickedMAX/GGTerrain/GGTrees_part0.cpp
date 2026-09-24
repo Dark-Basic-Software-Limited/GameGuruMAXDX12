@@ -77,6 +77,9 @@ namespace GGTrees
 #define GGTREES_UNDOREDO
 
 GGTreesParams ggtrees_global_params;
+// GGMAX 3.96: snapshot/restore partner for the Test Game round trip - this is what puts lod_dist
+// back to 3000 instead of leaving it at the preset's 1000. See M-GridEdit_part2.cpp.
+GGTreesParams ggtrees_save_params;
 GGTreesInternalParams ggtrees_internal_params;
 
 int ggtrees_draw_enabled = 1;

@@ -14454,3 +14454,80 @@ see the effect size before you commit to it.**
 
 C3 is unaffected - it gates on the absolute worst case, 3799.3 MB against 4096.
 
+---
+
+## 3.96 Test Game was silently rewriting the level's terrain settings to disk - FIXED - 2026-09-24
+
+§3.86 finally closed, and it turned out to be worse than the label I had put on it.
+
+### ★★★ My own framing was the thing that hid it
+
+I had this filed as "35% of geometry lost after a Test Game round trip". Lee's reply was the useful
+one: *"35% lost polygons sounds serious but I have not seen this in my own manual tests."*
+
+He was right not to have seen it. The 35% is almost entirely the tree mesh-to-billboard handover -
+`lod_dist` 3000 -> 1000 - and the far-tree work of 2.95-3.07 exists precisely to make that swap
+invisible. Operation Amazon lost 179 objects at ~950 triangles each, and they are all still drawn,
+as billboards. **The poly counter loses a third of the geometry and the eye loses almost nothing.**
+
+★ **A measurement stated as a symptom is a mis-filed bug.** "35% geometry loss" made it sound
+like missing content and made the real defect look like a performance footnote. Lee's "I haven't
+seen it" was the correction, and chasing WHY he hadn't seen it is what found the actual problem.
+
+### The actual problem: it reaches disk
+
+```
+SetGlobalGraphicsSettings          writes ggterrain_global_* and ggtrees_global_*
+CheckParams :3539 :3577 :3612      Copy( global -> local ), all three structs
+GGTerrain_SaveSettings :5769       serialises the LOCALS into the level's ggterrain.dat
+```
+
+Measured end to end on the shipped Switch Escape - load, one Test Level round trip, File>Save:
+
+| field | shipped | after | |
+|---|---|---|---|
+| segments_per_chunk | 64 | **16** | LOW |
+| segment_size | 8.0 | **16.0** | LOW |
+| detailScale | 0.586464 | **0.5** | LOW |
+| detailLimit | 0 | **2** | LOW |
+| tilingPower | 0.56 | **0.68** | LOW |
+
+**Five of six fields, all to exactly the LOW preset.** A tester who tests their level and saves
+bakes the downgrade in permanently, and nothing tells them.
+
+★★ **The content had been telling us for weeks.** Lee's own testpro2level carried the LOW
+signature on all six fields while NOT ONE of the 21 shipped demos did. **An "is this value normal?"
+question is often answerable by looking at the corpus** - that comparison turned a suspicion into a
+measurement in one command, before any test was run.
+
+### ⚠⚠ And the first attempt at the test returned a FALSE NEGATIVE
+
+The first save test compared md5 before and after on the build-area `mapbank` file and got
+**byte-identical** - which reads as "no mutation, stand down". It was wrong: a demo edited from the
+demo tab saves into the **writable area** (`Documents/GameGuruApps/.../mapbank`), so the file I was
+diffing was never written at all.
+
+★★★ **What saved it was distrusting a clean result, not distrusting a dirty one.** The
+tell was the success message - `SAVE_LEVEL completed without crashing` says the call did not crash,
+not that it saved - plus an md5 that was *exactly* identical, which a zip rewrite essentially never
+is. **A pass from an instrument you have not proved is pointed at the right target is not a pass.**
+Third instance this week, after the 38 stale screenshots and the overwritten dump row.
+
+### The fix
+
+Mirror what GRASS already did and nobody extended: snapshot the terrain and tree params on Test
+Game entry beside `gggrass_save_params`, restore them on the way back beside
+`gggrass_global_params = gggrass_save_params`. Grass had been protected from day one; terrain and
+trees never were, in the same function, twenty lines apart.
+
+Verified by re-running the exact test that convicted it: **all six fields now survive**. This also
+puts `lod_dist` back to 3000, which is the 35% - so §3.86 is closed by the same change.
+
+⚠ Two build slips worth recording, both mine. I stripped three bytes from `GGGrass.cpp`
+assuming a BOM it does not have (it is LF, no BOM) and rewrote it as CRLF - caught immediately by
+the compiler, restored from git. Then I declared the externs in the global namespace while the
+definitions sat inside `namespace GGTerrain`, which links cleanly as a *missing* symbol rather than
+a wrong one. ★ **Honour BOM and line endings as FOUND; never assume them per-file** - the helper
+that does this correctly is in every other patch script from this session, and I hand-rolled a
+worse one here.
+
