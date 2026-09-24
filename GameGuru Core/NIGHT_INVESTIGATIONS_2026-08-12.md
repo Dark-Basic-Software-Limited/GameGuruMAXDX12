@@ -14782,3 +14782,23 @@ with THEIR results.
   engine hook - preview-only by construction.
 - Ask for: the exact level and object, a screenshot, `Guru-Crash.log` / `dred_report.txt` if anything
   crashed or hung, and the GPU model - baselines here are all from the RX 9060 XT.
+
+---
+
+## Pre-alpha teaser video "Bugs Guaranteed" - 2026-09-24 evening
+
+At Lee's request, for the tester release: a 41-second 1080p MP4 from his six Switch Escape
+screenshots (`Downloads\A-..F-*.jpg` - the file names are the stage directions: conversation
+started / man speaks first / female replies / man says something profound / female wants to believe /
+both agree, universal truth). The joke, in his words: it is impossible to find bugs because Lee did the
+work - and BECAUSE Lee did the work, bugs are guaranteed, as is our right.
+
+Delivered to `Downloads\GameGuruMAX_PreAlpha_BugsGuaranteed.mp4`. Windows SAPI voices (Zira = the
+Futuristic Girl, David = the Futuristic Guy; the last line spoken by both at once), captions coloured
+to each character's chest lights (pink / teal / white for both), viewport-cropped slow push-ins, a
+synthesised "dun-dun-DUNNN" on the reveal, end card BUGS GUARANTEED. Source and rebuild steps in
+`tools/prealpha_video/` (README.txt). Nothing in the product changed.
+
+⚠ The first cut used the ATTACHMENT order, which differed from Lee's A-F in five of six places; the
+labelled files turned up in Downloads and the video was rebuilt in his order. ★ When someone says
+their files are labelled, find the labels before assuming an order.
