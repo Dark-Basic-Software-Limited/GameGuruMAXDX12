@@ -19,3 +19,7 @@ metadata:
 - ⚠ MSVC **C1061** in harness dispatch — hoist new commands into helper chains, don't extend the ladder. ⚠ Combined heredocs in one Bash call fail with "unexpected EOF" — split them.
 - ⚠ `SELECT_ENTITY` is by index, not visibility. ⚠ Verify subagent claims by grep; Windows `tail -f` emits phantom partial lines. ⚠ `tail` in a pipeline withholds a background script's output until it exits, and killing the tail DISCARDS the buffer — redirect to a FILE.
 - ⚠ **`cmd //c "call ... && msbuild ..."` from Git Bash can run NOTHING, silently** — write a .bat file and run that (2026-08-31, OGG libs). ⚠ **`cp -r` gives outputs fresh mtimes, so msbuild `/t:Build` on a copied tree is a silent no-op** — force `/t:Rebuild`, prove with md5sum.
+- ★★ **Launch MAX as `(cd "$D" && exec ./GameGuruMAX.exe) > /dev/null 2>&1 < /dev/null &`.** A plain
+  `cd "$D" && ./GameGuruMAX.exe > /dev/null 2>&1 &` backgrounds a SUBSHELL that keeps the caller's stdout
+  pipe open until MAX exits, so `script | tail` never returns — cost Lee two ~7-minute waits on 09-24.
+  Also: `GET_STATE` replies end in CRLF — strip `` before comparing. Both fixed in `tools/harness/lib.sh`.
