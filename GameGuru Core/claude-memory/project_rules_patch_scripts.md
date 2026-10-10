@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 9a28c586-4c13-4447-916e-7fb51301bfa8
-  modified: 2026-09-16T11:52:15.052Z
+  modified: 2026-10-10T16:16:56.477Z
 ---
 
 # ★★★ Rules for editing source files with a script
@@ -79,4 +79,4 @@ See also [[project-rules-environment]] and [[project-porting-clusters]].
 
 ## ⚠ HIT AGAIN 2026-10-10 (3.104)
 
-A python-in-bash `<< 'EOF'` patch collapsed `"thumbbank\lastnewlevel.jpg"` to a single backslash: `\l` is C4129, the path lost its separator and a CopyFileA silently failed - caught only by the harness run (node titled, no thumb file). **Write patch scripts with the Write tool, or use the Edit tool; never put C string literals with backslashes through a heredoc.** After any scripted edit, grep the added lines for `"...\x..."` single backslashes and for comments ending in `\` (a line continuation that comments out the next line).
+A python-in-bash `<< 'EOF'` patch collapsed the C literal's doubled backslash (thumbbank, two backslashes, lastnewlevel.jpg) to ONE: `\l` is C4129, the path lost its separator and a CopyFileA silently failed - caught only by the harness run (node titled, no thumb file). **Write patch scripts with the Write tool, or use the Edit tool; never put C string literals with backslashes through a heredoc.** After any scripted edit, grep the added lines for `"...\x..."` single backslashes and for comments ending in `\` (a line continuation that comments out the next line).
