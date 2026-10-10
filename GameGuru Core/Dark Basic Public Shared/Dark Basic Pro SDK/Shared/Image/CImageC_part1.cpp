@@ -827,9 +827,20 @@ DARKSDK bool LoadImageCoreRetainName ( char* szRealName, char* szFilename, int i
 	// copy memory
 	memcpy ( test->szLongFilename,         szTest,         sizeof ( char ) * iLen1 );	// copy the full dir to the long filename
 
+	// GGMAX 3.103: an ABSOLUTE name ("C:\..." or UNC "\\server\...") already is the long filename.
+	// Prefixing the CWD made it "CWD\C:\..." - useless, and long enough to run past this 256-byte
+	// buffer into szShortFilename, after which both DX12 lookups fail and the image draws blank.
+	// The DX12 storyboard thumbs load by absolute path (a9171fbd, 3.103).
+	const bool bGGAbsoluteName = ( iLen2 > 2 && pNameForInternalList[1] == ':' )
+							  || ( pNameForInternalList[0] == '\\' && pNameForInternalList[1] == '\\' );
 	// U74 BETA9 - 030709 - fix longfilename if full dir has no \ and filename does not start with
 	// memcpy ( test->szLongFilename + iLen1, szFilename + 1, sizeof ( char ) * iLen2 );	// append the filename onto the long file name
-	if ( pNameForInternalList[0]!='\\' )
+	if ( bGGAbsoluteName )
+	{
+		memset ( test->szLongFilename, 0, sizeof ( char ) * 256 );
+		memcpy ( test->szLongFilename, pNameForInternalList, sizeof ( char ) * ( iLen2 < 255 ? iLen2 : 255 ) );
+	}
+	else if ( pNameForInternalList[0]!='\\' )
 	{
 		if ( szTest[iLen1]!='\\' )
 		{

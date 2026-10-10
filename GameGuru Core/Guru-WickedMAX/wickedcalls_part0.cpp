@@ -2405,6 +2405,11 @@ void WickedCall_SetTexturePath(LPSTR pPath)
 
 bool WickedCall_CaptureBackbufferRegionToJPG(int x, int y, int w, int h, const char* outputPath)
 {
+	return WickedCall_CaptureBackbufferRegionToJPGScaled(x, y, w, h, outputPath, 0, 0);
+}
+
+bool WickedCall_CaptureBackbufferRegionToJPGScaled(int x, int y, int w, int h, const char* outputPath, int maxOutW, int maxOutH)
+{
 	using namespace wi::graphics;
 	GraphicsDevice* device = GetDevice();
 	if (!device) return false;
@@ -2470,6 +2475,45 @@ bool WickedCall_CaptureBackbufferRegionToJPG(int x, int y, int w, int h, const c
 		const uint8_t* srcRow = texturedata.data() + (size_t)(y + row) * srcRowPitch + (size_t)x * 4;
 		uint8_t* dstRow = croppedData.data() + (size_t)row * dstRowPitch;
 		std::memcpy(dstRow, srcRow, dstRowPitch);
+	}
+
+	// GGMAX 3.103: thumbnails and map snapshots are opaque - the backbuffer's alpha is whatever the
+	// last composite left there, and a PNG would keep it (DX11 saved these with g_bDontUseImageAlpha).
+	for (size_t i = 3; i < croppedData.size(); i += 4) croppedData[i] = 255;
+
+	// GGMAX 3.103: optional box-filter downscale, so a storyboard thumb captured from the whole
+	// visible view is not stored as a 2 MB full-resolution JPG.
+	if (maxOutW > 0 && maxOutH > 0 && (w > maxOutW || h > maxOutH))
+	{
+		const float fs = (std::min)((float)maxOutW / (float)w, (float)maxOutH / (float)h);
+		const int ow = (std::max)(1, (int)(w * fs + 0.5f));
+		const int oh = (std::max)(1, (int)(h * fs + 0.5f));
+		wi::vector<uint8_t> scaled((size_t)ow * oh * 4);
+		for (int oy = 0; oy < oh; ++oy)
+		{
+			const int sy0 = oy * h / oh;
+			const int sy1 = (std::max)(sy0 + 1, (oy + 1) * h / oh);
+			for (int ox = 0; ox < ow; ++ox)
+			{
+				const int sx0 = ox * w / ow;
+				const int sx1 = (std::max)(sx0 + 1, (ox + 1) * w / ow);
+				uint32_t sum[4] = { 0, 0, 0, 0 };
+				for (int sy = sy0; sy < sy1; ++sy)
+				{
+					const uint8_t* px = croppedData.data() + ((size_t)sy * w + sx0) * 4;
+					for (int sx = sx0; sx < sx1; ++sx, px += 4)
+					{
+						sum[0] += px[0]; sum[1] += px[1]; sum[2] += px[2]; sum[3] += px[3];
+					}
+				}
+				const uint32_t n = (uint32_t)((sy1 - sy0) * (sx1 - sx0));
+				uint8_t* dst = scaled.data() + ((size_t)oy * ow + ox) * 4;
+				for (int c = 0; c < 4; ++c) dst[c] = (uint8_t)(sum[c] / n);
+			}
+		}
+		croppedData.swap(scaled);
+		w = ow;
+		h = oh;
 	}
 
 	// Save as JPG using the raw-data overload with RGBA8 descriptor

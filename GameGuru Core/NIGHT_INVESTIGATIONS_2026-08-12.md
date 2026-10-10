@@ -14895,3 +14895,71 @@ code was never told.
 ★ `CopyTexture` / `CopyTextureRegion` do not range-check the subresource outside the debug layer - an
 out-of-range slice is a silent write into a neighbour. The guard now sits in the shared loader.
 ★ Check an instrument's WIDTH: a 64-bit field printed with `%u` reported `treebits=1` while bit 37 was set.
+
+**Lee-confirmed 2026-10-10:** "Works now, well done."
+
+---
+
+## 3.103 Storyboard "Take Screenshot" never reached the level node - 2026-10-10 (tester report #2)
+
+**Report** (Lee, TESTPRO2): level node > Take Screenshot > Snapshot Mode > Take Screenshot, back to the
+storyboard - the node still says CLICK HERE. It should show the capture.
+
+**What happened.** The capture WORKED: `Documents/GameGuruApps/GameGuruMAX/Files/thumbbank/lastnewlevel.jpg`
+was written at the right moment (1280x720). The storyboard then checked `FileExist` (true) and loaded
+it into the preview slot with a RELATIVE `LoadImageSize("thumbbank\\lastnewlevel.jpg", ...)`. On DX12 the
+image layer builds that name from the CWD only and never consults the writables redirect, so the load
+failed, `bGotAThumb` stayed false and the storyboard skipped "Use New Screenshot ?" without a word.
+Behind it a second break: the "Use" handler saved the node thumb with `SaveImage`, which on DX12 writes
+nothing (no CPU-side texture - `SaveImageCore` skips it). Commit `a9171fbd` (Feb) had fixed exactly
+this pair for SCREEN-node thumbs (copy the file, load by absolute path); the level-node path in the same
+function never got it. And the capture itself was a centre crop of the composed backbuffer, so the
+"Snapshot Mode" title and a strip of the right panel were baked into the image (DX11 did the same under
+`DIGAHOLE`).
+
+**Fix (game only):**
+1. Preview: on DX12 the capture is loaded by absolute path into an evicted slot (the DX12 texture cache
+   is keyed by image id - without the eviction a second snapshot would show the first).
+2. "Use New Screenshot / Map Snapshot" on DX12: new `storyboard_UseNewSnapshotDX12` copies the FILES
+   (thumbbank -> `CreateBackBufferCacheNameEx` name -> `CopyToProjectFolder`) and loads the node's copy.
+   Only the capture's own path resolves with writables-to-root ON; the copies run with it OFF, as DX11
+   did, so a custom-folder project keeps its thumb.
+3. Project reopen: the node keeps a RELATIVE `projectbank\<game>\...` name, which the DX12 loader also
+   misses - the thumb would have vanished on the next reopen, and on demo projects the stock `.dds`
+   fallback would have put the OLD picture back (review finding). `storyboard_LoadThumbByRealPath`
+   retries by `GG_GetRealPath` BEFORE that fallback; also covers the a9171fbd screen thumbs.
+4. Image loader (`CImageC_part1.cpp`): an ABSOLUTE name no longer gets the CWD prefixed - "CWD\C:\..."
+   was useless and could run past the 256-byte `szLongFilename` into `szShortFilename` (long game /
+   level names), after which the image draws blank.
+5. Capture: a screenshot is the largest 16:9 rect centred in the dig-a-hole view (no UI), box-filtered
+   to 512x288 - the size the storyboard stores and its file name says (was a 1.5 MB 1280x720 q100 JPG).
+   A map snapshot is the backbuffer-centred square of side 39.37/50 x view height: the ortho projection
+   spans `50000 * UnitsToMeters(2E) / 1000` units for a 2E-unit map, so that is exactly the yellow
+   map-edge frame at ANY resolution (DX11's fixed 800 only fitted 1080p), clamped inside the view. It
+   gets a PNG twin (`thumbbank/lastnewlevel.png`) copied to `<level>.png` beside the `.fpm`, since
+   `SaveImage` cannot write it. Alpha forced opaque. `WickedCall_CaptureBackbufferRegionToJPGScaled`
+   added (no default arguments - `wickedcalls.h` has no include guard and is included twice in DarkLUA:
+   C2572 on the first build).
+
+**Verified** (exe `f1357e2367aa25cdae402194917bbc04`, TESTPRO2 > testpro2, harness-driven):
+
+| step | result |
+|---|---|
+| Take Screenshot > Take Screenshot | popup "Use New Screenshot ?" with a clean 512x288 capture of the whole view, no UI |
+| Use New Screenshot | node shows it; `mapbank_testpro2.fpm512x288.jpg` in thumbbank and `projectbank/TESTPRO2` |
+| Save Game Project, then full MAX restart + reopen | node still shows it (`project203.dat` stores the relative name) |
+| Take Map Snapshot > Use | `mapbank/testpro2.png` 630x630 opaque = exactly the framed map; node keeps its screenshot (as DX11) |
+
+Review workflow (three lenses, refuter per finding): 6 of 9 findings survived and are all fixed above
+(reload gap, writables flag, absolute-name overflow, map square past the view, a wrong comment about DX11).
+
+⚠ Same shape still open: the Terrain Generator's "Save New Level As" dialog (`M-GridEditB_part20.cpp`)
+loads `lastnewlevel.jpg` relatively and saves the new node's thumb with `SaveImage` - on DX12 a new
+level from the generator gets no preview and no thumb. Not reported yet; same cure.
+⚠ DX11 stored the map PNG upscaled to 2048x2048 (LoadImageSize + SaveImage); DX12 stores the native
+square (630 px in a 801-px-high window). Whatever displays it scales it.
+
+★ On DX12 the DBP image layer has two blind spots that look like success: a RELATIVE load of a
+writables-area file fails (CWD only), and `SaveImage` writes nothing. Copy files and load by absolute
+path - and check every caller, not the one that was reported (a9171fbd fixed one of three).
+★ A thumbnail that appears is not a thumbnail that persists - test save + full restart + reopen.

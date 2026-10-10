@@ -49,6 +49,11 @@ namespace GGTerrain { bool GGTerrainWicked_IsRingComplete(); } // GGMAX 2.68h: g
 #define USEFULLVIEWPORT
 #define DIGAHOLE
 
+// GGMAX 3.103: the dig-a-hole view (where the 3D scene shows through the procedural window), in
+// backbuffer pixels, kept for the snapshot capture: on DX12 the capture reads the composed
+// backbuffer, so a plain centre crop picked up the title and the right-hand panel.
+static ImRect g_rSnapshotHole;
+
 static inline ImVec2 ImGuiRotation(const ImVec2& v, float cos_a, float sin_a) { return ImVec2(v.x * cos_a - v.y * sin_a, v.x * sin_a + v.y * cos_a); }
 
 // GGMAX 2.62: Terrain Generator biome harness hooks (AutomationHarness TERRAINGEN_BIOME).
@@ -860,6 +865,8 @@ void procedural_new_level(void)
 			rD3D11DigAHole.top = 67.0;
 			rD3D11DigAHole.right = fPreviewImgSize;
 			rD3D11DigAHole.bottom = ImGui::GetWindowSize().y - 24.0;
+			g_rSnapshotHole = ImRect(ImGui::GetWindowPos() + ImVec2(2.0f, 67.0f),
+			                         ImGui::GetWindowPos() + ImVec2(fPreviewImgSize, ImGui::GetWindowSize().y - 24.0f));
 			#endif
 
 			ImGui::Columns(2, "ProceduralPreviewColumns", false);  //false no border
@@ -3895,19 +3902,69 @@ void procedural_new_level(void)
 						if (bPopModalTakeMapSnapshot == true) { grabx12 = 800; graby12 = 800; }
 						int iScreenW = GetDisplayWidth();
 						int iScreenH = GetDisplayHeight();
+						// GGMAX 3.103: the map snapshot's ortho projection spans 50000 * UnitsToMeters(2E) / 1000 units of
+						// height (E = editable size, M-TerrainNew_part5 map camera) and the map is 2E units, so the map
+						// square is 39.37/50 = 78.7% of the view height at ANY resolution - exactly the yellow edge
+						// frame. The fixed 800 only matched a ~1016-pixel-high view (1080p).
+						if (bPopModalTakeMapSnapshot == true) { grabx12 = graby12 = (float)(int)(iScreenH * (39.37f / 50.0f)); }
 						if (grabx12 > iScreenW) grabx12 = (float)iScreenW;
 						if (graby12 > iScreenH) graby12 = (float)iScreenH;
 						int iCapX = (int)((iScreenW * 0.5f) - (grabx12 * 0.5f)); if (iCapX < 0) iCapX = 0;
 						int iCapY = (int)((iScreenH * 0.5f) - (graby12 * 0.5f)); if (iCapY < 0) iCapY = 0;
+						// GGMAX 3.103: a SCREENSHOT is the largest 16:9 rect centred in the visible view,
+						// stored at 512x288. The capture reads the composed backbuffer (DX11 did the
+						// same under DIGAHOLE, GetBackBufferForGG), so a plain centre crop took in the
+						// "Snapshot Mode" title and a strip of the right-hand panel. The MAP snapshot keeps
+						// the backbuffer-centred square its top-down projection is framed on, shrunk if it
+						// would reach past the visible view (smaller screens).
+						int iOutMaxW = 0, iOutMaxH = 0;
+						if (bPopModalTakeMapSnapshot == false && g_rSnapshotHole.GetWidth() > 16.0f && g_rSnapshotHole.GetHeight() > 16.0f)
+						{
+							const float hw = g_rSnapshotHole.GetWidth(), hh = g_rSnapshotHole.GetHeight();
+							float cw = hw, ch = hw * 9.0f / 16.0f;
+							if (ch > hh) { ch = hh; cw = hh * 16.0f / 9.0f; }
+							iCapX = (int)(g_rSnapshotHole.Min.x + (hw - cw) * 0.5f); if (iCapX < 0) iCapX = 0;
+							iCapY = (int)(g_rSnapshotHole.Min.y + (hh - ch) * 0.5f); if (iCapY < 0) iCapY = 0;
+							grabx12 = (float)(int)cw;
+							graby12 = (float)(int)ch;
+							iOutMaxW = 512;   // the size the storyboard stores and shows (DX11 saved 512x288)
+							iOutMaxH = 288;
+						}
+						else if (bPopModalTakeMapSnapshot == true && g_rSnapshotHole.GetWidth() > 16.0f && g_rSnapshotHole.GetHeight() > 16.0f)
+						{
+							const float cx = iScreenW * 0.5f, cy = iScreenH * 0.5f;
+							float side = grabx12 < graby12 ? grabx12 : graby12;
+							const float fitx = 2.0f * ((cx - g_rSnapshotHole.Min.x) < (g_rSnapshotHole.Max.x - cx) ? (cx - g_rSnapshotHole.Min.x) : (g_rSnapshotHole.Max.x - cx));
+							const float fity = 2.0f * ((cy - g_rSnapshotHole.Min.y) < (g_rSnapshotHole.Max.y - cy) ? (cy - g_rSnapshotHole.Min.y) : (g_rSnapshotHole.Max.y - cy));
+							if (fitx < side) side = fitx;
+							if (fity < side) side = fity;
+							if (side >= 16.0f)
+							{
+								grabx12 = graby12 = (float)(int)side;
+								iCapX = (int)(cx - side * 0.5f); if (iCapX < 0) iCapX = 0;
+								iCapY = (int)(cy - side * 0.5f); if (iCapY < 0) iCapY = 0;
+							}
+						}
 						char destination[MAX_PATH];
 						strcpy(destination, "thumbbank\\lastnewlevel.jpg");
 						GG_SetWritablesToRoot(true);
 						GG_GetRealPath(destination, 1);
 						GG_SetWritablesToRoot(false);
-						bool bThumbOK = WickedCall_CaptureBackbufferRegionToJPG(iCapX, iCapY, (int)grabx12, (int)graby12, destination);
+						bool bThumbOK = WickedCall_CaptureBackbufferRegionToJPGScaled(iCapX, iCapY, (int)grabx12, (int)graby12, destination, iOutMaxW, iOutMaxH);
+						if (bPopModalTakeMapSnapshot == true)
 						{
-							// Known remainder: this helper shares the "thumbnails don't persist on
-							// DX12" gap with the storyboard thumbs (M-GridEditB_part22.cpp:3700).
+							// GGMAX 3.103: the map image is stored beside the level as <level>.png, and on DX12
+							// SaveImage cannot write it (no CPU-side texture) - capture a PNG twin to copy.
+							char destPng[MAX_PATH];
+							strcpy(destPng, "thumbbank\\lastnewlevel.png");
+							GG_SetWritablesToRoot(true);
+							GG_GetRealPath(destPng, 1);
+							GG_SetWritablesToRoot(false);
+							WickedCall_CaptureBackbufferRegionToJPG(iCapX, iCapY, (int)grabx12, (int)graby12, destPng);
+						}
+						{
+							// GGMAX 3.103: the storyboard side of this (load + keep the file on DX12) is fixed
+							// in M-GridEditB_part19.cpp storyboard_UseNewSnapshotDX12.
 							// The crash fix above does not depend on it — log so the gap is visible.
 							char dbg[MAX_PATH + 64];
 							sprintf(dbg, "TerrainGen thumb capture %s: %s", bThumbOK ? "OK" : "FAILED", destination);

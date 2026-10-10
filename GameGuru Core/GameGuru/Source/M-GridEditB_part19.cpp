@@ -1,4 +1,75 @@
-﻿void process_storeboard(bool bInitOnly)
+﻿// GGMAX 3.103: the DX12 half of the storyboard's "Use New Screenshot / Map Snapshot". The DX11
+// body round-trips the capture through LoadImageSize + SaveImage, and on DX12 neither works for a
+// writables-area file: a relative LoadImageSize builds its path from the CWD and misses it, and
+// SaveImage has no CPU-side texture to write. So the level node's thumbnail never changed. Same
+// cure as the screen-editor thumbs (a9171fbd): copy the FILES, then load the node's copy by
+// absolute path into an evicted slot (the DX12 texture cache is keyed by image id).
+// GGMAX 3.103: load a node's thumb by its REAL path on DX12. CopyToProjectFolder stores a RELATIVE
+// name ("projectbank\<game>\...") and the DX12 image loader resolves names against the CWD only,
+// so a thumb in the writables area was never found - on a project reopen the node came back blank,
+// or (demo projects) the stock .dds fallback put the OLD picture back. GG_GetRealPath finds it:
+// writables, the additional folder, then the install. Also covers the a9171fbd screen thumbs.
+static bool storyboard_LoadThumbByRealPath(int node)
+{
+	extern bool ImGui_DX12_IsInitialized();
+	if (!ImGui_DX12_IsInitialized() || strlen(Storyboard.Nodes[node].thumb) == 0) return false;
+	char absThumb[MAX_PATH];
+	strcpy(absThumb, Storyboard.Nodes[node].thumb);
+	GG_GetRealPath(absThumb, 0);
+	if (ImageExist(Storyboard.Nodes[node].thumb_id)) DeleteImage(Storyboard.Nodes[node].thumb_id);
+	LoadImageSize(absThumb, Storyboard.Nodes[node].thumb_id, 512, 288);
+	return ImageExist(Storyboard.Nodes[node].thumb_id) == 1;
+}
+
+static void storyboard_UseNewSnapshotDX12(int node, bool bMapSnapshot)
+{
+	bool bThumbFromShot = true;
+	if (bMapSnapshot)
+	{
+		// the map image lives beside the level's .fpm as <level>.png (as DX11 - same path maths)
+		char pMapImageFile[MAX_PATH];
+		strcpy(pMapImageFile, g.fpscrootdir_s.Get());
+		strcat(pMapImageFile, "\\Files\\");
+		strcat(pMapImageFile, Storyboard.Nodes[node].level_name);
+		if (strnicmp(pMapImageFile + strlen(pMapImageFile) - 4, ".fpm", 4) == NULL)
+		{
+			pMapImageFile[strlen(pMapImageFile) - 4] = 0;
+		}
+		strcat(pMapImageFile, ".png");
+		GG_GetRealPath(pMapImageFile, 1);
+		GG_SetWritablesToRoot(true);
+		char srcPng[MAX_PATH];
+		strcpy(srcPng, "thumbbank\\lastnewlevel.png");
+		GG_GetRealPath(srcPng, 0);
+		GG_SetWritablesToRoot(false);
+		CopyFileA(srcPng, pMapImageFile, FALSE);
+		// keep an existing screenshot thumb; with none, the snapshot doubles as the thumb (as DX11)
+		if (FileExist(Storyboard.Nodes[node].thumb)) bThumbFromShot = false;
+	}
+
+	if (bThumbFromShot)
+	{
+		// only the capture's own path resolves with writables-to-root ON (that is where the capture
+		// wrote it); the copies run with it OFF, as DX11 did, so a custom-folder project keeps its thumb
+		GG_SetWritablesToRoot(true);
+		char srcJpg[MAX_PATH];
+		strcpy(srcJpg, "thumbbank\\lastnewlevel.jpg");
+		GG_GetRealPath(srcJpg, 0);
+		GG_SetWritablesToRoot(false);
+		CreateBackBufferCacheNameEx(Storyboard.Nodes[node].level_name, 512, 288, true);
+		CopyFileA(srcJpg, BackBufferCacheName.Get(), FALSE);
+		if (FileExist(BackBufferCacheName.Get()))
+		{
+			if (CopyToProjectFolder(BackBufferCacheName.Get()))
+				strcpy(Storyboard.Nodes[node].thumb, ProjectCacheName.Get());   // relative projectbank name
+			else
+				strcpy(Storyboard.Nodes[node].thumb, BackBufferCacheName.Get());
+		}
+	}
+	storyboard_LoadThumbByRealPath(node);
+}
+
+void process_storeboard(bool bInitOnly)
 {
 	bool bModal = false; //Use a modal window.
 
@@ -329,10 +400,27 @@
 							GG_SetWritablesToRoot(true);
 							if (FileExist("thumbbank\\lastnewlevel.jpg"))
 							{
+								// GGMAX 3.103: DX12 loads the capture by ABSOLUTE path into an evicted slot. The
+								// relative load below never found the writables-area file on DX12, so this slot
+								// stayed empty, bGotAThumb stayed false and the storyboard skipped "Use New
+								// Screenshot ?" without a word. Without the eviction a second snapshot would
+								// show the first (the DX12 texture cache is keyed by image id).
+								extern bool ImGui_DX12_IsInitialized();
+								if (ImageExist(STORYBOARD_THUMBS + 401)) DeleteImage(STORYBOARD_THUMBS + 401);
+								if (ImGui_DX12_IsInitialized())
+								{
+									char absShot[MAX_PATH];
+									strcpy(absShot, "thumbbank\\lastnewlevel.jpg");
+									GG_GetRealPath(absShot, 0);
+									LoadImageSize(absShot, STORYBOARD_THUMBS + 401, 512, 288);
+								}
+								else
+								{
 								image_setlegacyimageloading(true);
 								//Use a tmp unique image id
 								LoadImageSize("thumbbank\\lastnewlevel.jpg", STORYBOARD_THUMBS + 401, 512, 288);
 								image_setlegacyimageloading(false);
+								}
 								if (ImageExist(STORYBOARD_THUMBS + 401))
 									bGotAThumb = true;
 							}
@@ -383,7 +471,14 @@
 							ImGui::SetWindowFontScale(1.4);
 							LPSTR pUseNewSnapTitle = "Use New Screenshot";
 							if (bPopModalTakeMapSnapshot == true) pUseNewSnapTitle = "Use New Map Snapshot";
-							if (ImGui::StyleButton(pUseNewSnapTitle, ImVec2(ImGui::GetContentRegionAvail().x*0.5 - 20.0f, 0.0f)))
+							const bool bUseNewSnap = ImGui::StyleButton(pUseNewSnapTitle, ImVec2(ImGui::GetContentRegionAvail().x*0.5 - 20.0f, 0.0f));
+							extern bool ImGui_DX12_IsInitialized();
+							if (bUseNewSnap && ImGui_DX12_IsInitialized())
+							{
+								storyboard_UseNewSnapshotDX12(iScreenshotNode, bPopModalTakeMapSnapshot);   // GGMAX 3.103
+								iWaitForNewScreenshot = 0;
+							}
+							else if (bUseNewSnap)
 							{
 								//screenshot or map snapshot
 								bool bDoScreenshotForThumb = false;
@@ -909,6 +1004,7 @@
 			else
 			{
 				LoadImageSize(Storyboard.Nodes[UpdateThumbOnNode].thumb, Storyboard.Nodes[UpdateThumbOnNode].thumb_id, 512, 288);
+				if (!ImageExist(Storyboard.Nodes[UpdateThumbOnNode].thumb_id)) storyboard_LoadThumbByRealPath(UpdateThumbOnNode);   // GGMAX 3.103
 			}
 			image_setlegacyimageloading(false);
 
@@ -1022,6 +1118,8 @@
 						else
 						{
 							LoadImageSize(Storyboard.Nodes[i].thumb, Storyboard.Nodes[i].thumb_id, 512, 288);
+							// GGMAX 3.103: DX12 - retry by the real path BEFORE the stock .dds fallback below
+							if (!ImageExist(Storyboard.Nodes[i].thumb_id)) storyboard_LoadThumbByRealPath(i);
 							// If .jpg failed, try .dds (legacy JPG thumbnails may have been renamed to DDS by DX12 cleanup)
 							if (!ImageExist(Storyboard.Nodes[i].thumb_id))
 							{
@@ -2514,6 +2612,7 @@
 												//Make sure we have a fresh thumb.
 												GG_SetWritablesToRoot(true);
 												if (FileExist("thumbbank\\lastnewlevel.jpg")) DeleteAFile("thumbbank\\lastnewlevel.jpg");
+												if (FileExist("thumbbank\\lastnewlevel.png")) DeleteAFile("thumbbank\\lastnewlevel.png");   // GGMAX 3.103: the map snapshot's PNG twin
 												GG_SetWritablesToRoot(false);
 											}
 										}

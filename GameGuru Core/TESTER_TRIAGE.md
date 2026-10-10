@@ -62,6 +62,7 @@ a new data point, not a regression, until it is compared on the same hardware.
 | Second level loads blank or hangs | billboard atlas per-level rebuild (solved 09-18) | confirm build md5 first |
 | Trees / grass missing or popping | billboard handover, tree pool cap | [[project-far-tree-billboards]] |
 | Big FPS drop on a weak GPU | reflection default (§3) first, then the Brutal off-switches | ask for Graphics and Performance settings |
+| A thumbnail / image that should come from a capture never appears, or vanishes on reopen | DX12 image layer: relative load of a writables file fails, `SaveImage` writes nothing (3.103) | is the file on disk in `Documents/GameGuruApps/GameGuruMAX/Files/...`? then it is the load, not the capture |
 | Terrain torn into white sheets / spikes, trees floating, after clicking palette trees | 3.102 billboard atlas slice overrun (fixed after the tester build) | `SET_FARTREES` (no argument = read-only) -> `ATLAS (3.102): sliceCopiesRefused=` must stay 0 |
 
 ## 5. Reproducing — the tool belt
@@ -82,5 +83,6 @@ a new data point, not a regression, until it is compared on the same hardware.
 
 | # | date | tester | GPU | build md5 ok? | area | symptom (short) | known? (§3) | status | notes § / commit |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 2026-10-10 | via Lee | - | reproduced by Lee on the dev build | Terrain > Trees palette | picking the last trees tears the terrain into white sheets | no | **fixed** (also: selection wipe, 64-bit bitfield load, atlas rebuild for new types) | 3.102 / `e7b11178` |
+| 1 | 2026-10-10 | via Lee | - | reproduced by Lee on the dev build | Terrain > Trees palette | picking the last trees tears the terrain into white sheets | no | **fixed, Lee-confirmed** (also: selection wipe, 64-bit bitfield load, atlas rebuild for new types) | 3.102 / `e7b11178` |
+| 2 | 2026-10-10 | Lee | - | dev build | Storyboard > level node > Take Screenshot | snapshot taken but the level node thumbnail never changes | no | **fixed** (also: UI in the capture, thumb lost on reopen, map PNG) | 3.103 / COMMIT |
 | | | | | | | | | | |

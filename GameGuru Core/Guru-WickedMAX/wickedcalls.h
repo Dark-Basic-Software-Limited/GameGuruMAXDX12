@@ -319,4 +319,7 @@ uint32_t GGWeather_GetRoot(void);
 uint32_t WickedCall_CreateEmitter(std::string& name, float posX, float posY, float posZ, uint32_t proot);
 void WickedCall_SetShaderParameter(int obj, int parameter, float value);
 bool WickedCall_CaptureBackbufferRegionToJPG(int x, int y, int w, int h, const char* outputPath);
+// GGMAX 3.103: same, box-downscaled to fit maxOutW x maxOutH. Writes by extension (.jpg/.png). No default
+// arguments: this header has no include guard and is included twice in one project (C2572).
+bool WickedCall_CaptureBackbufferRegionToJPGScaled(int x, int y, int w, int h, const char* outputPath, int maxOutW, int maxOutH);
 
