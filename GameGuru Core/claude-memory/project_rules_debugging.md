@@ -45,3 +45,5 @@ metadata:
   that band firing on the same frame, the opposite of spreading load. And `Entity_Remove` is
   swap-with-last, so an INDEX-keyed phase reshuffles everything when an unrelated entity dies.
   Hash a stable ENTITY id.
+
+- ★★ **A round trip that reads a value straight after load is not the user round trip** (3.106): the grass palette REWRITES paint_type from its own per-slot flags every frame, and those flags were seeded for 22 of 64 slots - so a correctly loaded selection was cleared the moment the UI opened. My save/reload test passed; the parallel review caught it. Test through the UI that consumes the value.
