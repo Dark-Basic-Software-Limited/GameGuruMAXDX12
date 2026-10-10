@@ -6022,8 +6022,12 @@ int GGTerrain_LoadSettings( const char* settingsJSON, bool bRestoreWater)
 	{
 		// GGMAX 3.102: read all 64 bits. m_iValue is an int, so a saved selection holding any of
 		// trees 31-37 (Vine Tree Large .. Autumn Birch 3) came back truncated or sign-extended.
+		// GGMAX 3.105: and reject a value with any bit past the last tree type. A level saved by an
+		// older build after loading a bit-31 selection holds the SIGN-EXTENDED value
+		// (18446744071...), which atoll clamps to 0x7FFFFFFFFFFFFFFF - that loaded as "every tree type"
+		// where the old code fell back to Birch (cross-review of 3.102).
 		const long long gg_bits = ((JSONNumber*)pElement)->m_llValue;
-		if (gg_bits == 0xffffffffLL || gg_bits <= 0)
+		if (gg_bits == 0xffffffffLL || gg_bits <= 0 || (((uint64_t)gg_bits) >> GGTrees::GGTrees_GetNumTypes()) != 0)
 			ggtrees_global_params.paint_tree_bitfield = 1;
 		else
 			ggtrees_global_params.paint_tree_bitfield = (uint64_t)gg_bits;

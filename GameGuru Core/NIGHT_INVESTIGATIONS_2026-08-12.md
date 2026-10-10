@@ -15038,7 +15038,7 @@ Run order (serial - one GPU, one harness): fresh-launch sweep (`demo_fps_sweep.s
 (`sweepgate.sh`, C1-C4) -> single-session soak (`demo_soak_sweep.sh`). In parallel: a four-lens
 read-only review of the three tester-fix commits for regressions outside the flows they were tested on.
 
-**Status: sweep + gate DONE (18:47-19:38), soak RUNNING.**
+**Status: DONE (18:47-20:50). All is well with the worlds - every prediction held.**
 
 ### Fresh-launch sweep + gate - effectively CLEAN, every prediction held
 
@@ -15055,3 +15055,49 @@ VRAM against 0924, demo by demo: the differences come in ~16 MB steps in BOTH di
 granularity), median +0.4 MB editor / -0.1 MB game, mean -2.4 / -7.8. Aztec's +15.3 is one step - scatter,
 not a shift. So 3.97/3.98 (the testers' engine changes) and 3.99-3.104 changed neither geometry nor
 residency on any demo, exactly as pre-registered. FPS recorded, not compared (3.24b).
+
+### Single-session soak - clean, POLYS identical to the 0924 soak
+
+Raw: `tools/soak_1010.txt` (19:38-20:50, 4294 s, one MAX launch).
+
+- 19/19 reached the editor, 19/19 reached Test Game, **0 session restarts, 0 blank frames**
+  (luminance std, `soak_analyse.py`), final state hub.
+- POLYS identical to the 0924 soak on 18/19; Z Island 320728 vs 321464, inside its spread (3.95).
+  Operation Amazon 486602, RPG Template 540778, Foggy Forest 1248844 = full fresh-launch geometry
+  after the round trips, so the 3.96 preset restore still holds.
+- VRAM (ADVISORY, sequential-load accumulation, 3.66): slope +12.5 MB per level, r2 = 0.04 - no trend.
+  Mean +13 MB against the 0924 soak (largest +100 MB, Island Showdown). Loads over 4096 MB: Aztec Game
+  Kit 4111.8 (0924: 4059.6 - crossed the line by 52 MB), Operation Amazon 4212.7, Z Island 4481.6
+  (both over in 0924 too). Every FRESH launch is under 4096 (gate C3 above).
+
+### Parallel cross-review of 3.102-3.104 - two minor regressions found and fixed (3.105b)
+
+Four lenses (image redirect, image layer, trees at runtime, JSON + harness), a refuter per finding.
+Clean on: standalone exports (they redirect to their OWN folder - SetWriteSameAsRoot), thread safety
+(LoadImage is main-thread only), directories, cost (DX11 already paid it), every reader of the name
+buffers, level load / Terrain Bake / Lua trees and the atlas rebuild (cannot loop - Ensure and Refresh
+walk the same instances), both JSONNumber construction sites, the palette guard, harness scripts.
+
+1. **3.104 could kill the process on an over-long RELATIVE image name.** The DX12 loader's unbounded
+   memcpy runs CWD + name past the 256-byte `szLongFilename` into `szShortFilename`; 3.104 then
+   `strcpy_s`'d that unterminated string and the CRT fast-fails (no crash log, no dump) where the image
+   used to draw blank. Needs CWD + name >= 256 chars (deep user/marketplace content, long remote
+   project folder). Fixed: every copy into both name buffers is clamped to leave a terminator
+   (`CImageC_part1.cpp`) - a clamped name simply fails to load, as before.
+2. **3.102: a level saved by an OLDER build after loading a bit-31 tree selection** holds the
+   sign-extended value (18446744071...), which `atoll` clamps to 0x7FFFFFFFFFFFFFFF - it loaded as
+   "every tree type" where the old code fell back to Birch. Fixed: the loader rejects any bit past the
+   last tree type (`GGTerrain_part0.cpp`).
+   Noted, pre-existing, not acted on: the uint64 GRASS bitfield (`gggrass_global_params.paint_type`)
+   still loads through the 32-bit `m_iValue` - same class as the tree one; grass has fewer types.
+
+Built (exe `f20fd9b232fdd56f29b9ef3e487971ad`, CImageC.cpp + GGTerrain.cpp only) and smoke-tested on
+TESTPRO2: Lee's saved selection 0x30000c0000 (both palms + both Autumn Birches) loads intact through
+the new guard; Test Game HUD map loads (image 96002, 41% wide) and draws; Escape back to the editor.
+The sweep and soak above ran on `098e7639`; these two guards change nothing on any path they measured.
+
+★ Pre-registering pays every time: "Z Island will miss C2 at its usual value, nothing else moves" was
+written down before the run, so the NOT CLEAN line in the gate output is read in one glance instead of
+re-investigated.
+★ Run the review WHILE the sweep runs - the hardware-bound job and the read-only one do not compete,
+and the review found two real things the sweep could never have exercised.

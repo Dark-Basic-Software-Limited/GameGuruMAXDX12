@@ -817,7 +817,11 @@ DARKSDK bool LoadImageCoreRetainName ( char* szRealName, char* szFilename, int i
 	memset ( test->szShortFilename, 0, sizeof ( char ) * 256 );		// clear out short filename
 	memset ( szTest,                0, sizeof ( char ) * 256 );		// clear out test buffer
 
-	memcpy ( test->szShortFilename, pNameForInternalList, sizeof ( char ) * iLen1 );	// copy to short filename
+	// GGMAX 3.105: every copy into the two 256-byte name buffers is clamped to leave a terminator. The
+	// unbounded copies ran a long CWD + relative name past szLongFilename into szShortFilename, and
+	// since 3.104 strcpy_s'd that unterminated string - the CRT fast-fails the process (no crash log),
+	// where the image used to just draw blank. A clamped name simply fails to load, as before.
+	memcpy ( test->szShortFilename, pNameForInternalList, sizeof ( char ) * ( iLen1 < 255 ? iLen1 : 255 ) );	// copy to short filename
 
 	// sort out full filename
 	GetCurrentDirectory ( 256, szTest );	// get the apps full directory e.g. "c:\test\"
@@ -844,16 +848,26 @@ DARKSDK bool LoadImageCoreRetainName ( char* szRealName, char* szFilename, int i
 	{
 		if ( szTest[iLen1]!='\\' )
 		{
-			test->szLongFilename[iLen1]='\\';
-			memcpy ( test->szLongFilename + iLen1 + 1, pNameForInternalList, sizeof ( char ) * iLen2 );
+			const int gg_room = 255 - ( iLen1 + 1 );   // GGMAX 3.105: clamp (see the short-name copy above)
+			if ( gg_room > 0 )
+			{
+				test->szLongFilename[iLen1]='\\';
+				memcpy ( test->szLongFilename + iLen1 + 1, pNameForInternalList, sizeof ( char ) * ( iLen2 < gg_room ? iLen2 : gg_room ) );
+			}
 		}
 		else
-			memcpy ( test->szLongFilename + iLen1, pNameForInternalList, sizeof ( char ) * iLen2 );
+		{
+			const int gg_room = 255 - iLen1;
+			if ( gg_room > 0 )
+				memcpy ( test->szLongFilename + iLen1, pNameForInternalList, sizeof ( char ) * ( iLen2 < gg_room ? iLen2 : gg_room ) );
+		}
 	}
 	else
 	{
 		// legacy support
-		memcpy ( test->szLongFilename + iLen1, pNameForInternalList + 1, sizeof ( char ) * iLen2 );
+		const int gg_room = 255 - iLen1;
+		if ( gg_room > 0 )
+			memcpy ( test->szLongFilename + iLen1, pNameForInternalList + 1, sizeof ( char ) * ( iLen2 < gg_room ? iLen2 : gg_room ) );
 	}
 
 	// DX12 mode: skip DX11 texture creation, store entry with filenames for lazy DX12 loading
