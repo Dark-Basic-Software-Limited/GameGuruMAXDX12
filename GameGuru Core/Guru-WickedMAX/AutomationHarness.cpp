@@ -3344,6 +3344,53 @@ static bool AutoHarness_MouseCommands(const char* cmd, const char* arg, char* re
 	// across at least one frame: MOUSE_AT, MOUSE_DOWN, sleep, MOUSE_UP.
 	const bool bDown = (_stricmp(cmd, "MOUSE_DOWN") == 0);
 	const bool bUp = (_stricmp(cmd, "MOUSE_UP") == 0);
+	// GGMAX 3.106: SET_PALETTEBITS [tree|grass <hex>] - set (or, with no arguments, just read) the 64-bit
+	// paint palette bitfields. For SAVE_LEVEL -> reload round trips of the settings loader: the grass
+	// field uses all 64 bits (stock + custom palette slots), which the old 32-bit load dropped.
+	if (_stricmp(cmd, "SET_PALETTEBITS") == 0)
+	{
+		char pbWhich[16] = { 0 };
+		char pbHex[40] = { 0 };
+		const int pbGot = (arg && arg[0]) ? sscanf_s(arg, "%15s %39s", pbWhich, (unsigned)sizeof(pbWhich), pbHex, (unsigned)sizeof(pbHex)) : 0;
+		if (pbGot >= 2)
+		{
+			const uint64_t pbVal = _strtoui64(pbHex, NULL, 16);
+			if (_stricmp(pbWhich, "tree") == 0) GGTrees::ggtrees_global_params.paint_tree_bitfield = pbVal;
+			else if (_stricmp(pbWhich, "grass") == 0) GGGrass::gggrass_global_params.paint_type = pbVal;
+		}
+		_snprintf(result, resultSize, "OK: SET_PALETTEBITS tree=0x%llx grass=0x%llx",
+			(unsigned long long)GGTrees::ggtrees_global_params.paint_tree_bitfield,
+			(unsigned long long)GGGrass::gggrass_global_params.paint_type);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	// GGMAX 3.106: SET_GRASSCUSTOMSLOT <slot 22..63> [relative dds path] - fill (or, with no path, empty)
+	// a B.9 custom grass palette slot exactly as the palette's "Add New Grass" does, minus the file
+	// dialog. Lets a test select a custom slot, save, reload and check the selection survives.
+	if (_stricmp(cmd, "SET_GRASSCUSTOMSLOT") == 0)
+	{
+		extern bool bUpdateGrassMaterials;
+		const int csSlot = (arg && arg[0]) ? atoi(arg) : -1;
+		const char* csPath = (arg && arg[0]) ? strchr(arg, ' ') : nullptr;
+		if (csPath) csPath++;
+		else csPath = "";
+		if (csSlot < GGGRASS_CUSTOM_SLOT_BASE || csSlot >= GGGRASS_MAX_PALETTE_SLOTS)
+		{
+			_snprintf(result, resultSize, "ERROR: SET_GRASSCUSTOMSLOT <slot %d..%d> [relative dds path]", GGGRASS_CUSTOM_SLOT_BASE, GGGRASS_MAX_PALETTE_SLOTS - 1);
+		}
+		else
+		{
+			t.visuals.sGrassTextures[csSlot] = (char*)csPath;
+			t.gamevisuals.sGrassTextures[csSlot] = (char*)csPath;
+			t.visuals.sGrassTexturesName[csSlot] = (char*)csPath;
+			t.gamevisuals.sGrassTexturesName[csSlot] = (char*)csPath;
+			GGGrass::GGGrass_SetCustomSlotFilename(csSlot, csPath);
+			bUpdateGrassMaterials = true;
+			_snprintf(result, resultSize, "OK: SET_GRASSCUSTOMSLOT %d = '%s'", csSlot, csPath);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	// GGMAX 3.104: TYPE_TEXT <text> - posts one WM_CHAR per character to the MAX window, which the
 	// Win32 ImGui backend turns into io.AddInputCharacter, so the FOCUSED ImGui InputText receives it.
 	// PRESS_KEY cannot type into a text field (WM_KEYDOWN / the terrain key system only).

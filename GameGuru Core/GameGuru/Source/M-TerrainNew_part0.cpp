@@ -229,7 +229,7 @@ struct sCustomBiomeType
 	int treesscalerandomlow = 40;
 	int treesscalerandomhigh = 200;
 	int treeschangedensity = 40;
-	int grasspainttype = 1;
+	uint64_t grasspainttype = 1;   // GGMAX 3.106: was int - it is the 64-slot grass palette bitfield
 	int grasspaintdensity = 100;
 	int grasspaintmaterial = 0;
 	int waterline = -500;
@@ -326,7 +326,7 @@ void imgui_populatecustombiomes(void)
 									else if (stricmp(pLine2, "treesscalerandomlow") == 0) { item.treesscalerandomlow = atoi(pLine3); }
 									else if (stricmp(pLine2, "treesscalerandomhigh") == 0) { item.treesscalerandomhigh = atoi(pLine3); }
 									else if (stricmp(pLine2, "treeschangedensity") == 0) { item.treeschangedensity = atoi(pLine3); }
-									else if (stricmp(pLine2, "grasspainttype") == 0) { item.grasspainttype = atoi(pLine3); }
+									else if (stricmp(pLine2, "grasspainttype") == 0) { item.grasspainttype = _strtoui64(pLine3, NULL, 10); }
 									else if (stricmp(pLine2, "grasspaintdensity") == 0) { item.grasspaintdensity = atoi(pLine3); }
 									else if (stricmp(pLine2, "grasspaintmaterial") == 0) { item.grasspaintmaterial = atoi(pLine3); }
 									else if (stricmp(pLine2, "waterline") == 0) { item.waterline = atoi(pLine3); }

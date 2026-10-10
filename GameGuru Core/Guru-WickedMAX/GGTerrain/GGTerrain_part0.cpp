@@ -5880,6 +5880,16 @@ char* GGTerrain_SaveSettings(int water_height)
 	return strOut;
 }
 
+// GGMAX 3.106: a 64-bit palette bitfield (trees, grass) as saved. Before 3.102 these were loaded
+// through the 32-bit m_iValue, so a selection with bit 31 set came back SIGN-EXTENDED - bits 31..63
+// all set - and the next save wrote that out (18446744071...). In such a value bits 32..63 are
+// garbage and bits 0..31 are the user's real selection: keep those. Anything else is as saved.
+static uint64_t GGTerrain_RepairLegacyBitfield( uint64_t v )
+{
+	if ( ( v >> 31 ) == 0x1FFFFFFFFULL ) v &= 0xFFFFFFFFULL;
+	return v;
+}
+
 // returns 1 if successful, 0 if not
 int GGTerrain_LoadSettings( const char* settingsJSON, bool bRestoreWater)
 {
@@ -6022,22 +6032,30 @@ int GGTerrain_LoadSettings( const char* settingsJSON, bool bRestoreWater)
 	{
 		// GGMAX 3.102: read all 64 bits. m_iValue is an int, so a saved selection holding any of
 		// trees 31-37 (Vine Tree Large .. Autumn Birch 3) came back truncated or sign-extended.
-		// GGMAX 3.105: and reject a value with any bit past the last tree type. A level saved by an
-		// older build after loading a bit-31 selection holds the SIGN-EXTENDED value
-		// (18446744071...), which atoll clamps to 0x7FFFFFFFFFFFFFFF - that loaded as "every tree type"
-		// where the old code fell back to Birch (cross-review of 3.102).
-		const long long gg_bits = ((JSONNumber*)pElement)->m_llValue;
-		if (gg_bits == 0xffffffffLL || gg_bits <= 0 || (((uint64_t)gg_bits) >> GGTrees::GGTrees_GetNumTypes()) != 0)
+		// GGMAX 3.105: and reject a value with any bit past the last tree type.
+		// GGMAX 3.106: read UNSIGNED (m_ullValue - atoll clamps a sign-extended save to
+		// 0x7FFFFFFFFFFFFFFF and loses the real bits) and REPAIR an old sign-extended save to its low
+		// 32 bits - the selection it really held - instead of falling back to Birch.
+		const uint64_t gg_bits = GGTerrain_RepairLegacyBitfield( ((JSONNumber*)pElement)->m_ullValue );
+		if (gg_bits == 0 || gg_bits == 0xffffffffULL || (gg_bits >> GGTrees::GGTrees_GetNumTypes()) != 0)
 			ggtrees_global_params.paint_tree_bitfield = 1;
 		else
-			ggtrees_global_params.paint_tree_bitfield = (uint64_t)gg_bits;
+			ggtrees_global_params.paint_tree_bitfield = gg_bits;
 	}
 	pElement = pObject->GetElement("grass_paint_density");
 	if (pElement) { gggrass_global_params.paint_density = ((JSONNumber*)pElement)->m_iValue; }
 	pElement = pObject->GetElement("paint_material");
 	if (pElement) { gggrass_global_params.paint_material = ((JSONNumber*)pElement)->m_iValue; }
 	pElement = pObject->GetElement("paint_type");
-	if (pElement) { gggrass_global_params.paint_type = ((JSONNumber*)pElement)->m_iValue; }
+	if (pElement)
+	{
+		// GGMAX 3.106: all 64 bits. paint_type is one bit per grass PALETTE slot - stock 0..21 plus the
+		// B.9 custom slots 22..63 - and it was read through the 32-bit m_iValue: a selection of custom
+		// slots 32..63 was dropped on every load, and one holding slot 31 came back sign-extended into
+		// slots 31..63, so painting spread its strokes over empty custom slots. No range guard here -
+		// every bit is a real slot - but an old sign-extended save is repaired to its low 32 bits.
+		gggrass_global_params.paint_type = GGTerrain_RepairLegacyBitfield( ((JSONNumber*)pElement)->m_ullValue );
+	}
 
 	pElement = pObject->GetElement("grass_scale");
 	if (pElement) { gggrass_global_params.grass_scale = ((JSONNumber*)pElement)->m_fValue; }

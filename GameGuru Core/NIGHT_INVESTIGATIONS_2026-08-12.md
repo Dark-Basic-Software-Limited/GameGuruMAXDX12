@@ -15101,3 +15101,57 @@ written down before the run, so the NOT CLEAN line in the gate output is read in
 re-investigated.
 ★ Run the review WHILE the sweep runs - the hardware-bound job and the read-only one do not compete,
 and the review found two real things the sweep could never have exercised.
+
+---
+
+## 3.106 Grass palette selection survives save + reload (64-bit) - 2026-10-10 late evening
+
+Lee: "fix the grass bitfield too" (the pre-existing defect noted in 3.105).
+
+**What was wrong.** `gggrass_global_params.paint_type` is one bit per grass PALETTE slot - stock 0..21
+plus the B.9 custom slots 22..63, so all 64 bits are real. Three things broke it:
+
+1. **The loader** (`GGTerrain_LoadSettings`) read it through the 32-bit `JSONNumber::m_iValue`: custom
+   slots 32..63 were dropped on every load, and a selection holding slot 31 came back sign-extended
+   into slots 31..63 - painting then spread its strokes over empty custom slots.
+2. **The editor's selection flags** (`M-TerrainNew_part1.cpp`): on every level load
+   `bCurrentGrassTextureForPaint[]` was seeded from `paint_type` for the 22 STOCK slots only, and the
+   Add Vegetation palette rebuilds `paint_type` from those flags every frame - so even a correctly
+   loaded custom selection was cleared the moment the palette opened (custom slots 22..31 too, which
+   the old loader had read fine). Found by the parallel review: my save/reload round trip read
+   `paint_type` before the palette drew, so it passed without seeing it.
+3. **Custom biomes** parsed `grasspainttype` with `atoi` into an `int`.
+
+**Fix (game only):**
+- `JSONNumber::m_ullValue` - an exact UNSIGNED 64-bit parse (`_strtoui64`). The signed `m_llValue`
+  (`atoll`) cannot hold a bitfield with bit 63 set: slots 0+2+32+63 saved as 9223372041149743109, which
+  the old loader turned into "every slot".
+- `GGTerrain_RepairLegacyBitfield`: a value with bits 31..63 all set is an old sign-extended save -
+  keep its low 32 bits, the selection it really held. Grass has no range guard (every bit is a slot).
+  The TREE loader now uses the same unsigned read + repair (3.105 fell back to Birch; a sign-extended
+  0xFFFFFFFF80100000 now restores Pine + Vine Tree Large) and keeps its 3.105 range guard.
+- Selection flags seeded for all 64 palette slots.
+- Custom biome `grasspainttype` -> `uint64_t` + `_strtoui64`.
+- Pre-existing, found by the same review: painting terrain texture with Match Terrain Color over a
+  CUSTOM grass cell indexed `grassSourceTypes[46]` with byte-2 (up to 87) - an out-of-bounds read that
+  swapped the custom grass for stock grass. Custom grass has no material variants: now left as painted
+  (`GGGrass.cpp`).
+- Harness: `SET_PALETTEBITS [tree|grass <hex>]` (set/read the bitfields) and `SET_GRASSCUSTOMSLOT <slot>
+  [path]` (fill or empty a custom slot as Add New Grass does, without the file dialog).
+
+**Verified** (exe `5ab58daec813b639df799fe0b733fe5d`, TESTPRO2 > testpro2 - the only level I may save):
+
+| test | saved as | loaded back |
+|---|---|---|
+| grass slots 0, 2, 32, 63 | 9223372041149743109 | 0x8000000100000005 exact (old: every slot) |
+| old sign-extended grass | 18446744071562067971 | 0x80000003 |
+| old sign-extended trees | 18446744071563116544 | 0x80100000 (Pine + Vine Tree Large; 3.105: Birch) |
+| custom slot 33 filled, slots 0 + 33 selected | `visuals.GrassTextures33=...` + 0x200000001 | 0x200000001 after reload AND after the Add Vegetation palette has drawn (old: 0x1) |
+| restore | 15 / 206159216640, slot 33 emptied | 0xf / 0x30000c0000 |
+
+Review: two lenses (load semantics, consumers), a refuter per finding. Survived: the flag-seeding bug
+and the texture-paint OOB (both fixed above). Refuted: the repair mis-reading a genuine selection of all
+of slots 31..63 (needs 33 custom grasses all selected; noted as the known limit of the signature).
+
+★ A round trip that reads the value straight after load is not the user's round trip - the palette
+REWRITES the value from its own flags. Test through the UI that consumes it.

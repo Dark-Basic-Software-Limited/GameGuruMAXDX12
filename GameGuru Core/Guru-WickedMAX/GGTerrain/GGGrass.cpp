@@ -1784,6 +1784,10 @@ void GGGrass_Update_Painting( RAY ray )
 							if ( grassID > 1 )
 							{
 								grassID -= 2;
+								// GGMAX 3.106: a CUSTOM palette grass (byte = slot + 26, real type >= GGGRASS_NUM_TYPES)
+								// has no per-material variants - leave it as painted. Indexing grassSourceTypes[46]
+								// with it read past the array and swapped the custom grass for a stock one.
+								if ( grassID >= GGGRASS_NUM_TYPES ) continue;
 								int grassSourceType = grassSourceTypes[ grassID ];
 								grassID = GGGrass_GetRealIndex( material, grassSourceType );
 							}

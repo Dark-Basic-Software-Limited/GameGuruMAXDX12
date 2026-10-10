@@ -295,6 +295,7 @@ DX12 ported them later (most in the 3.44–3.50 parity round, 2026-09-16/17).
 | 232 | **Picking the last palette trees no longer wrecks the terrain** - TESTPRO2 > testpro2 > Terrain > Trees: select Kentia Palm, Palm, Autumn Birch 2, then Autumn Birch 3. The terrain stays intact and all four stay selected (the selection used to fall back to Birch). Paint some Autumn Birch 3 and fly away from it: the distant billboards are yellow birches, not another species | L |
 | 233 | **Storyboard Take Screenshot updates the level node** - on a level node choose Take Screenshot, then Take Screenshot in Snapshot Mode: the "Use New Screenshot ?" box shows the view with no UI in it, and Use puts it on the node. Save the project, restart MAX, reopen: still there. Take Map Snapshot writes `<level>.png` beside the level | L |
 | 234 | **The RPG HUD map shows the level map; new levels get a thumbnail** - take a Map Snapshot of a level, then Test Game a level whose HUD has a `map:image`: the on-screen map shows the snapshot. Add New Level > Generate: the Save New Level box shows a preview, and the saved level's node shows it as its thumbnail | U |
+| 235 | **Grass selection survives save and reload** - add a custom grass (palette Add New Grass), select it with a stock grass, save the level, restart MAX and reopen it: open Add Vegetation and both are still selected, and painting uses both. Trees: an old level's palette selection now restores instead of resetting to Birch | U |
 
 ---
 

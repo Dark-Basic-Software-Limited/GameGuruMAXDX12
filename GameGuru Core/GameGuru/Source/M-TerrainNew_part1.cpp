@@ -21,8 +21,13 @@ void imgui_terrain_loop_v3(void)
 		fTreeRandomMin = (ggtrees_global_params.paint_scale_random_low); 
 		fTreeRandomMax = (ggtrees_global_params.paint_scale_random_high); 
 	
+		// GGMAX 3.106: seed EVERY palette slot from the loaded selection - stock 0..21 and the B.9 custom
+		// slots 22..63. This stopped at the 22 stock slots, so the custom flags kept whatever the
+		// previous level (or process start) left, and the Add Vegetation palette - which rebuilds
+		// paint_type from these flags every frame - cleared the loaded custom selection the moment it
+		// opened (cross-review of the 3.106 loader fix).
 		uint64_t values = gggrass_global_params.paint_type;
-		for (int iL = 0; iL < GGGRASS_NUM_SELECTABLE_TYPES; iL++)
+		for (int iL = 0; iL < GGGRASS_MAX_PALETTE_SLOTS; iL++)
 		{
 			uint64_t mask = 1ULL << iL;
 			if (values & mask)
