@@ -1,6 +1,6 @@
 # GameGuruMAX Project Memory
 
-> ★★★ **TESTER REPORTS? Log + triage in `GameGuru Core/TESTER_TRIAGE.md`** (build md5s, known issues, symptom→first check, repro tools). #1 fixed 3.102 (tree palette → atlas slice overrun).
+> ★★★ **TESTER REPORTS? Log + triage in `GameGuru Core/TESTER_TRIAGE.md`** (build md5s, known issues, symptom→first check, repro tools). #1 fixed 3.102 (tree palette → atlas slice overrun, Lee-confirmed); #2 fixed 3.103 (storyboard snapshot → DX12 image layer).
 > ★★★ **RESUMING? Read `GameGuru Core/RESUME_2026-09-24.md` FIRST** — 09-24 evening: gate effectively CLEAN (0924), everything pushed, Lee preparing a MANUAL tester build. §3.86 CLOSED by 3.96 (soak confirmed). Open decisions: two levels baked at a downgraded terrain preset; Lee does file cleanup himself.
 
 > **Resuming work? Read [Next action immediate](project_next_action_immediate.md) FIRST** — current state, next step, do-not list.
