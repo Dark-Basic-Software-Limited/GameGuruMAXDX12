@@ -15023,3 +15023,19 @@ were one missing `GG_GetRealPath` in the DX12 image loader. 3.103 patched two ca
 fix made the third work with no call-site change at all.
 ★ The heredoc backslash trap is not theoretical - it shipped a silent bug into a build within the hour.
 Write patch scripts with the Write tool or edit with the Edit tool.
+
+---
+
+## 3.105 Full demo hub test 1010 - first gate since 3.96 (2026-10-10 evening)
+
+Lee: "run a complete demo hub test to make sure all is well with our worlds". Pre-registered in
+`tools/prereg_1010.txt` (committed `b9d90552` BEFORE the run). Build: game `e715e5c3` (3.104), exe md5
+`098e7639e25205786671c1c7928a4c9e`, engine `680a30b0`; 4.5 h since boot. This is the first hub gate
+since 0924 (3.96): 3.97/3.98 (both engine changes the external testers run) and 3.99-3.104 had never
+been through one.
+
+Run order (serial - one GPU, one harness): fresh-launch sweep (`demo_fps_sweep.sh 1010`) -> gate
+(`sweepgate.sh`, C1-C4) -> single-session soak (`demo_soak_sweep.sh`). In parallel: a four-lens
+read-only review of the three tester-fix commits for regressions outside the flows they were tested on.
+
+**Status: RUNNING** - results below as they land.
