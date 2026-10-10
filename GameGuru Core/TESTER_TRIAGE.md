@@ -73,6 +73,7 @@ a new data point, not a regression, until it is compared on the same hardware.
 - `tools/harness/open_project_level.sh TESTPRO2 testpro2 library` — My Games project → level →
   Object Library open.
 - In game: `RUN_LUA return <expr>` reads live Lua state; `PRESS_ESCAPE` leaves Test Game.
+- `TYPE_TEXT <text>` types into the focused ImGui text field (3.104) - e.g. naming a new level.
 - Debug views (`SET_TANGENTVIS n`, 0 = off): 2 vertex normal · 3 bumped normal · 1 world tangent ·
   4 handedness · 16 world-position grid · 23 albedo. Exact black in 2/3 = a NaN normal.
 - `FIND_OBJECT x y z r` lists scene objects near a point; `SET_CAMERA x y z ax ay` moves the editor
@@ -84,5 +85,6 @@ a new data point, not a regression, until it is compared on the same hardware.
 | # | date | tester | GPU | build md5 ok? | area | symptom (short) | known? (§3) | status | notes § / commit |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | 2026-10-10 | via Lee | - | reproduced by Lee on the dev build | Terrain > Trees palette | picking the last trees tears the terrain into white sheets | no | **fixed, Lee-confirmed** (also: selection wipe, 64-bit bitfield load, atlas rebuild for new types) | 3.102 / `e7b11178` |
-| 2 | 2026-10-10 | Lee | - | dev build | Storyboard > level node > Take Screenshot | snapshot taken but the level node thumbnail never changes | no | **fixed** (also: UI in the capture, thumb lost on reopen, map PNG) | 3.103 / `96b52e3a` |
+| 2 | 2026-10-10 | Lee | - | dev build | Storyboard > level node > Take Screenshot | snapshot taken but the level node thumbnail never changes | no | **fixed, Lee-confirmed** (also: UI in the capture, thumb lost on reopen, map PNG) | 3.103 / `96b52e3a` |
+| 3 | 2026-10-10 | Lee | - | dev build | RPG HUD on-screen map + Save New Level | the HUD map shows nothing after a Map Snapshot; a generated level gets no thumbnail | no | **fixed** (DX12 image loader now uses the writables redirect) | 3.104 / COMMIT |
 | | | | | | | | | | |

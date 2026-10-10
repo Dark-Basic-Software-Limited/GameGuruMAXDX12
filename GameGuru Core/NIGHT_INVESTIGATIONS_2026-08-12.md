@@ -14963,3 +14963,63 @@ square (630 px in a 801-px-high window). Whatever displays it scales it.
 writables-area file fails (CWD only), and `SaveImage` writes nothing. Copy files and load by absolute
 path - and check every caller, not the one that was reported (a9171fbd fixed one of three).
 ★ A thumbnail that appears is not a thumbnail that persists - test save + full restart + reopen.
+
+**Lee-confirmed 2026-10-10:** "Works now".
+
+---
+
+## 3.104 RPG HUD map + Save New Level thumbnail - the DX12 image loader now honours the writables redirect - 2026-10-10 (tester report #3)
+
+**Report** (Lee): the RPG HUD on-screen map (`map:image`, a User Defined Global Image on the In-Game HUD,
+"replaced with the Map Snapshot associated with each level") shows NOTHING in Test Game after a Take
+Map Snapshot; plus: fix the Save New Level thumbnail too (flagged in 3.103).
+
+**The map.** `hud0.lua` loads it with Lua `LoadImage("mapbank\\" .. level .. ".png")`. The Lua binding
+(`DarkLUA_part2.cpp`) builds the INSTALL path `<Max>\Files\mapbank\testpro2.png`, checks it with
+`FileExist` - which goes through the writables redirect and finds the 3.103 snapshot in
+`Documents\...\Files\mapbank\` - then hands the same install path to `LoadImage`, which on DX12 opens it
+raw and fails. So the HUD never had the map; before 3.103 the PNG was never even written. The sprite
+path (PasteSprite + SetSpriteScissor through the ImGui foreground clip) was fine - once the image
+loaded, the map drew, scissored to the window, player dot and all.
+
+**Root cause, shared with 3.103.** Every DX11 texture loader in `CImageC_part0.cpp` runs
+`GG_GetRealPath` before loading; the DX12 branch of `LoadImageCoreRetainName` (`CImageC_part1.cpp`)
+returns before reaching any of them. So on DX12 NO image the editor or a script had written to the
+writables area could be loaded by a relative or install path. 3.103 worked around it per call site;
+this fixes it once: the DX12 branch resolves `szLongFilename` through `GG_GetRealPath` and keeps the
+redirected path when it lands on an existing file (return 1). DX11 parity - files in Documents
+override the install, as they always did there.
+
+**Save New Level** (`M-GridEditB_part20.cpp`): its preview was a relative load (now fixed by the loader
+change, no call-site edit) and the new node's thumb was `SaveImage` (DX12 no-op) -> now a file copy from
+`g.mysystem.thumbbank_s + "lastnewlevel.jpg"` - the absolute root-writables thumbbank the capture writes
+into, so the working directory at save time cannot matter (the 3.103 helper switched to it too). The
+Generate button's tooltip was on screen during the capture and baked into the thumbnail's corner - no
+tooltip while `iQuitProceduralLevel` counts down.
+
+⚠ **I broke it once on the way:** the first part20 patch went through a bash `<< 'EOF'` heredoc, which
+collapsed `"thumbbank\\lastnewlevel.jpg"` to `"thumbbank\lastnewlevel.jpg"` - `\l` is C4129, the path
+became `thumbbanklastnewlevel.jpg`, the copy silently failed and the harness run caught it (node titled,
+no thumb file). That rule is in memory (Programmatic source edits) and I walked into it anyway. Every
+added line was then scanned for single-backslash literals and comment continuations: clean.
+
+**Harness:** new `TYPE_TEXT <text>` - posts WM_CHAR per character so a focused ImGui InputText receives
+it (PRESS_KEY could not type into a text field; the Save New Level name needed it).
+
+**Verified** (exe `098e7639e25205786671c1c7928a4c9e`, TESTPRO2, harness-driven):
+
+| step | result |
+|---|---|
+| testpro2 > Test Game | top-right map shows the level map at MyMapMiniZoom 500, scissored to the window, player dot on the right bank; `RUN_LUA` hud0_mapView_LevelImage=96002, 41.0% x 72.9% of the screen = the 630x630 `mapbank/testpro2.png` |
+| Add New Level > Generate | "Save New Level As" shows the preview (was blank), no tooltip in it |
+| name via TYPE_TEXT > Save Level | `mapbank_zzthumbtest2.fpm512x288.jpg` in thumbbank + projectbank/TESTPRO2; node "zzthumbtest2" shows it |
+
+Left on disk for Lee to clear (test levels, storyboard NOT saved with them): `Documents\...\Files\mapbank\`
+`zzthumbtest.fpm/.lst`, `zzthumbtest2.fpm/.lst`, their `_automatedbackups`, and
+`mapbank_zzthumbtest2.fpm512x288.jpg` in thumbbank and projectbank/TESTPRO2.
+
+★ Fix the LAYER, not the callers: three reports in a row (3.103 storyboard, the HUD map, Save New Level)
+were one missing `GG_GetRealPath` in the DX12 image loader. 3.103 patched two call sites; the loader
+fix made the third work with no call-site change at all.
+★ The heredoc backslash trap is not theoretical - it shipped a silent bug into a build within the hour.
+Write patch scripts with the Write tool or edit with the Edit tool.

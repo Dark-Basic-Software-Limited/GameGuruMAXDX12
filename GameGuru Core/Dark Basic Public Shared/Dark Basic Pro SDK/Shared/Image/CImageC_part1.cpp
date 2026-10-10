@@ -862,6 +862,22 @@ DARKSDK bool LoadImageCoreRetainName ( char* szRealName, char* szFilename, int i
 	{
 		// Get image dimensions from file header without loading full pixel data
 		extern bool ImGui_DX12_GetFileDimensions(const char* filepath, int* outWidth, int* outHeight);
+		// GGMAX 3.104: resolve through the WRITABLES redirect first, as every DX11 texture loader in
+		// this file does (GG_GetRealPath before the D3DX load). This DX12 branch returns before reaching
+		// any of them, so an image the editor or a script had WRITTEN to Documents\...\Files\ was
+		// invisible to a relative or install-path load - the storyboard snapshot thumbs (3.103), the RPG
+		// HUD level map (mapbank\<level>.png, hud0.lua) and the Save New Level preview all fell into it.
+		// GG_GetRealPath returns 1 only when it redirected to an existing FILE there.
+		{
+			char gg_real[MAX_PATH];
+			strcpy_s(gg_real, MAX_PATH, test->szLongFilename);
+			if (GG_GetRealPath(gg_real, 0) == 1)
+			{
+				const size_t gg_len = strlen(gg_real);
+				memset(test->szLongFilename, 0, sizeof(char) * 256);
+				memcpy(test->szLongFilename, gg_real, sizeof(char) * (gg_len < 255 ? gg_len : 255));
+			}
+		}
 		int imgW = 0, imgH = 0;
 		ImGui_DX12_GetFileDimensions(test->szLongFilename, &imgW, &imgH);
 		if (imgW == 0 || imgH == 0)

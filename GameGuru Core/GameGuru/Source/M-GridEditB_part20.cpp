@@ -161,7 +161,18 @@ int save_level_as( void )
 								if (bGotAThumb)
 								{
 									CreateBackBufferCacheNameEx(Storyboard.Nodes[iNewLevelNode].level_name, 512, 288, true);
-									SaveImage(BackBufferCacheName.Get(), STORYBOARD_THUMBS + 402);
+									extern bool ImGui_DX12_IsInitialized();
+									if (ImGui_DX12_IsInitialized())
+									{
+										// GGMAX 3.104: SaveImage writes nothing on DX12 (no CPU-side texture), so the new
+										// level's node never got its thumb - copy the capture file instead (as 3.103).
+										// thumbbank_s is the ABSOLUTE root-writables thumbbank the capture writes into
+										// (Common_part2.cpp), so this does not depend on the CWD at the moment of saving.
+										cstr gg_src = g.mysystem.thumbbank_s + "lastnewlevel.jpg";
+										CopyFileA(gg_src.Get(), BackBufferCacheName.Get(), FALSE);
+									}
+									else
+										SaveImage(BackBufferCacheName.Get(), STORYBOARD_THUMBS + 402);
 									if (FileExist(BackBufferCacheName.Get()))
 									{
 										if (CopyToProjectFolder(BackBufferCacheName.Get()))

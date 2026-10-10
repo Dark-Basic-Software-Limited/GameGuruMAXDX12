@@ -3344,6 +3344,24 @@ static bool AutoHarness_MouseCommands(const char* cmd, const char* arg, char* re
 	// across at least one frame: MOUSE_AT, MOUSE_DOWN, sleep, MOUSE_UP.
 	const bool bDown = (_stricmp(cmd, "MOUSE_DOWN") == 0);
 	const bool bUp = (_stricmp(cmd, "MOUSE_UP") == 0);
+	// GGMAX 3.104: TYPE_TEXT <text> - posts one WM_CHAR per character to the MAX window, which the
+	// Win32 ImGui backend turns into io.AddInputCharacter, so the FOCUSED ImGui InputText receives it.
+	// PRESS_KEY cannot type into a text field (WM_KEYDOWN / the terrain key system only).
+	if (_stricmp(cmd, "TYPE_TEXT") == 0)
+	{
+		if (!g_pGlob || !g_pGlob->hWnd)
+		{
+			_snprintf(result, resultSize, "ERROR: no window handle");
+			result[resultSize - 1] = 0;
+			return true;
+		}
+		int nTyped = 0;
+		for (const char* c = arg; c && *c; ++c, ++nTyped)
+			PostMessageA(g_pGlob->hWnd, WM_CHAR, (WPARAM)(unsigned char)*c, 0);
+		_snprintf(result, resultSize, "OK: TYPE_TEXT posted %d characters (lands in the focused ImGui field)", nTyped);
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (bAt || bClick || bDown || bUp)
 	{
 		if (!g_pGlob || !g_pGlob->hWnd)

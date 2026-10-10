@@ -3758,7 +3758,9 @@ void procedural_new_level(void)
 					iQuitProceduralLevel = 5;
 					bTreeGlobalInit = false;
 				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Generates the terrain for your level and takes you to the Level Editor");
+				// GGMAX 3.104: no tooltip during the capture countdown - it reaches into the view and was
+				// baked into the new level's thumbnail (the DX12 capture reads the composed backbuffer)
+				if (ImGui::IsItemHovered() && iQuitProceduralLevel == 0) ImGui::SetTooltip("Generates the terrain for your level and takes you to the Level Editor");
 
 				ImVec2 restorehere = ImGui::GetCursorPos();
 				ImGui::SetCursorPos(texthere+ImVec2(0.0,8.0));

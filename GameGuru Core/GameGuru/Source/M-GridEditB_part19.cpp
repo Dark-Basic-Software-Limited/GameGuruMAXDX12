@@ -37,27 +37,21 @@ static void storyboard_UseNewSnapshotDX12(int node, bool bMapSnapshot)
 		}
 		strcat(pMapImageFile, ".png");
 		GG_GetRealPath(pMapImageFile, 1);
-		GG_SetWritablesToRoot(true);
-		char srcPng[MAX_PATH];
-		strcpy(srcPng, "thumbbank\\lastnewlevel.png");
-		GG_GetRealPath(srcPng, 0);
-		GG_SetWritablesToRoot(false);
-		CopyFileA(srcPng, pMapImageFile, FALSE);
+		// thumbbank_s = the ABSOLUTE root-writables thumbbank the capture writes into (CWD-independent)
+		cstr srcPng = g.mysystem.thumbbank_s + "lastnewlevel.png";
+		CopyFileA(srcPng.Get(), pMapImageFile, FALSE);
 		// keep an existing screenshot thumb; with none, the snapshot doubles as the thumb (as DX11)
 		if (FileExist(Storyboard.Nodes[node].thumb)) bThumbFromShot = false;
 	}
 
 	if (bThumbFromShot)
 	{
-		// only the capture's own path resolves with writables-to-root ON (that is where the capture
-		// wrote it); the copies run with it OFF, as DX11 did, so a custom-folder project keeps its thumb
-		GG_SetWritablesToRoot(true);
-		char srcJpg[MAX_PATH];
-		strcpy(srcJpg, "thumbbank\\lastnewlevel.jpg");
-		GG_GetRealPath(srcJpg, 0);
-		GG_SetWritablesToRoot(false);
+		// the source is the ABSOLUTE root-writables thumbbank the capture writes into (thumbbank_s,
+		// CWD-independent); the copies run with the writables flag OFF, as DX11 did, so a
+		// custom-folder project keeps its thumb
+		cstr srcJpg = g.mysystem.thumbbank_s + "lastnewlevel.jpg";
 		CreateBackBufferCacheNameEx(Storyboard.Nodes[node].level_name, 512, 288, true);
-		CopyFileA(srcJpg, BackBufferCacheName.Get(), FALSE);
+		CopyFileA(srcJpg.Get(), BackBufferCacheName.Get(), FALSE);
 		if (FileExist(BackBufferCacheName.Get()))
 		{
 			if (CopyToProjectFolder(BackBufferCacheName.Get()))
