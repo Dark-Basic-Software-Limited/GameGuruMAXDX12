@@ -82,5 +82,5 @@ a new data point, not a regression, until it is compared on the same hardware.
 
 | # | date | tester | GPU | build md5 ok? | area | symptom (short) | known? (§3) | status | notes § / commit |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 2026-10-10 | via Lee | - | reproduced by Lee on the dev build | Terrain > Trees palette | picking the last trees tears the terrain into white sheets | no | **fixed** (also: selection wipe, 64-bit bitfield load, atlas rebuild for new types) | 3.102 / COMMIT |
+| 1 | 2026-10-10 | via Lee | - | reproduced by Lee on the dev build | Terrain > Trees palette | picking the last trees tears the terrain into white sheets | no | **fixed** (also: selection wipe, 64-bit bitfield load, atlas rebuild for new types) | 3.102 / `e7b11178` |
 | | | | | | | | | | |

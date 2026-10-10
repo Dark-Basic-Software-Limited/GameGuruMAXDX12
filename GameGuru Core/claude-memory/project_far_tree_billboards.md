@@ -23,7 +23,7 @@ entities, one draw per visible chunk. `gg_far_tree_pass`, default ON.
 - **2.99 per-level atlas slices** — atlases used to allocate AND upload all 38 tree types
   regardless of what the level places. Now scans placed instances and uploads only the used count
   (13 of 38 on spotshadowtest). −51.5 MB, zero quality cost. Aztec in-game 4026.6 → 3941.2 MB.
-  ⚠ init is ONE-SHOT: a Lua-spawned type absent at load would index an unuploaded slice.
+  (3.102: no longer one-shot - `GGTrees_RefreshBillboardAtlasTypes` rebuilds it when a placed type has no slice.)
 - **3.03 handover fade** — `ObjectComponent::draw_distance` (defaults FLT_MAX, so every pool tree
   had opted out) now dissolves the mesh out where the billboard has dissolved in.
 - **3.07 shade wrap** — `gg_tree_shade_wrap`, default **0.5** (Lee's pick).
@@ -52,3 +52,4 @@ azimuth, never fully lit or fully black, half the brightness swing of a flat qua
   shadows and appear in probes past the terrain edge. Unresolved, probably invisible.
 - ⚠ Don't reach for `GGTrees_HideAll` / `GGGrass_RemoveAll` / `bWaterEnable` as content levers —
   they are LEVEL-DATA MUTATORS.
+- ★★★ **3.102 (2026-10-10, first tester report):** the legacy palette-change upload (`GGTrees_LoadTextures`) still wrote billboards at slice = TYPE index into the per-level atlas - Autumn Birch 2/3 = slices 36/37 of 12 = GPU memory corruption, terrain torn into white sheets. Upload removed, loader bounds-checked, atlas rebuilds for new types. ⚠ `GGTreesShadowMapPS.hlsl` still samples by TYPE index (unwired today). `SET_FARTREES` with no arg is now READ-ONLY (it used to switch the pass off). Notes §3.102.

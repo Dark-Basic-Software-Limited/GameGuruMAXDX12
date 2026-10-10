@@ -78,6 +78,7 @@ metadata:
   downstream is alternating. Also fix the velocity twin (`vb_pre`) or a motionless held mesh
   reports a large constant vertex velocity.
 
+- ★★★ **`CopyTexture`/`CopyTextureRegion` do NOT range-check the subresource outside the debug layer** - an out-of-range array slice is a silent GPU write into whatever the allocator put next to the texture (3.102: a palette click wrote slice 37 of a 12-slice tree atlas and tore the terrain apart; it did not reproduce on a second run - where it lands is allocation-dependent). ★ **When a resource is resized or remapped, find every WRITER, not just the reader** - 2.99 changed the atlas and its shader lookup together and left the palette upload indexing by type. The shared loader `GGTerrain_LoadTextureDDSIntoSlice` now refuses (`gg_ddsSliceRefused`, harness `SET_FARTREES`).
 - ★★★ **Static DBO props are SKINNED** (a one-bone `SKINDUMMY` armature), so they draw the skinning
   compute's output (`so_nor`), NOT their mesh buffers - rebuilding or recomputing a prop's normals
   changes nothing on screen. 3.98: `skinningCS` carried the normal in half and an EXACTLY (0,0,-1)
