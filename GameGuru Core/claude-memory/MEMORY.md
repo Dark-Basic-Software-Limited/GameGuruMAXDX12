@@ -1,7 +1,7 @@
 # GameGuruMAX Project Memory
 
 > ★★★ **TESTER REPORTS? Log + triage in `GameGuru Core/TESTER_TRIAGE.md`** (build md5s, known issues, symptom→first check, repro tools). #1 fixed 3.102 (tree palette → atlas slice overrun, Lee-confirmed); #2 fixed 3.103 (storyboard snapshot, Lee-confirmed); #3 fixed 3.104 (HUD map + new-level thumb → DX12 image loader redirect). Hub test 1010 CLEAN (3.105).
-> ★★★ **RESUMING? Read `GameGuru Core/RESUME_2026-09-24.md` FIRST** — 09-24 evening: gate effectively CLEAN (0924), everything pushed, Lee preparing a MANUAL tester build. §3.86 CLOSED by 3.96 (soak confirmed). Open decisions: two levels baked at a downgraded terrain preset; Lee does file cleanup himself.
+> ★★★ **RESUMING? Read `GameGuru Core/RESUME_2026-09-24.md` FIRST** — top block = 10-10 state (tester fixes 3.102-3.106, hub test 1010 CLEAN). Older: 09-24 evening: gate effectively CLEAN (0924), everything pushed, Lee preparing a MANUAL tester build. §3.86 CLOSED by 3.96 (soak confirmed). Open decisions: two levels baked at a downgraded terrain preset; Lee does file cleanup himself.
 
 > **Resuming work? Read [Next action immediate](project_next_action_immediate.md) FIRST** — current state, next step, do-not list.
 > ⚠⚠ **TWO MACHINES since 08-31** — run ``[ -d /d/DEV/BUILDS ] && echo LAPTOP || echo DESKTOP`` before trusting any path, GPU or perf number. **DESKTOP = RX 9060 XT, the primary box and the source of every recorded FPS/VRAM baseline**; LAPTOP = GTX 1050, set up 08-31 and unused since, where those baselines are INVALID. Full table: [Machine migration](project_machine_migration.md).
