@@ -109,9 +109,10 @@ class JSONNumber : public JSONElement
 	public:
 		float m_fValue;
 		int m_iValue;
+		long long m_llValue;   // GGMAX 3.102: the full integer - m_iValue truncates past 32 bits
 		int m_iIsInt;
 
-		JSONNumber() { m_fValue = 0; m_iValue = 0; m_iIsInt = 0; }
+		JSONNumber() { m_fValue = 0; m_iValue = 0; m_llValue = 0; m_iIsInt = 0; }
 		~JSONNumber() {}
 
 		int GetType() { return JSON_NUMBER; } // 0=Undefined, 1=Object, 2=Array, 3=String, 4=Number, 5=Bool

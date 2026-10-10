@@ -292,6 +292,7 @@ DX12 ported them later (most in the 3.44–3.50 parity round, 2026-09-16/17).
 | 229 | **Library previews no longer take their lighting from the level** - hover a large object (a Buildings Collection house) in a bright level and in a dark one: it must look the same in both and never white-out. The loaded level's fog, sun and ambient must not change the preview | U |
 | 230 | **Box contents / flat -Z faces are no longer black** - place *Pistol Ammo* (Max Collection > Weapons) in a level and look into the open end: brass cartridges and a blue tray, not a black hole. Same in the library preview | L |
 | 231 | **The full-size Object Library Preview shows its backdrop** - press the fullscreen button on any library thumbnail (Pistol Ammo): the Static Image backdrop fills the whole view, and switching it in the combo updates it at once. No black or starry sky anywhere | U |
+| 232 | **Picking the last palette trees no longer wrecks the terrain** - TESTPRO2 > testpro2 > Terrain > Trees: select Kentia Palm, Palm, Autumn Birch 2, then Autumn Birch 3. The terrain stays intact and all four stay selected (the selection used to fall back to Birch). Paint some Autumn Birch 3 and fly away from it: the distant billboards are yellow birches, not another species | U |
 
 ---
 

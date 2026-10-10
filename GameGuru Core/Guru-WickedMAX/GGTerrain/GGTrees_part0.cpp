@@ -919,6 +919,12 @@ void GGTrees_ReleaseLevelAssets();     // fwd - GGMAX 3.54, defined in GGTrees_p
 static bool g_ftAtlasesReady = false;
 char g_ftAtlasFailName[ MAX_PATH ] = { 0 };   // first path that failed to load
 uint32_t g_ftAtlasSlices = 0;   // diagnostics: slices actually uploaded
+// GGMAX 3.102: the type -> slice map the atlas was built with (-1 = type not in it), and the
+// g_treeInstanceStamp it was last checked against - see GGTrees_RefreshBillboardAtlasTypes.
+static int g_ftTypeSlice[ numTreeTypes ];
+static uint32_t g_ftAtlasStamp = 0;
+uint32_t g_ftAtlasRebuilds = 0;   // diagnostics: rebuilds because a placed type had no slice
+uint32_t g_ftTypeScans = 0;       // diagnostics: placed-type scans run
 void GGTrees_EnsureBillboardAtlases()
 {
 	if ( g_ftAtlasesReady ) return;
@@ -944,6 +950,8 @@ void GGTrees_EnsureBillboardAtlases()
 		}
 	}
 	g_ftTypesUsed = sliceCount;
+	for ( uint32_t i = 0; i < numTreeTypes; i++ ) g_ftTypeSlice[ i ] = typeSlice[ i ];   // GGMAX 3.102
+	g_ftAtlasStamp = g_treeInstanceStamp;
 	if ( sliceCount == 0 ) { g_ftAtlasesReady = true; return; }   // treeless level: no atlas at all
 
 	// publish the mapping for the shader (spare CB float; -1 for absent types)
@@ -1013,6 +1021,43 @@ void GGTrees_InvalidateBillboardAtlases()
 	texTree       = Texture();
 	texTreeNormal = Texture();
 	for ( uint32_t i = 0; i < numTreeTypes; i++ ) treeConstantData.tree_type[ i ].slice = 0.0f;
+}
+
+// GGMAX 3.102: the 2.99 atlas holds only the types placed when it was BUILT, and nothing rebuilt
+// it when a type arrived later - painting a newly selected species, GGTrees_ChangeDensity (every
+// biome pick re-types all the trees from the palette), an undo. Those trees drew slice 0, another
+// species' billboard, in the distance. Every one of those paths bumps g_treeInstanceStamp, so on a
+// stamp change collect the placed types and rebuild only when one has no slice. A paint stroke
+// bumps the stamp every frame, hence at most one scan per 30 frames.
+static void GGTrees_RefreshBillboardAtlasTypes()
+{
+	static uint32_t s_calls = 0, s_lastScan = 0;
+	s_calls++;
+	if ( !g_ftAtlasesReady ) return;                    // not built yet - the build scans anyway
+	if ( g_ftAtlasStamp == g_treeInstanceStamp ) return;
+	if ( s_calls - s_lastScan < 30 ) return;
+	s_lastScan = s_calls;
+	g_ftAtlasStamp = g_treeInstanceStamp;
+	g_ftTypeScans++;
+	uint64_t placed = 0;
+	for ( uint32_t c = 0; c < numTreeChunks; c++ )
+	{
+		TreeChunk* pc = &pTreeChunks[ c ];
+		for ( uint32_t j = 0; j < pc->pInstances.NumItems(); j++ )
+		{
+			const uint32_t t = pc->pInstances[ j ]->GetType();
+			if ( t < numTreeTypes ) placed |= 1ULL << t;
+		}
+	}
+	for ( uint32_t i = 0; i < numTreeTypes; i++ )
+	{
+		if ( ( placed & ( 1ULL << i ) ) && g_ftTypeSlice[ i ] < 0 )
+		{
+			g_ftAtlasRebuilds++;
+			GGTrees_InvalidateBillboardAtlases();   // GGTrees_EnsureBillboardAtlases rebuilds it next
+			return;
+		}
+	}
 }
 
 void GGTrees_CreateEmptyTexture( int width, int height, int mipLevels, int levels, Format format, Texture* tex )
@@ -1329,51 +1374,20 @@ int GGTrees_UpdateInstances( int accurate )
 }
 
 #ifdef ONLYLOADWHENUSED
+// GGMAX 3.102: computes treeMaxHeight and NOTHING ELSE. It used to upload each newly selected
+// palette type's images into slice = TYPE index of texTree / texTreeNormal / texTreeHigh /
+// texBranchesHigh, run from GGTrees_Update whenever paint_tree_bitfield changed. That matched
+// DX11, where all four are full 38-slice arrays. In DX12 the HIGH pair is never created, and
+// texTree / texTreeNormal became the 2.99 per-level billboard atlases - one slice per type the
+// level PLACES, in placement order, tree_type[t].slice mapping type -> slice. So every palette
+// click wrote one species over another's slice, or, for a type index past the slice count, past
+// the end of the texture (Autumn Birch 3 = slice 37 of a 12-slice atlas): GPU memory corruption,
+// the terrain torn into white sheets. GGTrees_EnsureBillboardAtlases alone fills the atlas, and
+// GGTrees_RefreshBillboardAtlasTypes rebuilds it when a placed type has no slice.
 void GGTrees_LoadTextures(bool bInit = false)
 {
-	char path[1024];
 	for (int i = 0; i < numTreeTypes; i++)
-	{
-		if (!bTreeTextureUploaded[i])
-		{
-			if (g_GGTrees[i].height > treeMaxHeight) treeMaxHeight = g_GGTrees[i].height;
-			if (ggtrees_global_params.paint_tree_bitfield & (1ULL << i) || bTreeTextureForceUploaded[i])
-			{
-				bTreeTextureUploaded[i] = true;
-
-				char szDstRoot[MAX_PATH];
-				//sprintf_s(szDstRoot, MAX_PATH, "%streebank/", FinalGameGuruMaxFolder.c_str());
-				if(bInit)
-					strcpy_s(szDstRoot, "files/treebank/");
-				else
-					strcpy_s(szDstRoot, "treebank/");
-
-				strcpy_s(path, szDstRoot);
-				strcat_s(path, "billboards/");
-				strcat_s(path, g_GGTrees[i].billboardFilename);
-				GGTrees_LoadTextureDDSIntoSlice(path, &texTree, i);
-
-				strcpy_s(path, szDstRoot);
-				strcat_s(path, "billboards/");
-				strcat_s(path, g_GGTrees[i].billboardNormalFilename);
-				GGTrees_LoadTextureDDSIntoSlice(path, &texTreeNormal, i);
-
-				strcpy_s(path, szDstRoot);
-				strcat_s(path, "textures/");
-				strcat_s(path, g_GGTrees[i].trunk->textureName);
-				GGTrees_LoadTextureDDSIntoSlice(path, &texTreeHigh, i);
-
-				if (g_GGTrees[i].branches)
-				{
-					strcpy_s(path, szDstRoot);
-					strcat_s(path, "textures/");
-					strcat_s(path, g_GGTrees[i].branches->textureName);
-					GGTrees_LoadTextureDDSIntoSlice(path, &texBranchesHigh, i);
-				}
-			}
-		}
-	}
-
+		if (g_GGTrees[i].height > treeMaxHeight) treeMaxHeight = g_GGTrees[i].height;
 }
 #endif
 
@@ -2634,13 +2648,8 @@ void GGTrees_Update( float camX, float camY, float camZ, CommandList cmd, bool b
 
 	if ( !ggtrees_global_params.draw_enabled && ggtrees_global_params.hide_until_update == 0 ) return;
 
-#ifdef ONLYLOADWHENUSED
-	if (last_paint_tree_bitfield != ggtrees_global_params.paint_tree_bitfield)
-	{
-		last_paint_tree_bitfield = ggtrees_global_params.paint_tree_bitfield;
-		GGTrees_LoadTextures(false);
-	}
-#endif
+	// GGMAX 3.102: the palette-change texture upload that stood here wrote past the end of the
+	// billboard atlas - see GGTrees_LoadTextures. A palette click no longer touches any texture.
 
 	if (ggtrees_global_params.hide_until_update)
 	{
@@ -2816,6 +2825,7 @@ void GGTrees_Update( float camX, float camY, float camZ, CommandList cmd, bool b
 // genuinely dead. Everything here is cheap: 8 sin/cos, one light lookup, numTreeTypes floats.
 static void GGTrees_UpdateBillboardCB( float camX, float camY, float camZ, CommandList cmd )
 {
+	GGTrees_RefreshBillboardAtlasTypes();   // GGMAX 3.102: a newly placed type rebuilds the atlas
 	GGTrees_EnsureBillboardAtlases();   // GGMAX 2.97: MAIN-THREAD one-shot, before any draw binds these
 	float ang = 0.785398f; // (2.0 * pi) / 8.0
 	for( int i = 0; i < 8; i++ )

@@ -1515,7 +1515,10 @@ void imgui_Customize_Tree_v3(int mode)
 		bool bGotSelection = false;
 		ImRect image_selected_bb;
 		uint64_t values = ggtrees_global_params.paint_tree_bitfield;
-		if (values > 0x3000000000) //Max 2fffffffff
+		// GGMAX 3.102: was `values > 0x3000000000` ("Max 2fffffffff"), from when there were 37 types.
+		// With 38 the top two are bits 36+37 = 0x3000000000, so Autumn Birch 2 + 3 plus ANY other tree
+		// tripped it and the whole selection fell back to Birch. Reject only bits past the last type.
+		if (values >> GGTrees_GetNumTypes())
 		{
 			values = 1; //PE: Somethis is wrong , select default tree.
 			ggtrees_global_params.paint_tree_bitfield = 1;
@@ -1654,8 +1657,8 @@ void imgui_Customize_Tree_v3(int mode)
 				}
 			}
 			else {
-				//Delete old image.
-				if (ImageExist(sTerrainTexturesID[iL]) == 1) DeleteImage(sTerrainTexturesID[iL]);
+				//Delete old image. GGMAX 3.102: was sTerrainTexturesID (32 entries) - read past its end for trees 32-37
+				if (ImageExist(sTreeTexturesID[iL]) == 1) DeleteImage(sTreeTexturesID[iL]);
 			}
 
 		}

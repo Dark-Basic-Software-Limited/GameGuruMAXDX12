@@ -225,7 +225,7 @@ struct sCustomBiomeType
 	int showgrass = 0;
 	int showterrain = 0;
 	int showwater = 1;
-	int treesbitfield = 9673113696;
+	uint64_t treesbitfield = 9673113696ULL;   // GGMAX 3.102: was int - the default itself did not fit
 	int treesscalerandomlow = 40;
 	int treesscalerandomhigh = 200;
 	int treeschangedensity = 40;
@@ -322,7 +322,7 @@ void imgui_populatecustombiomes(void)
 									else if (stricmp(pLine2, "showgrass") == 0) { item.showgrass = atoi(pLine3); }
 									else if (stricmp(pLine2, "showterrain") == 0) { item.showterrain = atoi(pLine3); }
 									else if (stricmp(pLine2, "showwater") == 0) { item.showwater = atoi(pLine3); }
-									else if (stricmp(pLine2, "treesbitfield") == 0) { item.treesbitfield = atoi(pLine3); }
+									else if (stricmp(pLine2, "treesbitfield") == 0) { item.treesbitfield = _strtoui64(pLine3, NULL, 10); }
 									else if (stricmp(pLine2, "treesscalerandomlow") == 0) { item.treesscalerandomlow = atoi(pLine3); }
 									else if (stricmp(pLine2, "treesscalerandomhigh") == 0) { item.treesscalerandomhigh = atoi(pLine3); }
 									else if (stricmp(pLine2, "treeschangedensity") == 0) { item.treeschangedensity = atoi(pLine3); }

@@ -14813,3 +14813,85 @@ every reporter, the known issues, a symptom -> first-suspect -> first-check map 
 Repro helpers live in `tools/harness/` (`open_demo.sh "<demo>" testgame`, `open_project_level.sh`).
 Each fix during the test period: a section here, a checklist row, one commit, and its hash in the
 report log.
+
+---
+
+## 3.102 Tree palette: picking the last trees tore the terrain apart - 2026-10-10 (first tester report)
+
+**Report** (a tester, relayed and reproduced by Lee on TESTPRO2 > testpro2): in Terrain > Trees,
+selecting the last trees in the palette makes "the entire terrain polygons go crazy" - torn white
+sheets standing up through the forest, trees floating over bare shore, the same in the water
+reflection. His shot had Kentia Palm, Palm and Autumn Birch 2 selected.
+
+**Cause - a writer that predates the atlas resize.** `GGTrees_Update` compared `paint_tree_bitfield`
+every frame and, on any change, called `GGTrees_LoadTextures(false)`: for each newly selected type it
+uploaded that type's billboard images into array slice = TYPE INDEX of `texTree` / `texTreeNormal`
+(and of the HIGH pair, which DX12 never creates). In DX11 those are full 38-slice arrays, so that was
+right. In DX12, 2.99 made `texTree` / `texTreeNormal` PER-LEVEL atlases - one slice per type the level
+places, `tree_type[t].slice` mapping type -> slice - and 3.53 rebuilds them per level. Nobody told
+the palette upload. On testpro2 the atlas has **12 slices** (`SET_FARTREES`: `atlasOK=12/typesUsed=12`);
+Autumn Birch 2 / 3 asked for slices **36 / 37**. Wicked's `CopyTexture` hands
+`D3D12CalcSubresource(mip, 37, 0, 9, 12)` = subresource 333+ (of 108) straight to
+`CopyTextureRegion`, and only the debug layer checks it. In release that is a GPU write ~50 MB past the
+start of a ~17 MB texture, into whatever the allocator put next to it. The trees stay put (their
+heights are CPU data) while the GPU-side terrain breaks - exactly the shot. Types 12-35 failed more
+quietly: an in-range slice that belongs to ANOTHER species, overwritten.
+
+★ The torn terrain did NOT reproduce on my run of the old build with the same clicks - where a stray
+GPU write lands depends on allocation order. The overrun itself is certain: the arithmetic, and it is
+the only GPU write on the click path (a four-lens review traced every reader of the bitfield and
+found no other). Lee's re-test is the visual confirmation.
+
+**Fix (game only, no engine change):**
+1. `GGTrees_LoadTextures` now only computes `treeMaxHeight`; the per-frame palette-change call is
+   gone. A palette click touches no texture.
+2. `GGTerrain_LoadTextureDDSIntoSlice`, the shared loader, refuses a slice >= `array_size` and clamps
+   its fill-all loop. Refusals are counted (`gg_ddsSliceRefused`, the first one named).
+3. NEW `GGTrees_RefreshBillboardAtlasTypes`. The 2.99 atlas was one-shot per level, so a type that
+   arrived LATER - painted with a newly selected species, a biome pick (`GGTrees_ChangeDensity`
+   re-types every tree), an undo - drew slice 0, another species, in the distance. On a
+   `g_treeInstanceStamp` change (at most one scan per 30 frames) it collects the placed types; if one
+   has no slice it invalidates the atlas and `GGTrees_EnsureBillboardAtlases` rebuilds it at once. It
+   also gives a treeless level its atlas on the first painted tree, which never happened before.
+4. Palette guard: `values > 0x3000000000` ("Max 2fffffffff", from the 37-type era) wiped the
+   selection back to Birch whenever Autumn Birch 2 + 3 + anything else were selected - reproduced. Now
+   `values >> GGTrees_GetNumTypes()`. Inherited from DX11.
+5. The 64-bit tree bitfield on load: `JSONNumber::m_iValue` is an `int`, so a saved selection holding
+   any of trees 31-37 came back sign-extended and the guard reset it to Birch. testpro2's own saved
+   selection `0x1800ffc00` (jungle trees, palms, vine trees) now loads - before, the palette showed
+   Birch alone. `m_llValue` added. The custom-biome `treesbitfield` was an `int` too (its own default,
+   9673113696, does not fit) -> `uint64_t` + `_strtoui64`. Inherited from DX11.
+6. The same palette loop deleted `sTerrainTexturesID[iL]` (32 entries) when a tree thumbnail failed to
+   load, with iL up to 37 - now `sTreeTexturesID`.
+7. Harness: `TERRAINGEN_BIOME` printed the bitfield as `%u`, so `treebits=1` hid bit 37 (it misled me
+   for one step) -> 64-bit hex. `SET_FARTREES` with NO argument switched the billboard pass OFF (it bit
+   me mid-session) -> read-only; its status gains `ATLAS (3.102): sliceCopiesRefused= rebuildsForNewType=
+   typeScans=`. `tools/harness/open_project_level.sh` defaults to the level node `testpro2` (its new
+   name) and fails fast when `CLICK_NODE` answers ERROR - it had waited out 7 minutes on a wrong name.
+
+**Verified** - final exe `a0dc4c899719cbae7330e3ba5fa3000b`, testpro2, lake view as in Lee's shot:
+
+| step | result |
+|---|---|
+| load the level | `treebits=0x1800ffc00` - the saved selection, intact |
+| + Autumn Birch 2, + Autumn Birch 3 | `treebits=0x31800ffc00`, all highlighted, terrain intact, `sliceCopiesRefused=0`, no rebuild |
+| only Autumn Birch 3 selected, five spray strokes | yellow birches painted; `rebuildsForNewType=1`, `atlasOK=13/typesUsed=13`, refused 0 |
+
+Review workflow (four lenses, each finding to an independent refuter): no defect survived. Its side
+notes, kept here:
+- ⚠ `GGTreesShadowMapPS.hlsl` samples `texTree` at the TYPE index, not the slice. Unreachable today
+  (`GGTrees_Draw_ShadowMap` / `_EnvProbe` have no callers) - a wrong-texture READ the day they are wired.
+- ⚠ Y-key legacy terrain toggle: `GGTrees_EnsureLegacyTexArrays` recreates `texTree` EMPTY at 38 slices
+  while the billboard flag stays set -> blank billboards in that debug mode. Predates this change.
+- The scan walks ~400K chunk instances (scattered pointers, estimated a few ms, not measured); the tree
+  pool already rebuilds its grid over the same 400K on every stamp change, unthrottled.
+- A rebuild re-reads each placed type's two DDS files on the main thread: one hitch per newly painted
+  species.
+
+★ When a resource is resized or remapped, find every WRITER, not just the reader. 2.99 changed the
+atlas and its reader (the shader's slice lookup) together and left a second writer indexing the old
+way. Same shape as the tree-sway and billboard-atlas finds: something changed shape and the other
+code was never told.
+★ `CopyTexture` / `CopyTextureRegion` do not range-check the subresource outside the debug layer - an
+out-of-range slice is a silent write into a neighbour. The guard now sits in the shared loader.
+★ Check an instrument's WIDTH: a 64-bit field printed with `%u` reported `treebits=1` while bit 37 was set.

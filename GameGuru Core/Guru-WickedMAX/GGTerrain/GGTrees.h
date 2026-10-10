@@ -26,6 +26,7 @@ namespace GGTrees
 	extern uint32_t g_ftTerrainKills;
 	extern uint32_t g_ftTypesUsed;
 	extern uint32_t g_ftAtlasSlices;
+	extern uint32_t g_ftAtlasRebuilds, g_ftTypeScans;   // GGMAX 3.102
 	extern float gg_tree_pool_max_dist;   // GGMAX 2.97 pool radius cap
 	extern float gg_tree_mesh_fade_dist;  // GGMAX 3.03 mesh dissolve-out distance
 	extern char g_ftAtlasFailName[];

@@ -62,13 +62,14 @@ a new data point, not a regression, until it is compared on the same hardware.
 | Second level loads blank or hangs | billboard atlas per-level rebuild (solved 09-18) | confirm build md5 first |
 | Trees / grass missing or popping | billboard handover, tree pool cap | [[project-far-tree-billboards]] |
 | Big FPS drop on a weak GPU | reflection default (§3) first, then the Brutal off-switches | ask for Graphics and Performance settings |
+| Terrain torn into white sheets / spikes, trees floating, after clicking palette trees | 3.102 billboard atlas slice overrun (fixed after the tester build) | `SET_FARTREES` (no argument = read-only) -> `ATLAS (3.102): sliceCopiesRefused=` must stay 0 |
 
 ## 5. Reproducing — the tool belt
 
 - `tools/harness/lib.sh` — `send`, `wait_state`, `shot`, `click` (CR-safe; screenshots go to
   `$GGMAX_OUT`, never the build folder).
 - `tools/harness/open_demo.sh "Switch Escape" testgame` — shipped demo → editor → Test Game.
-- `tools/harness/open_project_level.sh TESTPRO2 testpro2level library` — My Games project → level →
+- `tools/harness/open_project_level.sh TESTPRO2 testpro2 library` — My Games project → level →
   Object Library open.
 - In game: `RUN_LUA return <expr>` reads live Lua state; `PRESS_ESCAPE` leaves Test Game.
 - Debug views (`SET_TANGENTVIS n`, 0 = off): 2 vertex normal · 3 bumped normal · 1 world tangent ·
@@ -81,4 +82,5 @@ a new data point, not a regression, until it is compared on the same hardware.
 
 | # | date | tester | GPU | build md5 ok? | area | symptom (short) | known? (§3) | status | notes § / commit |
 |---|---|---|---|---|---|---|---|---|---|
+| 1 | 2026-10-10 | via Lee | - | reproduced by Lee on the dev build | Terrain > Trees palette | picking the last trees tears the terrain into white sheets | no | **fixed** (also: selection wipe, 64-bit bitfield load, atlas rebuild for new types) | 3.102 / COMMIT |
 | | | | | | | | | | |

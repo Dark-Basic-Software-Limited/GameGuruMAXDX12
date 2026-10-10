@@ -355,7 +355,7 @@ int JSONArray::ParseArray( const char* data )
 				if ( strchr(str, '.') == 0 && strchr(str, 'e') == 0 && strchr(str, 'E') == 0 ) 
 				{
 					pNumber->m_iIsInt = 1;
-					pNumber->m_iValue = atoll( str );
+					pNumber->m_llValue = atoll( str ); pNumber->m_iValue = (int)pNumber->m_llValue;
 				}
 				pNumber->m_fValue = (float) atof( str );
 				index += length;
@@ -611,7 +611,7 @@ int JSONKeyPair::ParsePair( const char *data )
 				if ( strchr(str, '.') == 0 && strchr(str, 'e') == 0 && strchr(str, 'E') == 0 ) 
 				{
 					pNumber->m_iIsInt = 1;
-					pNumber->m_iValue = atoll( str );
+					pNumber->m_llValue = atoll( str ); pNumber->m_iValue = (int)pNumber->m_llValue;
 				}
 				pNumber->m_fValue = (float) atof( str );
 				index += length;

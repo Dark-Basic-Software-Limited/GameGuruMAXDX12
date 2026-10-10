@@ -5552,7 +5552,7 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			return true;
 		}
 		int wtb = _snprintf(result, resultSize,
-			"OK: TERRAINGEN_BIOME sel=%d ptype=%d seed=%u amp=%.2f offx=%.1f offz=%.1f editsize=%.0f slopemat0=%d treebits=%u | chain cpRuns=%u cpResets=%u notifies=%u matNotifies=%u wipes=%u",
+			"OK: TERRAINGEN_BIOME sel=%d ptype=%d seed=%u amp=%.2f offx=%.1f offz=%.1f editsize=%.0f slopemat0=%d treebits=0x%llx | chain cpRuns=%u cpResets=%u notifies=%u matNotifies=%u wipes=%u",
 			g_ggBiomeSelectedMirror,
 			ggterrain_extra_params.iProceduralTerrainType,
 			(unsigned int)ggterrain_global_params.seed,
@@ -5561,7 +5561,7 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 			ggterrain_global_params.offset_z,
 			GGTerrain::ggterrain_global_render_params2.editable_size,
 			(int)(GGTerrain::ggterrain_global_render_params.slopeMatIndex[0] & 0xff),
-			(unsigned int)GGTrees::ggtrees_global_params.paint_tree_bitfield,
+			(unsigned long long)GGTrees::ggtrees_global_params.paint_tree_bitfield,   // GGMAX 3.102: all 38 bits
 			GGTerrain::gg_dbg_checkparams_runs,
 			GGTerrain::gg_dbg_checkparams_resets,
 			GGTerrain::gg_dbg_params_notifies,
@@ -7127,18 +7127,21 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		// not the abandoned merged-proxy experiment from 2.95b.
 		namespace GGT2 = GGTrees;
 		extern bool gg_trees_far_billboards;
-		GGT2::gg_far_tree_pass = (atoi(arg) != 0);
+		if (arg && arg[0]) GGT2::gg_far_tree_pass = (atoi(arg) != 0);   // GGMAX 3.102: no argument = READ ONLY (it used to switch the pass off)
 		int pc = 0, ps = 0, cand = 0, pb = 0, psz = 0; float cut = -1.0f;
 		namespace GGT = GGTrees;
 		GGT::GGTrees_GetFarTreeStats(&pc, &ps, &cand, &pb, &psz, &cut);
 		extern char gg_ftLoadReason[];
 		int vp = 0; float nch = -1.0f, fch = -1.0f;
-		char ftbuf[320];
+		extern uint32_t gg_ddsSliceRefused; extern char gg_ddsSliceRefusedWhat[];   // GGMAX 3.102
+		char ftbuf[640];
 		_snprintf(ftbuf, sizeof(ftbuf),
-			"BILLBOARD PASS: entered=%u draws=%u instances=%u atlasOK=%u/typesUsed=%u | chunksTotal=%u withInstances=%u frustumKilled=%u noTerrainKilled=%u | firstFail=%s",
+			"BILLBOARD PASS: entered=%u draws=%u instances=%u atlasOK=%u/typesUsed=%u | chunksTotal=%u withInstances=%u frustumKilled=%u noTerrainKilled=%u | firstFail=%s\nATLAS (3.102): sliceCopiesRefused=%u%s%s rebuildsForNewType=%u typeScans=%u",
 			GGT2::g_ftEnterCount, GGT2::g_ftDrawCalls, GGT2::g_ftInstances, GGT2::g_ftAtlasSlices, GGT2::g_ftTypesUsed,
 			GGT2::g_ftChunksTotal, GGT2::g_ftChunksWithIn, GGT2::g_ftFrustumKills, GGT2::g_ftTerrainKills,
-			gg_ftLoadReason[0] ? gg_ftLoadReason : "(none)");
+			gg_ftLoadReason[0] ? gg_ftLoadReason : "(none)",
+			gg_ddsSliceRefused, gg_ddsSliceRefused ? " first=" : "", gg_ddsSliceRefused ? gg_ddsSliceRefusedWhat : "",
+			GGT2::g_ftAtlasRebuilds, GGT2::g_ftTypeScans);
 		ftbuf[sizeof(ftbuf)-1] = 0;
 		GGT::GGTrees_GetFarTreeRange(&vp, &nch, &fch);
 		_snprintf(result, resultSize,

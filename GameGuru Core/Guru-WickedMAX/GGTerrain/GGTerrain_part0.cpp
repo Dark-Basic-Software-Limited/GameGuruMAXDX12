@@ -180,6 +180,11 @@ extern std::vector<int> g_DeferTextureUpdateIncompatibleTextures;
 // Automation harness injected key — defined in AutomationHarness.cpp, consumed by GGTerrain_CheckKeys()
 extern int g_autoHarnessInjectedKey;
 
+// GGMAX 3.102: DDS slice copies refused because the destination has no such slice (harness
+// SET_FARTREES). Global scope so the harness can extern them the way it does gg_ftLoadReason.
+uint32_t gg_ddsSliceRefused = 0;
+char gg_ddsSliceRefusedWhat[ 200 ] = { 0 };   // the first refusal: file, slice, array size
+
 namespace GGTerrain
 {
 
@@ -4530,6 +4535,20 @@ bool GGTerrain_LoadTextureDDSIntoSlice(const char* filename, Texture* tex, uint3
 		return true;
 	}
 
+	// GGMAX 3.102: REFUSE A SLICE THE DESTINATION DOES NOT HAVE. CopyTexture takes the
+	// subresource index on trust, and (mip + slice * mips) past the end of the array is a GPU
+	// write into whatever memory sits after the texture - no error, no device removal. The tree
+	// billboard atlas holds only the level's placed types (2.99: 12 slices on testpro2) while the
+	// legacy palette upload asked for slice = TYPE index - 36/37 for the Autumn Birches - and
+	// the terrain went to pieces (tester report, 2026-10-10).
+	if (!bFillAllSlots && arraySlice >= tex->desc.array_size)
+	{
+		if (gg_ddsSliceRefused++ == 0)
+			sprintf_s(gg_ddsSliceRefusedWhat, "%.140s slice %u of %u", filename, arraySlice, tex->desc.array_size);
+		delete[] filedata;
+		return false;
+	}
+
 	// Staging texture must survive until the GPU finishes executing the copy commands.
 	// CopyTexture records raw resource pointers without AddRef.
 	Texture stagingTex;
@@ -4550,7 +4569,7 @@ bool GGTerrain_LoadTextureDDSIntoSlice(const char* filename, Texture* tex, uint3
 	// Copy each mip from staging texture into the target array slice(s)
 	if (bFillAllSlots)
 	{
-		for (uint32_t i = 0; i < GGTERRAIN_MAX_SOURCE_TEXTURES; i++)
+		for (uint32_t i = 0; i < GGTERRAIN_MAX_SOURCE_TEXTURES && i < tex->desc.array_size; i++)   // GGMAX 3.102: same overrun
 		{
 			for (uint32_t mip = 0; mip < maxMip; ++mip)
 			{
@@ -6001,10 +6020,13 @@ int GGTerrain_LoadSettings( const char* settingsJSON, bool bRestoreWater)
 	pElement = pObject->GetElement("paint_tree_bitfield");
 	if (pElement)
 	{
-		if(((JSONNumber*)pElement)->m_iValue == 0xffffffff)
+		// GGMAX 3.102: read all 64 bits. m_iValue is an int, so a saved selection holding any of
+		// trees 31-37 (Vine Tree Large .. Autumn Birch 3) came back truncated or sign-extended.
+		const long long gg_bits = ((JSONNumber*)pElement)->m_llValue;
+		if (gg_bits == 0xffffffffLL || gg_bits <= 0)
 			ggtrees_global_params.paint_tree_bitfield = 1;
-			else
-			ggtrees_global_params.paint_tree_bitfield = ((JSONNumber*)pElement)->m_iValue;
+		else
+			ggtrees_global_params.paint_tree_bitfield = (uint64_t)gg_bits;
 	}
 	pElement = pObject->GetElement("grass_paint_density");
 	if (pElement) { gggrass_global_params.paint_density = ((JSONNumber*)pElement)->m_iValue; }
