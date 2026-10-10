@@ -76,3 +76,7 @@ the first function in that part.
 See also [[project-rules-environment]] and [[project-porting-clusters]].
 
 - ★★★ **THIRD INSTANCE, 2026-09-23 (notes 3.88), and this one cost a FALSE PASS, not a crash.** A probe's screenshot-path conversion used sed to turn backslashes into forward slashes, written inside a quoted heredoc. The heredoc collapsed the doubled backslash, sed died with "unterminated s command", and the run carried on to print a healthy-looking status line that was ALREADY TRUE BEFORE THE FIX — so a verification that captured nothing reported success. Use `tr`, which only warns, or write the file with a tool that never goes through the shell (the Write tool). ★★ **And make the failure loud**: the repaired probe prints "!! SCREENSHOT NOT SAVED" and returns non-zero. **A verification that cannot fail loudly is not a verification** — same family as the 0923 gate sweep validating one stale image 38 times.
+
+## ⚠ HIT AGAIN 2026-10-10 (3.104)
+
+A python-in-bash `<< 'EOF'` patch collapsed `"thumbbank\lastnewlevel.jpg"` to a single backslash: `\l` is C4129, the path lost its separator and a CopyFileA silently failed - caught only by the harness run (node titled, no thumb file). **Write patch scripts with the Write tool, or use the Edit tool; never put C string literals with backslashes through a heredoc.** After any scripted edit, grep the added lines for `"...\x..."` single backslashes and for comments ending in `\` (a line continuation that comments out the next line).

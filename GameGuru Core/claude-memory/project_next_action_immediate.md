@@ -20,7 +20,7 @@ already known (so it is not re-investigated), the least-tested paths (weight rep
 what the newest changes touch (3.98 float skinned normals reach EVERY skinned mesh incl. static
 DBO props via SKINDUMMY).
 
-**Tester reports so far:** #1 (2026-10-10) picking the last palette trees tore the terrain apart - FIXED 3.102 (`e7b11178`), Lee-confirmed. #2 storyboard Take Screenshot never reached the level node - FIXED 3.103 (`96b52e3a`), awaiting Lee. Both logged in `TESTER_TRIAGE.md` §6. Lee's level node is now `testpro2` (not `testpro2level`); `tools/harness/open_project_level.sh` defaults to it.
+**Tester reports so far:** #1 (2026-10-10) picking the last palette trees tore the terrain apart - FIXED 3.102 (`e7b11178`), Lee-confirmed. #2 storyboard Take Screenshot never reached the level node - FIXED 3.103 (`96b52e3a`), Lee-confirmed. #3 RPG HUD map blank + Save New Level thumbnail - FIXED 3.104 (`e715e5c3`, DX12 image loader now honours the writables redirect), awaiting Lee. Harness gained `TYPE_TEXT`. Both logged in `TESTER_TRIAGE.md` §6. Lee's level node is now `testpro2` (not `testpro2level`); `tools/harness/open_project_level.sh` defaults to it.
 
 **Do-not list still in force:** no file cleanup (Lee does it himself); never Debug builds; DX11 repos
 read-only; never save Lee's projects except TESTPRO2; ask before killing MAX while Lee is working.

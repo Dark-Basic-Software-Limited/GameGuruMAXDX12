@@ -1,12 +1,16 @@
 ---
 name: feedback-kill-max-after-10min
-description: "If a pending build/test needs MAX closed and the user hasn't exited it manually within ~10 minutes, assume they are AWAY and kill MAX yourself — proceed autonomously. Waiting politely cost an hour once."
+description: "BUG-FIXING STAGE (from 2026-10-10): kill MAX any time without asking. Otherwise: if a pending build/test needs MAX closed and the user hasn't exited it manually within ~10 minutes, assume they are AWAY and kill MAX yourself — proceed autonomously. Waiting politely cost an hour once."
 metadata: 
   node_type: memory
   type: feedback
   originSessionId: 9a28c586-4c13-4447-916e-7fb51301bfa8
   modified: 2026-07-27T16:40:45.315Z
 ---
+
+## ★ STANDING PERMISSION 2026-10-10 (tester bug-fixing stage)
+
+Lee, verbatim: "Feel free to kill MAX any ANY time, there is nothing I would work on during the bug fixing stage that needs saving." So while fixing tester reports, `taskkill` MAX whenever a build or test needs it - do NOT ask, even with a `*` (unsaved) title. **Why:** I asked twice in one hour (3.103, 3.104) and it only slowed him down. **How to apply:** kill, build, test; say in the report that MAX was closed. Revert to the rules below once the bug-fixing stage is over.
 
 If work is blocked on GameGuruMAX.exe being closed (game rebuild needs the EXE unlocked) and the
 user has not exited it within **~10 minutes** of being asked, **assume they are NOT at the machine

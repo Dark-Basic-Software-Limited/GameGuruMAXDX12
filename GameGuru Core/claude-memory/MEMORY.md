@@ -1,6 +1,6 @@
 # GameGuruMAX Project Memory
 
-> ★★★ **TESTER REPORTS? Log + triage in `GameGuru Core/TESTER_TRIAGE.md`** (build md5s, known issues, symptom→first check, repro tools). #1 fixed 3.102 (tree palette → atlas slice overrun, Lee-confirmed); #2 fixed 3.103 (storyboard snapshot → DX12 image layer).
+> ★★★ **TESTER REPORTS? Log + triage in `GameGuru Core/TESTER_TRIAGE.md`** (build md5s, known issues, symptom→first check, repro tools). #1 fixed 3.102 (tree palette → atlas slice overrun, Lee-confirmed); #2 fixed 3.103 (storyboard snapshot, Lee-confirmed); #3 fixed 3.104 (HUD map + new-level thumb → DX12 image loader redirect).
 > ★★★ **RESUMING? Read `GameGuru Core/RESUME_2026-09-24.md` FIRST** — 09-24 evening: gate effectively CLEAN (0924), everything pushed, Lee preparing a MANUAL tester build. §3.86 CLOSED by 3.96 (soak confirmed). Open decisions: two levels baked at a downgraded terrain preset; Lee does file cleanup himself.
 
 > **Resuming work? Read [Next action immediate](project_next_action_immediate.md) FIRST** — current state, next step, do-not list.
@@ -97,7 +97,7 @@
 - **Worktree builds**: junction + copied *.lib + cmd /c wrapper [feedback](feedback_worktree_build.md) · every path starts with the worktree prefix [feedback](feedback_edit_worktree_path.md) · mirror EVERY touched file [feedback](feedback_mirror_complete_file_set.md) · check main repo status first [feedback](feedback_check_main_repo_status.md)
 - **DX11 reference repos `D:\max\GameGuruMAX` / `D:\max\WickedRepo` are STRICTLY READ ONLY** — present on the DESKTOP, absent on the LAPTOP (whose untracked-binary donor is `D:\DEV\GAMEGURUMAXREPO`). [feedback](feedback_dx11_reference_readonly.md)
 - **"Commit and push" means** local `main` + origin; never disturb stashes. [feedback](feedback_commit_and_push_means_main.md) · **Notes + commit + push as each milestone lands.** [feedback](feedback_notes_commit_as_you_go.md)
-- **Be decisive; autonomous test loop wanted** — kill/rebuild/launch/screenshot without asking. [feedback](feedback_be_decisive_dont_over_confirm.md) · [feedback](feedback_autonomous_testing.md) · **user idle ~10 min = AWAY, kill MAX** [feedback](feedback_kill_max_after_10min.md)
+- **Be decisive; autonomous test loop wanted** — kill/rebuild/launch/screenshot without asking. [feedback](feedback_be_decisive_dont_over_confirm.md) · [feedback](feedback_autonomous_testing.md) · **bug-fixing stage: kill MAX ANY time, no asking (Lee 10-10); else idle ~10 min = AWAY** [feedback](feedback_kill_max_after_10min.md)
 - **Two failed attempts = wrong approach.** [feedback](feedback_two_attempts_change_approach.md) · **Don't thrash on automation** [feedback](feedback_dont_thrash_on_automation.md) · **Build the instrument that NAMES the culprit** [feedback](feedback_instrument_before_theory.md)
 - ★★★ **[Programmatic source edits](project_rules_patch_scripts.md)** — ⚠ a `<< 'EOF'` heredoc **collapses `\\` to `\`**, so writing the script to a FILE does **NOT** save you (the old note here said it did — it is wrong). Build backslashes from `chr(92)`, or pick a form needing none. Also: binary mode + assert ending counts (a CRLF slip rewrote 1974 lines), and `re.sub` eats escapes in the REPLACEMENT — use a lambda. ⚠ Long heredocs truncate; `wiProfiler.cpp` is LF, `wiProfiler.h`/`GameGuruMain.cpp` CRLF — DETECT. ⚠ This ImGui has no `BeginDisabled`.
 
