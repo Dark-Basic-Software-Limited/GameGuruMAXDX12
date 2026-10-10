@@ -15038,4 +15038,20 @@ Run order (serial - one GPU, one harness): fresh-launch sweep (`demo_fps_sweep.s
 (`sweepgate.sh`, C1-C4) -> single-session soak (`demo_soak_sweep.sh`). In parallel: a four-lens
 read-only review of the three tester-fix commits for regressions outside the flows they were tested on.
 
-**Status: RUNNING** - results below as they land.
+**Status: sweep + gate DONE (18:47-19:38), soak RUNNING.**
+
+### Fresh-launch sweep + gate - effectively CLEAN, every prediction held
+
+Raw: `tools/sweep_1010.txt`, verdict `tools/sweepgate_1010.txt`.
+
+| criterion | 1010 | 0924 (3.96) |
+|---|---|---|
+| C1 LOAD | 19/19 | 19/19 |
+| C2 POLYS | **19/19 identical to 0924**; gate's only "miss" is Z Island 320304 (ref 320624) - the SAME value as 0924, inside its measured spread 317344..321464 (3.95) | same |
+| C3 VRAM | worst 3814.6 MB (Aztec Game Kit, game), headroom 281.4 MB | 3799.3 MB, 296.7 |
+| C4 GAME | 19/19 | 19/19 |
+
+VRAM against 0924, demo by demo: the differences come in ~16 MB steps in BOTH directions (allocation
+granularity), median +0.4 MB editor / -0.1 MB game, mean -2.4 / -7.8. Aztec's +15.3 is one step - scatter,
+not a shift. So 3.97/3.98 (the testers' engine changes) and 3.99-3.104 changed neither geometry nor
+residency on any demo, exactly as pre-registered. FPS recorded, not compared (3.24b).
