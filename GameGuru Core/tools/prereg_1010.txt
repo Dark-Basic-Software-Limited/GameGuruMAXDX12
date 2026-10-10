@@ -1,0 +1,45 @@
+PRE-REGISTERED BEFORE THE 2026-10-10 FULL DEMO HUB TEST (written before any run started)
+
+Build: game e715e5c3 (3.104) + notes-only commits, exe md5 098e7639e25205786671c1c7928a4c9e,
+engine 680a30b0. DESKTOP (RX 9060 XT), 4.5 h since boot. Tag 1010. Lee asked for "a complete demo
+hub test to make sure all is well with our worlds" after the first three tester fixes.
+
+THIS IS THE FIRST FULL GATE SINCE 0924 (game 7297f435 = 3.96). Everything below has never been
+through a hub sweep, including the two ENGINE changes the external testers are running:
+
+  3.97  engine: per-camera FrameCB copy for render_to_texture cameras (gg_rtt_frame_override hook).
+        Only the library preview camera installs an override; the main camera path is untouched.
+  3.98  engine: skinningCS reads/accumulates the skinned normal in float (was half). Touches EVERY
+        skinned mesh, and static DBO props are skinned (SKINDUMMY). Output format unchanged.
+  3.99/3.99b  library full-size preview backdrop state. Editor UI only.
+  3.102 tree palette: the per-frame palette upload removed; texture copies range-checked; billboard
+        atlas rebuilt when a placed type has no slice; 64-bit tree bitfield on load.
+  3.103 storyboard snapshot thumbnail (DX12 image layer, capture crop).
+  3.104 DX12 image loader resolves through the writables redirect (GG_GetRealPath) - DX11 parity.
+
+PREDICTIONS, with the reasoning, before the numbers exist:
+
+  C1 LOAD   19/19.
+  C2 POLYS  identical to 0924 on every demo; Z Island anywhere inside its measured spread
+            317344..321464 (notes 3.95). Nothing above changes what is drawn in a demo's editor
+            frame: 3.98 changes normals (shading), not triangles; 3.102 only acts on palette
+            clicks and on atlas slices; 3.103/3.104 are UI/image paths.
+            ⚠ ONE WAY 3.102 COULD MOVE POLYS: a level whose saved tree bitfield had bit 31+ set now
+            loads it intact instead of falling back to 1 - but the bitfield is the PAINT palette,
+            not the placed trees, so placed geometry should not change. A C2 move is a finding.
+  C3 VRAM   every demo < 4096 MB; worst case within normal scatter of 0924's 3799.3 MB (Aztec Game
+            Kit in Test Game). 3.102's atlas rebuild-for-new-type should NEVER fire on a demo load
+            (Ensure scans the same instances the refresh scans) -> no atlas growth.
+  C4 GAME   19/19 reach gameplay.
+  HUD       3.104 makes Lua LoadImage find writables copies. Demos that ship a mapbank\<level>.png
+            AND have a Documents copy now load the Documents one (DX11 parity). Recorded, not gated.
+
+  SOAK (single launch, all 19 through editor -> Test Game -> editor): POLYS per demo identical to
+  the 0924 soak (3.96 restore already confirmed there); VRAM advisory (accumulation, notes 3.66).
+  The 3.98 skinning change and 3.102 atlas refresh are the only things here that touch per-level
+  state across loads - a soak-only VRAM or POLYS divergence would point at them first.
+
+FPS recorded, not gated (3.24b). PLAY GAME standalone is NOT exercised by these scripts (0924
+showed the harness verb needs the storyboard) - recorded as untested, not as a pass.
+
+NOT DOING: no file cleanup of any kind (Lee's standing rule). No shipped demo is written.
