@@ -64,6 +64,7 @@ a new data point, not a regression, until it is compared on the same hardware.
 | Big FPS drop on a weak GPU | reflection default (§3) first, then the Brutal off-switches | ask for Graphics and Performance settings |
 | A thumbnail / image that should come from a capture never appears, or vanishes on reopen | DX12 image layer: relative load of a writables file fails, `SaveImage` writes nothing (3.103) | is the file on disk in `Documents/GameGuruApps/GameGuruMAX/Files/...`? then it is the load, not the capture |
 | A character splays into huge sheets for a frame or few when placed or spawned; distant characters flick between two poses | 3.107 skinning ping-pong under Reduction Scale (fixed after the tester build) | `SET_SKINFRESHGUARD` -> `drawnGarbage` and `drawnStale` must stay 0; ask them to untick Lower Animation |
+| A tree pops lighter (its self-shadow vanishes) as the camera backs away | 3.108 mesh shadow cut at the tree pool end / Tree Shadow LOD Distance; the pool end follows the quality preset | `DUMP_POSTFX` -> `testgamequality`, `treelod`: pop at about treelod + 850 units |
 | Terrain torn into white sheets / spikes, trees floating, after clicking palette trees | 3.102 billboard atlas slice overrun (fixed after the tester build) | `SET_FARTREES` (no argument = read-only) -> `ATLAS (3.102): sliceCopiesRefused=` must stay 0 |
 
 ## 5. Reproducing — the tool belt
@@ -77,6 +78,10 @@ a new data point, not a regression, until it is compared on the same hardware.
 - `TYPE_TEXT <text>` types into the focused ImGui text field (3.104) - e.g. naming a new level.
 - `tools/harness/place_burst.sh <pickX> <pickY> <placeX> <placeY> <frames> <tag>` - place an object while
   capturing consecutive frames (3.107); `BURST_FRAMES` alone for any other one-frame glitch.
+- `tools/harness/tree_shadow_sweep.sh` / `tree_shadow_sweep_game.sh` - dolly the editor camera / teleport the
+  player straight back from a tree and log its crown brightness per step (3.108). In Test Game
+  `SetFreezePosition(x,y,z)` + `TransportToFreezePosition()` via `RUN_LUA` moves the player - put it 60 u
+  above `GetTerrainHeight`, or it falls through.
 - Debug views (`SET_TANGENTVIS n`, 0 = off): 2 vertex normal · 3 bumped normal · 1 world tangent ·
   4 handedness · 16 world-position grid · 23 albedo. Exact black in 2/3 = a NaN normal.
 - `FIND_OBJECT x y z r` lists scene objects near a point; `SET_CAMERA x y z ax ay` moves the editor
@@ -90,5 +95,6 @@ a new data point, not a regression, until it is compared on the same hardware.
 | 1 | 2026-10-10 | via Lee | - | reproduced by Lee on the dev build | Terrain > Trees palette | picking the last trees tears the terrain into white sheets | no | **fixed, Lee-confirmed** (also: selection wipe, 64-bit bitfield load, atlas rebuild for new types) | 3.102 / `e7b11178` |
 | 2 | 2026-10-10 | Lee | - | dev build | Storyboard > level node > Take Screenshot | snapshot taken but the level node thumbnail never changes | no | **fixed, Lee-confirmed** (also: UI in the capture, thumb lost on reopen, map PNG) | 3.103 / `96b52e3a` |
 | 3 | 2026-10-10 | Lee | - | dev build | RPG HUD on-screen map + Save New Level | the HUD map shows nothing after a Map Snapshot; a generated level gets no thumbnail | no | **fixed** (DX12 image loader now uses the writables redirect) | 3.104 / `e715e5c3` (+3.105b guards) |
-| 4 | 2026-10-11 | Lee | RX 9060 XT | dev build | Level editor > placing a character (Christmas Zombie, TESTPRO2 > testpro2) | for ONE frame as the character is put down its polygons splay out, then it looks fine | no | **fixed** (also: distant characters drew an old pose whenever an object was on the cursor) | 3.107 / `c8e5a62b` (engine `c1f54bd9`) |
+| 4 | 2026-10-11 | Lee | RX 9060 XT | dev build | Level editor > placing a character (Christmas Zombie, TESTPRO2 > testpro2) | for ONE frame as the character is put down its polygons splay out, then it looks fine | no | **fixed, Lee-confirmed** (also: distant characters drew an old pose whenever an object was on the cursor) | 3.107 / `c8e5a62b` (engine `c1f54bd9`) |
+| 5 | 2026-10-11 | Lee | RX 9060 XT | dev build | Test Game > tree shadows (TESTPRO2 > testpro2snow) | backing the camera away from a tree, its shadowing changes and the whole tree pops lighter; tied to Tree Shadow LOD Distance (7000 shows it, 750 moves it closer) | no | **root cause found** (mesh shadow cut in one frame at the pool end - ~1850 u at Test Game's Low preset; the slider above the pool reach is dead); options with Lee | 3.108 / `__HASH__` |
 | | | | | | | | | | |

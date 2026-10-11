@@ -15262,3 +15262,101 @@ through `CreateStreamoutRenderData`, which resets the written bits, and that eve
 advance, a "posed once" mark - has to be keyed on the RENDERED frame, or a mid-frame refresh counts as
 a frame nothing drew. Fifth member of the double-buffer family (1.37b hair, 3.92 skinning swap): the
 producer ran once per frame, the swap ran once per UPDATE.
+
+### LEE-CONFIRMED, 2026-10-11: "Works now"
+
+
+---
+
+## 3.108 Tree shadow pop when backing away (tester report #5) - ROOT CAUSE, options to Lee - 2026-10-11
+
+Lee, TESTPRO2 > testpro2snow, Test Game, camera on a pine: backing away, "the shadow that affects the
+tree changes drastically causing the whole tree to visually pop lighter". Tree Shadow LOD Distance 7000
+shows it; 750 makes it go away (then it shows again closer). He suspected design, and floated raising
+the 7000 maximum to ~20000.
+
+### What pops: the tree's MESH shadow is switched off in ONE frame
+
+Every tree casts two shadows (four read-only investigators, every step cited, then measured):
+
+1. **Its real mesh** - only while it is one of the nearest-N "pool" trees, and only while
+   `g_treeShadow = XZ(camera, tree) < Tree Shadow LOD Distance` (`GGTrees_part2.cpp:1496-1505`), applied
+   as a binary `SetCastShadow` (`:1544-1554`). Mesh casters reach sun cascades 0-2 (mask 2, `:607`).
+2. **Its chunk "shadow proxy"** - one merged mesh per 12500-unit chunk holding TWO CROSSED, world X/Z
+   aligned, alpha-tested cards for EVERY tree in the chunk, near trees included (`:987-996`,
+   `:1029-1037`), always casting (`:1053`). So a near tree casts twice.
+
+When the mesh shadow goes, only the two flat cards are left. In cascade 2 (950-7500 view depth, ~18 u
+texels at Sun 1024) the slope bias pushes a vertical card's shadow ~74-166 u away - more than the
+crown radius - so the cards cannot shadow their own tree at all: the layered canopy self-shadowing
+vanishes and the tree turns lighter in one frame.
+
+### Where it pops: whichever comes first
+
+- **(a) the slider distance** (XZ from the camera), or
+- **(b) the end of the tree pool** - the engine hard-culls a shadow caster at `draw_distance + radius`
+  (`wiRenderer.cpp:8601-8603`), and pool trees get `draw_distance = clamp(cap - 1.1r, lod_dist,
+  lod_dist + 500)` with `cap = lod_dist + 1000` (`GGTrees_part2.cpp:153-176`, `:1416-1417`). `lod_dist`
+  comes from the quality preset: Low 1000 / Med 2000 / High 3000 / Ultra 4000 (`GGTrees_part0.cpp:2114-2132`).
+
+**Lee's Test Game runs the LOW preset** (`DUMP_POSTFX`: `testgamequality=0 treelod=1000`; the editor is
+High, `treelod=3000`). So in Test Game the pool - and every mesh shadow - ends at ~1850-1900 units
+(~48 m), and **his player start is 1783 units from that pine**: a few steps back crosses it.
+**A slider value above the pool's reach is dead** - 7000 can never be reached at any preset (Ultra
+reaches ~5000), so "7000" means "until the pool ends". At 750 the switch moves to 750 instead.
+
+**Why it is a pop and not a fade:** the visible tree DOES dissolve (Wicked's distance dither, 3.03), but
+the shadow pass builds its batches with distance 0 (`wiRenderer.cpp:8649`), so the dither never runs
+for shadows - the shadow stays solid until the hard cull, then is gone.
+
+### Measured (harness; `tools/harness/tree_shadow_sweep_game.sh` teleports the player straight back
+from the tree with `SetFreezePosition`, and measures the crown's mean brightness; grass off for a
+clear view; `tree_shadow_sweep.sh` does the same with the editor camera)
+
+| where | slider | crown brightness | event |
+|---|---|---|---|
+| Test Game (Low), 1500-1825 u | 7000 | 15-29 (self-shadowed) | |
+| Test Game, 1825 -> 1850 u | 7000 | 16 -> **35**, then 29-37 | **the pop**: mesh shadow culled at the pool end |
+| Test Game, 1500-2300 u | 750 | 26-36 throughout | none - the mesh shadow was already off |
+| Test Game, 500-1000 u | 750 | 22-28 | subtle: at fine cascades the cards still self-shadow, so the shape changes more than the brightness |
+| Editor (High), 3750 -> 3900 u | 7000 | 96 -> **170** | pool end at High |
+| Editor, 3700 u | 2000 vs 7000 | 116 vs 101 | the mesh shadow's share at that distance |
+| Editor, 3700 -> 3900 u | 2000 | 116 -> 170 | at High the visible mesh -> billboard handover ALSO brightens the tree (a second effect, slider-independent; not seen at Low) |
+
+### Is it by design?
+
+**The handoff is - the hard switch is not.** DX11 (read-only reference) had the same idea but
+DISSOLVED it per pixel with noise: the card shadow faded in over [L, L+500] and was discarded inside L,
+the mesh shadow faded out over [L+500, L+1000] (`GGTreesShadowMapPS.hlsl:29-30`,
+`GGTreesHighShadowMapPS.hlsl:26-27`), mesh shadows were gathered separately from the visual range, and
+near trees never cast a card shadow. And in DX11, 7000 really reached 7000. The DX12 port lost the
+dissolve, the separate shadow range, and the near-card discard.
+
+### Raising the maximum to 20000
+
+**Changes nothing on its own** - the pool ends long before (2000 / 3000 / 4000 / 5000 by preset), so it
+would be another dead range. The loader also resets any saved value outside 750..7000 to 4000
+(`M-Visuals_part0.cpp:1761`).
+
+### Options (for Lee to choose)
+
+1. **Dissolve the mesh shadow instead of cutting it** - let the shadow pass honour the same distance
+   dither as the visible tree, opt-in for pool trees (`wiRenderer.cpp:8649`: pass the real distance).
+   The far pop becomes a fade over the same ~400 u as the visible mesh's - DX11's behaviour. Small
+   engine edit; small shadow-pass cost only for trees inside the fade band. **Recommended first.**
+2. **Make the slider fade too** - same mechanism for the slider threshold, so a low value (750) fades
+   instead of switching.
+3. **Make the slider honest** - clamp it to the pool's reach and show the effective value, fix the
+   tooltip. Trivial UI.
+4. **Stop near trees casting their card shadow** (DX11 parity) - removes the double shadow; needs a
+   camera-distance clip in a proxy shadow shader. Medium.
+5. **Push the handoff further out** - a higher Test Game quality preset (Lee's is Low: the pool ends at
+   ~50 m), or shadow-only pool trees beyond the visual pool so a big slider value really works.
+   Costs more casters on every level - needs a gate rebaseline.
+6. **Soften what is left** - Sun shadow 2048 (cards' bias halves; +60 MB VRAM), sun-facing single cards
+   (DX11), or a bounded slope bias (risky for every caster). Each reduces the contrast; none removes
+   the switch.
+
+★ **"Distance X" settings need a check of what ELSE ends first.** The slider was honest in DX11 and became
+a dead range in DX12 because the pool, not the slider, now decides where tree meshes stop - and the
+quality preset decides where the pool stops.
