@@ -10,6 +10,7 @@ metadata:
 
 # ▶▶ RESUME HERE — 2026-10-11: TESTER FIX CYCLE IN PROGRESS
 
+2026-10-11 evening: report #5 (tree shadow pop) FIXED 3.108 - game 3bbddd5e, engine d1e972a6; awaiting Lee. 3.107 Lee-confirmed.
 2026-10-11: report #4 fixed (3.107, game `c8e5a62b`, ENGINE `c1f54bd9` - first engine change since the tester build): placing a character drew its never-written skinning buffer (splayed polygons) + held characters drew an old pose whenever an object was on the cursor. Awaiting Lee. Kill MAX freely; parallel review per fix.
 
 ## 2026-10-10 late
