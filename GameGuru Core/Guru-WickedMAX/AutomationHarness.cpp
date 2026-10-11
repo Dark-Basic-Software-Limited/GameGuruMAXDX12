@@ -6677,6 +6677,24 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		wi::scene::gg_skin_fresh_report(result, (int)resultSize);
 		return true;
 	}
+	if (_stricmp(cmd, "SET_SHADOWDISTFADE") == 0)
+	{
+		// GGMAX 3.108 (tester report #5): SET_SHADOWDISTFADE [0|1]. No argument = read-only.
+		// 1 (default) = tree pool meshes dissolve their sun shadow with their distance fade;
+		// 0 = the stock hard cut at the end of the fade (the pop). fadingCasters is this frame's count
+		// of casters inside their fade band - the executed-check that the dither is being asked for.
+		if (arg && arg[0]) wi::renderer::gg_shadow_distance_fade = (atoi(arg) != 0);
+		_snprintf(result, resultSize,
+			"SHADOW DISTANCE FADE (3.108): %d  fadingCasters=%u  shadowCasters=%u\n"
+			"  tree lod_dist=%.0f  meshShadowReach(pool cap)=%.0f  TreeShadowLODDist=%.0f (stored %.0f)",
+			wi::renderer::gg_shadow_distance_fade ? 1 : 0,
+			wi::renderer::gg_dbg_shadow_fading.load(std::memory_order_relaxed),
+			wi::renderer::gg_dbg_shadow_casters.load(std::memory_order_relaxed),
+			GGTrees::ggtrees_global_params.lod_dist, GGTrees::GGTrees_GetMeshShadowReach(),
+			GGTrees::ggtrees_global_params.lod_dist_shadow, t.visuals.fTreeShadowLODDist);
+		result[resultSize - 1] = 0;
+		return true;
+	}
 
 	// ========================================================================================
 	// GGMAX 2.94: brutal off-switches + a keyed GPU-milliseconds readout.

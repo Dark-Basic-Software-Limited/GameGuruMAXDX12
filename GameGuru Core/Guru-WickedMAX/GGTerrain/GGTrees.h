@@ -113,6 +113,7 @@ namespace GGTrees
 	void GGTrees_Update_Painting( RAY ray );
 	int GGTrees_UsingBrush();
 	uint32_t GGTrees_GetNumTypes();
+	float GGTrees_GetMeshShadowReach();   // GGMAX 3.108: where tree mesh shadows end (the pool cap)
 	uint32_t GGTrees_GetNumHighDetail();
 	void GGTrees_ChangeDensity(int density);
 	void GGTrees_RepopulateInstances();

@@ -1449,13 +1449,49 @@ bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		// tree's mesh-shadow flag in place; range live-updates proxy/pool cascade masks.
 		ImGui::TextCenter("Tree Shadow LOD Distance");
 		ImGui::PushItemWidth(-10);
-		if (ImGui::SliderFloat("##setshadow_TreeShadowLODDist", &t.visuals.fTreeShadowLODDist, 750, 7000, "%.0f"))
 		{
-			t.gamevisuals.fTreeShadowLODDist = t.visuals.fTreeShadowLODDist;
-			GGTrees::ggtrees_global_params.lod_dist_shadow = t.visuals.fTreeShadowLODDist;
-			bVisualUpdated = true;
+			// ★ GGMAX 3.108 (tester report #5): an HONEST slider. Tree mesh shadows cannot reach past
+			// the trees drawn as meshes - the tree pool, whose reach the Graphics Quality preset sets
+			// (Low 2000 ... Ultra 5000 units; Test Game often runs a different preset from the editor).
+			// The old fixed 750..7000 range offered values no preset reaches, so everything above the
+			// pool's reach did nothing. The range now stops at the CURRENT reach, and dragging to the end
+			// stores 7000 = "Max": as far as the trees go at whatever preset is running.
+			// The stored value is left alone unless the slider is dragged, so a value set in the editor
+			// is not cut down by a lower Test Game preset - it is just shown at its effective value.
+			const float reach = GGTrees::GGTrees_GetMeshShadowReach();
+			float sliderMax = (reach < 7000.0f) ? reach : 7000.0f;
+			if (sliderMax < 750.0f) sliderMax = 750.0f;
+			float shown = t.visuals.fTreeShadowLODDist;
+			if (shown > sliderMax) shown = sliderMax;
+			// "Max" ONLY for the stored 7000 sentinel - the one value that follows the preset. A plain
+			// number at or past the current reach (the default 4000 at High, or 4000 under a Low Test
+			// Game) is shown as what it is: its effective value, plus the stored one when they differ.
+			// (3.108 review: labelling a stored 4000 "Max" promised a fade it would not get at a preset
+			// whose reach is beyond 4000 - there the plain 4000 still switches the mesh shadow off.)
+			char sliderFmt[64];
+			if (t.visuals.fTreeShadowLODDist >= 6999.5f)
+				strcpy_s(sliderFmt, sizeof(sliderFmt), "Max (%.0f)");
+			else if (t.visuals.fTreeShadowLODDist > sliderMax + 0.5f)
+				sprintf_s(sliderFmt, sizeof(sliderFmt), "%%.0f (set %.0f)", t.visuals.fTreeShadowLODDist);
+			else
+				strcpy_s(sliderFmt, sizeof(sliderFmt), "%.0f");
+			if (ImGui::SliderFloat("##setshadow_TreeShadowLODDist", &shown, 750, sliderMax, sliderFmt))
+			{
+				const float stored = (shown >= sliderMax - 0.5f) ? 7000.0f : shown;
+				t.visuals.fTreeShadowLODDist = stored;
+				t.gamevisuals.fTreeShadowLODDist = stored;
+				GGTrees::ggtrees_global_params.lod_dist_shadow = stored;
+				bVisualUpdated = true;
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip("How far trees cast their full, detailed shadow. Beyond it they cast simple card shadows.\n"
+					"It cannot reach past the trees drawn in full detail, which the Graphics Quality setting decides:\n"
+					"%.0f units at the current setting, so the slider stops there. 'Max' always follows that setting.\n"
+					"At Max the detailed shadow fades out smoothly with the tree. A lower value saves shadow work,\n"
+					"but switches each tree's detailed shadow off at that distance.", sliderMax);
+			}
 		}
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Distance where detailed tree mesh shadows hand off to the merged billboard shadow proxies. The tree's own visual LOD switches at 2500 - matching values hides one transition inside the other.");
 
 		ImGui::TextCenter("Tree Shadow Range");
 		if (ImGui::SliderInt("##setshadow_TreeShadowRange", &t.visuals.iTreeShadowRange, 0, 5))

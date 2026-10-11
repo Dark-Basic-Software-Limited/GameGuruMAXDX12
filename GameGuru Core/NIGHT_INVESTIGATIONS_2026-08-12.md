@@ -15360,3 +15360,54 @@ would be another dead range. The loader also resets any saved value outside 750.
 ★ **"Distance X" settings need a check of what ELSE ends first.** The slider was honest in DX11 and became
 a dead range in DX12 because the pool, not the slider, now decides where tree meshes stop - and the
 quality preset decides where the pool stops.
+
+
+### 3.108 FIX - options 1 + 3 (Lee: "Go with 1 and 3")
+
+**1. The mesh shadow now dissolves with the mesh.** Engine: new `ObjectComponent` flag
+`SHADOW_DISTANCE_FADE` (bit 27, the GGMAX range). For a flagged object the directional shadow gather
+gives the batch its REAL eye distance (`sqrt(distanceSq)`, the same EYE and `object.center` the camera
+pass uses) instead of 0, so `RenderMeshes` computes the same dither, `(distance - fadeDistance) /
+radius`, and switches the batch to the alpha-test shadow PSO; `shadowPS_alphatest.hlsl` now clips with
+the same 8x8 Bayer cutout the camera pass uses without TAA. The game flags every pool tree at creation
+(`GGTrees_part2.cpp` GrowTreePool); chunk proxies and every other object are untouched.
+Harness `SET_SHADOWDISTFADE [0|1]` (A/B lever; prints `fadingCasters`, the reach and the slider).
+Shader landed: `shadowPS_alphatest.cso` 19,116 -> **20,092** bytes.
+
+**3. An honest slider.** `GGTrees_GetMeshShadowReach()` returns the pool cap exactly as the gather
+resolves it. The slider's range is now 750..min(7000, reach) - 4000 at High (editor), 2000 at Low (this
+Test Game). Dragging to the end stores **7000 = "Max"**, the one value that follows the preset;
+"Max (N)" shows only for it. A plain value past the current reach shows as "2000 (set 4000)". The stored
+value is written only when the slider is dragged, so a lower Test Game preset never cuts a saved value.
+Tooltip rewritten (the old one pointed at the 2500 LOD switch, a near-invisible event on snow trees).
+
+### Verified (exe `8b6eba394433dede2274358b1eef14a2`, TESTPRO2 > testpro2snow, nothing saved)
+
+| where | run | crown brightness | largest single step |
+|---|---|---|---|
+| Test Game (Low), 1400-2100 u, slider 7000 | fade OFF (= old) | 13.5 at 1825 -> **38.2** at 1850 | **24.7** |
+| same | fade ON | rises 22 -> 30 across 1500-1850 | 7.6 (noise level) |
+| same, final exe | fade ON | | 7.5 |
+| Editor (High), 3300-3750 u | fade OFF | 73 -> 94, then flat | |
+| same | fade ON | 73 -> 107, rising steadily | |
+| Editor, 3750-3850 u | both | 107 / 94 -> 161 | the mesh -> billboard APPEARANCE step (below) |
+
+Slider (editor): stored 7000 reads "Max (4000)"; a drag to the middle stored 2150; a drag back to the
+end stored 7000. Test Game readout: reach 2000, stored 7000 -> "Max (2000)". (The Test Game Visuals
+window itself could not be opened by the harness - its TAB key is polled through `KeyState`, which
+`PRESS_KEY` does not reach; it is the same `tab_tab_visuals` code as the editor panel.)
+
+**Review** (three lenses, a refuter per finding): ONE survived, fixed - the first label showed "Max" for
+any value at the current reach (the default 4000 at High), promising a fade a plain 4000 would not get
+at a preset reaching beyond it; "Max" is now shown only for the 7000 sentinel. Refuted as
+not-a-regression or unreachable: a whole instanced batch takes the alpha-test shadow PSO while one of
+its trees is in the band (trees are alpha-tested anyway; no measurable cost); the Bayer stipple is
+indexed by shadow-atlas pixel and can shift a texel as the cascade snaps (invisible under PCF, and the
+visible dissolve moves more); Object Detail Distance objects still hard-cut their shadows (pre-existing,
+untouched - a candidate to opt in later); Ultra-only scenarios (no stock UI selects Ultra).
+
+**Still there, by design of this change:** (a) a slider value BELOW the reach still switches each
+tree's mesh shadow off at that distance (option 2, not chosen); (b) at High the visible tree's swap from
+mesh to the lighter billboard brightens it at ~3750-3850 u whatever the shadow does - the billboard
+shader lifts the darks (shade wrap 0.5) - not seen at Test Game's Low preset; (c) near trees still cast
+a card shadow under their mesh shadow (option 4).

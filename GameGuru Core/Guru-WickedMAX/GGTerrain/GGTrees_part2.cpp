@@ -172,6 +172,20 @@ static float TreeMeshFadeDistance( float radius )
 	return d;
 }
 
+// GGMAX 3.108: how far tree MESH shadows can reach - the pool cap, resolved exactly as the gather
+// resolves it. Every pool tree's mesh (and so its mesh shadow, which since 3.108 dissolves with it)
+// has faded out by here, so a Tree Shadow LOD Distance beyond this value changes nothing. The cap
+// follows the quality preset (lod_dist 1000/2000/3000/4000 -> 2000/3000/4000/5000), which is why the
+// Visuals > Shadows slider asks for it rather than offering a fixed 7000 that no preset reaches.
+// Returns a very large value when the pool is uncapped.
+float GGTrees_GetMeshShadowReach()
+{
+	float cap = gg_tree_pool_max_dist;
+	if ( cap < 0.0f ) cap = ggtrees_global_params.lod_dist + 2.0f * GG_TREE_LOD_TRANSITION;
+	if ( cap <= 0.0f ) return 1.0e30f;
+	return cap;
+}
+
 static bool             g_wickedTreesSetup   = false;
 static std::string      g_treesExeDir;
 
@@ -603,6 +617,10 @@ static void GrowTreePool( wi::scene::Scene& scene, uint32_t want )
 		obj.SetRenderable( false );
 		obj.SetNotVisibleInReflections( true );
 		obj.SetOcclusionQueryDisabled( true );
+		// GGMAX 3.108 (tester report #5): the mesh's SUN SHADOW dissolves over the same band as the
+		// mesh (3.03 fade) instead of staying solid until the engine culls the caster at the end of
+		// that band and dropping out in one frame - which took the tree's whole self-shadow with it.
+		obj.SetShadowDistanceFade( true );
 		obj.draw_distance = TreeMeshFadeDistance( 0.0f );   // GGMAX 3.03: placeholder, BindTreeSlot refines it
 		obj.cascadeMask = 2;
 		scene.transforms.Create( e );

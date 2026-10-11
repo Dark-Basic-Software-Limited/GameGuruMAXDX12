@@ -297,6 +297,7 @@ DX12 ported them later (most in the 3.44–3.50 parity round, 2026-09-16/17).
 | 234 | **The RPG HUD map shows the level map; new levels get a thumbnail** - take a Map Snapshot of a level, then Test Game a level whose HUD has a `map:image`: the on-screen map shows the snapshot. Add New Level > Generate: the Save New Level box shows a preview, and the saved level's node shows it as its thumbnail | U |
 | 235 | **Grass selection survives save and reload** - add a custom grass (palette Add New Grass), select it with a stock grass, save the level, restart MAX and reopen it: open Add Vegetation and both are still selected, and painting uses both. Trees: an old level's palette selection now restores instead of resetting to Birch | U |
 | 236 | **Placing a character no longer flashes corrupt polygons** - in a level with Lower Animation ticked (Reduction Scale on), pick a character from Level Items and place several of them far from the camera: no frame of polygons splayed across the view. Also: while a character is held on the cursor and you move the mouse, distant characters animate smoothly instead of flicking between two poses | L |
+| 237 | **Trees no longer pop lighter as you back away** - in Test Game on a level with trees, walk backwards away from a tree you are facing: its shading should fade smoothly instead of the whole tree suddenly turning lighter. Visuals > Shadows > Tree Shadow LOD Distance now stops at the distance the current quality setting can reach and reads "Max (N)" at the end; drag to the end for the smooth fade | U |
 
 ---
 
