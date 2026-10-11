@@ -296,6 +296,7 @@ DX12 ported them later (most in the 3.44–3.50 parity round, 2026-09-16/17).
 | 233 | **Storyboard Take Screenshot updates the level node** - on a level node choose Take Screenshot, then Take Screenshot in Snapshot Mode: the "Use New Screenshot ?" box shows the view with no UI in it, and Use puts it on the node. Save the project, restart MAX, reopen: still there. Take Map Snapshot writes `<level>.png` beside the level | L |
 | 234 | **The RPG HUD map shows the level map; new levels get a thumbnail** - take a Map Snapshot of a level, then Test Game a level whose HUD has a `map:image`: the on-screen map shows the snapshot. Add New Level > Generate: the Save New Level box shows a preview, and the saved level's node shows it as its thumbnail | U |
 | 235 | **Grass selection survives save and reload** - add a custom grass (palette Add New Grass), select it with a stock grass, save the level, restart MAX and reopen it: open Add Vegetation and both are still selected, and painting uses both. Trees: an old level's palette selection now restores instead of resetting to Birch | U |
+| 236 | **Placing a character no longer flashes corrupt polygons** - in a level with Lower Animation ticked (Reduction Scale on), pick a character from Level Items and place several of them far from the camera: no frame of polygons splayed across the view. Also: while a character is held on the cursor and you move the mouse, distant characters animate smoothly instead of flicking between two poses | U |
 
 ---
 

@@ -15155,3 +15155,110 @@ of slots 31..63 (needs 33 custom grasses all selected; noted as the known limit 
 
 ★ A round trip that reads the value straight after load is not the user's round trip - the palette
 REWRITES the value from its own flags. Test through the UI that consumes it.
+
+---
+
+## 3.107 Placing a character drew it from an EMPTY skinning buffer (tester report #4) - 2026-10-11
+
+Lee, adding Christmas Zombies one by one to TESTPRO2 > testpro2: "there is definately a framer where it
+seems the character polygons themselves are splayed out and corrupt for a single frame before restoring".
+
+**Reproduced on the first try** with `BURST_FRAMES` (new driver `tools/harness/place_burst.sh`: pick the
+Level Items thumbnail, arm a 40-frame burst, click to place). It is far bigger than it looks at speed:
+4 consecutive frames of a brown sheet from the zombie up into the sky, the selection outline tracing it,
+then a frame where the sheet's SHADOW darkens the terrain. Lee saw one frame because at 100+ FPS that
+is what 4 burst frames (each slowed by a readback) amount to.
+
+### Two defects in the skinning streamout ping-pong, both under Reduction Scale
+
+The level runs Reduction Scale 25 in the EDITOR too (`DUMP_ANIMREDUCTION`: 58 of 106 armatures held),
+so the 3.92 machinery is live while editing - holding an armature skips its skinning dispatch AND its
+so_pos/so_pre swap, and the mesh draws the pose already in the buffer.
+
+**1. A fresh buffer was held before anything had been written to it.** The click path (traced by the
+parallel investigation, every step cited): `entity_createobj` -> `CloneObject` -> `WickedCall_AddObject`
+builds a NEW MeshComponent and a NEW armature per skinned mesh, and `CreateRenderData` allocates the
+streamout buffer UNINITIALISED. In the same frame, `gridedit_recreateentitycursor` deletes the old
+cursor object, and `WickedCall_RemoveObject` ends with a full `Scene::Update(0)`
+(`wickedcalls_part0.cpp:2397`) - BEFORE the frame's real `Update(dt)`. That render-less update gives
+the new armatures their forced first pose (3.25's `gg_anim_posed_once`) - but no render follows it, so
+no dispatch ever writes the buffer. The real update sees armatures that are "posed", at 1000+ units,
+and HOLDS them on their normal phase. The draw reads the never-written half until the next go-frame:
+up to a whole period (3 at 1000 units, 6 at 2000, at scale 25).
+
+Evidence: the event's armature entity is always its mesh's entity + 1 - created together, so NEW -
+and the instrument now prints how many rendered frames ago each armature got its first pose:
+**0** for every placement event, i.e. posed in the same frame by a render-less update.
+⚠ My first version printed `posedBefore=1` and I cited it as this evidence. The review caught that it
+is 1 BY CONSTRUCTION for any held armature (the prologue can only hold an armature that is already in
+the set) - a number that could not have come out any other way, agreeing with me. Replaced by the
+frame count, which can.
+
+**2. The ping-pong swapped on every scene update, not every rendered frame.** The editor's pick refresh
+(`WickedCall_UpdateSceneForPick`, `wickedcalls_part2.cpp:881`) runs `Scene::Update(0)` on every frame
+the mouse or camera moves while an object is on the cursor. Each update swapped again; only ONE
+dispatch follows, in the render. And the mid-frame update reads LAST frame's phase counter (the game
+publishes it after its logic), so a character that went on frame N-1 swapped again in `Update(0)` -
+onto the half holding the pose one period older - and the real update then held it there with no
+dispatch. **Every distant character drew a pose one period old for all but one frame of every
+period, whenever an object was on the cursor** - the 3.92 two-pose flick, back through a side door.
+Measured with the guard off: **312,863 held-mesh draws of an old pose in ~20 s** with a zombie on the
+cursor and the camera turning - essentially every held mesh, every frame.
+
+### Fix (engine `wiScene.cpp/.h`, `wiScene_Components.h/.cpp`, `wiRenderer.cpp`; game harness)
+
+- `MeshComponent::gg_so_written` - which halves a dispatch has REALLY written (set in the dispatch,
+  cleared whenever the buffer is created). A mesh is never held while the half it would draw is
+  unwritten. Safe: `RunArmatureUpdateSystem` uploads every armature's bone matrices every frame, held
+  or not - a held armature's are just unchanged, so the forced dispatch skins the held pose.
+- **The ping-pong advances at most once per RENDERED frame.** The half the last render left
+  (`gg_so_base`) is captured on the first update of each device frame (`GetFrameCount`), and every
+  update re-derives `held ? base : other` from it - so however many updates run, the last one before
+  the render wins, and the dispatch obeys that same decision through `MeshComponent::gg_skin_held`
+  (it no longer reads the armature vector; one decision, as 3.25n intended).
+- `vb_pre` points at `so_pos` while the previous half has never been written (frame 1 of a fresh
+  buffer): zero motion instead of a random velocity.
+- Instrument + A/B lever, harness `SET_SKINFRESHGUARD [0|1]` (no argument = read-only):
+  `freshEvents`, render-truth `drawnGarbage` / `drawnStale` (what held meshes REALLY draw),
+  `sameFrameUpdates`, and the last 8 events with `firstPosedFramesAgo`. 0 = the pre-3.107 behaviour of both.
+
+Not changed: the render-less update still marks a first pose. With the buffer guard it is harmless
+(the pose it evaluated is real and gives valid bounds, which is what the 3.25 force exists for).
+
+### Verified (exe `835dc4cc9466076bf1294b7542fe74be`, TESTPRO2 > testpro2, nothing saved)
+
+| run | splay frames in a 40-frame burst | drawnGarbage | drawnStale |
+|---|---|---|---|
+| pre-fix build, 1 placement | **4** (sheet to the sky) | - | - |
+| guard 0, 1 placement (interim build, fix 1 only) | **2** (pink sheet over the whole view, then its shadow) | - | - |
+| guard 0, 1 placement | **1** (grey sheet over the sky) | **+10** (5 meshes x 2 frames) | - |
+| guard 1, 3 placements (3 more on the interim build) | **0** (largest frame-to-frame change 0.3) | 0 | 0 |
+| zombie on the cursor, camera turning ~20 s, guard 1 | - | 0 | **0** (5,761 extra same-frame updates) |
+| same, guard 0 | - | 0 | **+312,863** |
+| same, guard 1 again (x2) | - | 0 | **+0** (after the switch moment: +25, meshes left on an old half by the guard-0 run) |
+
+Behaviour change worth knowing: with Reduction Scale OFF and two updates in a frame, the old double swap
+left the drawn half fixed and `vb_pre` naming a stale pose; now one swap per frame - drawn geometry
+identical, `vb_pre` the genuine previous pose. In Test Game (one update per frame) nothing changes.
+
+**Investigation + review (parallel).** Four read-only investigators, one hypothesis each, ran while I
+reproduced: the editor placement path (SUPPORTED - it traced the render-less `Update(0)` in
+`WickedCall_RemoveObject` and the posed-once mark), engine first-frame state (plausible), the first bone
+pose (REFUTED - the pose is valid: the DBO's own frame matrices, animation started in the same tick),
+clone/instance sharing (REFUTED - every placed character gets its own meshes, armatures and buffers).
+The double-swap came from the bone-pose investigator's side notes. Then a three-lens adversarial review
+of the fix, one refuter per finding: nothing survived. Refuted: (a) `posedBefore` always reads 1 -
+correct, and not a product defect, but it was being cited as evidence, so the instrument was changed to
+`firstPosedFramesAgo` anyway (above); (b) `GetFrameCount` also advances on non-render submits
+(texture/buffer readbacks), which could re-capture the base mid-frame - real in principle, but every
+submit in this game either is a full render or happens before the frame's first update (the capture
+paths run in the editor loop's first half, the pick refresh in its second), and even if reached it is
+one stale pose, never garbage, and no worse than before. The consumers/threading lens returned no
+findings. The build lens confirmed every buffer-creating path (load, `Entity_Duplicate`, merge) goes
+through `CreateStreamoutRenderData`, which resets the written bits, and that every lib referencing
+`MeshComponent` was rebuilt after the header changed.
+
+★ **A render-less `Scene::Update` is not a frame.** Anything that means "once per frame" - a ping-pong
+advance, a "posed once" mark - has to be keyed on the RENDERED frame, or a mid-frame refresh counts as
+a frame nothing drew. Fifth member of the double-buffer family (1.37b hair, 3.92 skinning swap): the
+producer ran once per frame, the swap ran once per UPDATE.

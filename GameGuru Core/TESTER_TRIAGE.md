@@ -63,6 +63,7 @@ a new data point, not a regression, until it is compared on the same hardware.
 | Trees / grass missing or popping | billboard handover, tree pool cap | [[project-far-tree-billboards]] |
 | Big FPS drop on a weak GPU | reflection default (§3) first, then the Brutal off-switches | ask for Graphics and Performance settings |
 | A thumbnail / image that should come from a capture never appears, or vanishes on reopen | DX12 image layer: relative load of a writables file fails, `SaveImage` writes nothing (3.103) | is the file on disk in `Documents/GameGuruApps/GameGuruMAX/Files/...`? then it is the load, not the capture |
+| A character splays into huge sheets for a frame or few when placed or spawned; distant characters flick between two poses | 3.107 skinning ping-pong under Reduction Scale (fixed after the tester build) | `SET_SKINFRESHGUARD` -> `drawnGarbage` and `drawnStale` must stay 0; ask them to untick Lower Animation |
 | Terrain torn into white sheets / spikes, trees floating, after clicking palette trees | 3.102 billboard atlas slice overrun (fixed after the tester build) | `SET_FARTREES` (no argument = read-only) -> `ATLAS (3.102): sliceCopiesRefused=` must stay 0 |
 
 ## 5. Reproducing — the tool belt
@@ -74,6 +75,8 @@ a new data point, not a regression, until it is compared on the same hardware.
   Object Library open.
 - In game: `RUN_LUA return <expr>` reads live Lua state; `PRESS_ESCAPE` leaves Test Game.
 - `TYPE_TEXT <text>` types into the focused ImGui text field (3.104) - e.g. naming a new level.
+- `tools/harness/place_burst.sh <pickX> <pickY> <placeX> <placeY> <frames> <tag>` - place an object while
+  capturing consecutive frames (3.107); `BURST_FRAMES` alone for any other one-frame glitch.
 - Debug views (`SET_TANGENTVIS n`, 0 = off): 2 vertex normal · 3 bumped normal · 1 world tangent ·
   4 handedness · 16 world-position grid · 23 albedo. Exact black in 2/3 = a NaN normal.
 - `FIND_OBJECT x y z r` lists scene objects near a point; `SET_CAMERA x y z ax ay` moves the editor
@@ -87,4 +90,5 @@ a new data point, not a regression, until it is compared on the same hardware.
 | 1 | 2026-10-10 | via Lee | - | reproduced by Lee on the dev build | Terrain > Trees palette | picking the last trees tears the terrain into white sheets | no | **fixed, Lee-confirmed** (also: selection wipe, 64-bit bitfield load, atlas rebuild for new types) | 3.102 / `e7b11178` |
 | 2 | 2026-10-10 | Lee | - | dev build | Storyboard > level node > Take Screenshot | snapshot taken but the level node thumbnail never changes | no | **fixed, Lee-confirmed** (also: UI in the capture, thumb lost on reopen, map PNG) | 3.103 / `96b52e3a` |
 | 3 | 2026-10-10 | Lee | - | dev build | RPG HUD on-screen map + Save New Level | the HUD map shows nothing after a Map Snapshot; a generated level gets no thumbnail | no | **fixed** (DX12 image loader now uses the writables redirect) | 3.104 / `e715e5c3` (+3.105b guards) |
+| 4 | 2026-10-11 | Lee | RX 9060 XT | dev build | Level editor > placing a character (Christmas Zombie, TESTPRO2 > testpro2) | for ONE frame as the character is put down its polygons splay out, then it looks fine | no | **fixed** (also: distant characters drew an old pose whenever an object was on the cursor) | 3.107 / `__HASH__` |
 | | | | | | | | | | |

@@ -6664,6 +6664,19 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_SKINFRESHGUARD") == 0)
+	{
+		// GGMAX 3.107 (tester report #4): SET_SKINFRESHGUARD [0|1]. No argument = read-only.
+		// 1 (default) = a held skinned mesh whose streamout has never been written is skinned
+		// anyway; 0 = the pre-3.107 behaviour (it is drawn from the uninitialised buffer - the
+		// one-frame splayed character). The report counts every such event either way and lists
+		// the last 8, with how many rendered frames ago the ARMATURE got its first pose (0 = by a
+		// render-less Scene::Update in the same frame - the mechanism behind report #4). Also the
+		// render-side truth counters drawnGarbage / drawnStale, which must stay 0 with the guard on.
+		if (arg && arg[0]) wi::scene::gg_skin_fresh_guard = (atoi(arg) != 0);
+		wi::scene::gg_skin_fresh_report(result, (int)resultSize);
+		return true;
+	}
 
 	// ========================================================================================
 	// GGMAX 2.94: brutal off-switches + a keyed GPU-milliseconds readout.
