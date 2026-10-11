@@ -5,10 +5,14 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 9a28c586-4c13-4447-916e-7fb51301bfa8
-  modified: 2026-10-10T23:00:00.000Z
+  modified: 2026-10-11T01:40:00.000Z
 ---
 
-# ▶▶ RESUME HERE — 2026-10-10 late: TESTER FIX CYCLE IN PROGRESS
+# ▶▶ RESUME HERE — 2026-10-11: TESTER FIX CYCLE IN PROGRESS
+
+2026-10-11: report #4 fixed (3.107, game `c8e5a62b`, ENGINE `c1f54bd9` - first engine change since the tester build): placing a character drew its never-written skinning buffer (splayed polygons) + held characters drew an old pose whenever an object was on the cursor. Awaiting Lee. Kill MAX freely; parallel review per fix.
+
+## 2026-10-10 late
 
 Read `GameGuru Core/RESUME_2026-09-24.md` FIRST (its top block is the 10-10 state). Tester reports #1-#3 fixed (3.102 + 3.103 Lee-confirmed; 3.104 awaiting), hub test 1010 CLEAN (3.105), grass 64-bit selection (3.106, awaiting). Engine unchanged since the tester build (680a30b0). Next: more tester reports via Lee -> TESTER_TRIAGE.md. Kill MAX freely during bug fixing. Run a parallel review workflow on every fix.
 

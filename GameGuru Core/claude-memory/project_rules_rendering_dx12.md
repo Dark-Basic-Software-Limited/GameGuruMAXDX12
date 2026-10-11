@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 509f3c47-3d86-4b9b-a337-23ada2c00769
-  modified: 2026-08-30T23:43:05.586Z
+  modified: 2026-10-11T00:26:52.588Z
 ---
 
 # Durable rendering / DX12 rules (verbatim from the index; each paid for at least once)
@@ -77,6 +77,14 @@ metadata:
   would predict a long hold then a jump. That mismatch says the DECISION is fine and something
   downstream is alternating. Also fix the velocity twin (`vb_pre`) or a motionless held mesh
   reports a large constant vertex velocity.
+  ★★★ 3.107 (tester report #4), the same buffer twice more: **(a) a HOLD on a buffer nothing has
+  written draws garbage** (streamout is created uninitialised - a placed character splayed into
+  sheets to the sky); **(b) A RENDER-LESS `Scene::Update(0)` IS NOT A FRAME.** The game calls it
+  mid-frame (pick refresh on every mouse/camera move while an object is on the cursor;
+  `WickedCall_RemoveObject` on every delete), and each one swapped the ping-pong and marked
+  armatures "posed" with NO dispatch following. Anything meaning "once per frame" must key on
+  the RENDERED frame (`GetDevice()->GetFrameCount()`), re-deriving from the state the last
+  render left. Instrument: `SET_SKINFRESHGUARD` render-truth `drawnGarbage`/`drawnStale`.
 
 - ★★★ **The DX12 DBP image layer has two blind spots that look like success:** a RELATIVE `LoadImage`/`LoadImageSize` of a writables-area file (Documents) fails - names resolve against the CWD only, never `GG_GetRealPath` - and `SaveImage` writes nothing (no CPU-side texture). ROOT FIXED 3.104: the DX12 branch of `LoadImageCoreRetainName` now runs `GG_GetRealPath` like every DX11 loader, so relative/install-path loads of writables files work (RPG HUD map, Save New Level). `SaveImage` is still a no-op - copy files. Earlier per-site cure (a9171fbd, 3.103): copy the FILE, load by ABSOLUTE path into an evicted slot (the DX12 texture cache is keyed by image id). ★ Fix the LAYER, not the callers: three reports were one missing call in the loader. ★ A thumbnail that appears is not one that persists: test save + full restart + reopen.
 - ★★★ **`CopyTexture`/`CopyTextureRegion` do NOT range-check the subresource outside the debug layer** - an out-of-range array slice is a silent GPU write into whatever the allocator put next to the texture (3.102: a palette click wrote slice 37 of a 12-slice tree atlas and tore the terrain apart; it did not reproduce on a second run - where it lands is allocation-dependent). ★ **When a resource is resized or remapped, find every WRITER, not just the reader** - 2.99 changed the atlas and its shader lookup together and left the palette upload indexing by type. The shared loader `GGTerrain_LoadTextureDDSIntoSlice` now refuses (`gg_ddsSliceRefused`, harness `SET_FARTREES`).
