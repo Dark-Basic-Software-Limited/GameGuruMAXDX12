@@ -4214,7 +4214,7 @@ struct visualstype
 		 iShadowSpotMax = 8;
 		 bTransparentShadows = false;
 
-		 fTreeShadowLODDist = 4000.0f;
+		 fTreeShadowLODDist = 2000.0f;   // GGMAX 3.108c: Lee 2026-10-12 (was 4000)
 		 iTreeShadowRange = 5;
 
 		 fShadowFarPlane = DEFAULT_FAR_PLANE;

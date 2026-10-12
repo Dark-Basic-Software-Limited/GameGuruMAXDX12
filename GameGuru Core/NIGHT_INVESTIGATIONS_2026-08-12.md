@@ -15450,3 +15450,30 @@ line because the pick point is ~100 units in front of the trunk):
 
 A small step at 1425 and 1525 (~6) is identical with the fade on and off at every slider value - not this
 mechanism (a cascade boundary on that line of travel).
+
+
+### LEE-CONFIRMED 3.108b, 2026-10-12: "Works now"
+
+### 3.108c Tree Shadow LOD Distance: range 750..5000, default 2000 - 2026-10-12
+
+Lee: "can you allow a maximum of 5000 instead of 2000, and set the default to 2000".
+
+- **Range a fixed 750..5000** (the slider had stopped at the current tree pool reach - 2000 in his Low
+  Test Game). 5000 is the furthest any quality setting draws trees in full detail (Ultra's pool
+  reach), so it is the honest top; the 7000 "Max" sentinel is gone. A value past the CURRENT reach
+  still acts as the reach - a tree mesh shadow cannot outlive the tree mesh - and the label says so:
+  "5000 (4000 at this quality)" in the editor (High), "(2000 at this quality)" in a Low Test Game.
+  The tooltip explains it and that the value takes full effect at a higher quality setting.
+- **Default 2000** everywhere it is set: `Types.h` struct default, both `M-Visuals_part0.cpp` reset
+  paths (level defaults + Reset Visuals), the zeroed-struct guard in `M-GridEditB_part3.cpp`, and the
+  tree module's own `GGTrees.h` default (was 4000, user-tuned 2026-07-28 before the fade existed).
+- **Loader**: below 750 -> 2000; above 5000 (an older level's 7000 "Max") -> 5000.
+
+Verified (exe `b693149441d09460675070f7e1d19b71`, TESTPRO2 > testpro2snow, nothing saved): the stored 1002 loads and shows as
+"1002"; a drag to the end stores 5000 and reads "5000 (4000 at this quality)" (High editor, reach
+4000); the tooltip reads correctly; Reset Visuals gives 2000. MAX was then relaunched so the level is
+back exactly as saved.
+
+★ Reset Visuals opens a native Yes/No/Cancel box, which owns the message pump - the harness goes deaf
+(every command TIMEOUT) until it is answered. Answered here with WScript.Shell AppActivate
+("Confirmation") + SendKeys ENTER (the default button is Yes).

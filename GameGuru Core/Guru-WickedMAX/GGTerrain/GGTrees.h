@@ -56,7 +56,7 @@ namespace GGTrees
 		int paint_scale_random_high = 245; // 0 to 100
 
 		float lod_dist = 3000;
-		float lod_dist_shadow = 4000; // USER-TUNED 2026-07-28 (live in test game): best shadow transition, acceptable cost
+		float lod_dist_shadow = 2000; // GGMAX 3.108c: Lee 2026-10-12 (was 4000, user-tuned 2026-07-28 before the shadow fade existed)
 
 		int hide_until_update = 0;
 

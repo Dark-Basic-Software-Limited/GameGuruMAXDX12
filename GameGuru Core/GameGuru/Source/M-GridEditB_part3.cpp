@@ -1318,7 +1318,7 @@ void Wicked_Update_Shadows(void *voidvisual)
 	// module. Guard: a zeroed struct from a legacy path must not silence tree shadows.
 	if (visuals->fTreeShadowLODDist < 1.0f)
 	{
-		visuals->fTreeShadowLODDist = 4000.0f;
+		visuals->fTreeShadowLODDist = 2000.0f;   // GGMAX 3.108c default
 		visuals->iTreeShadowRange = 5;
 	}
 	GGTrees::ggtrees_global_params.lod_dist_shadow = visuals->fTreeShadowLODDist;
