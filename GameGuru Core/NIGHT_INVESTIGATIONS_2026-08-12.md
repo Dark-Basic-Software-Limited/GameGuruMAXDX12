@@ -15652,3 +15652,5 @@ DX11); pre-generating into the install thumbbank is a separate job. Group thumbn
 other `SaveImage` callers can reuse the same primitive later. DX12 thumbnails match the studio-lit hover, not
 the DX11 stock thumbnails (Lee's 3.98 decision). Abalone shell (user content) frames low - the DX11 framing
 maths on that item's bounds.
+
+### LEE-CONFIRMED 3.111, 2026-10-12: "Works now" - DX12 thumbnail generation
