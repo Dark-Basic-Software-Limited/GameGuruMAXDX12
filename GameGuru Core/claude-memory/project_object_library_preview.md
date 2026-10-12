@@ -165,3 +165,18 @@ content ships its thumbnails. The preview render target is now exactly what a re
 - A preview keyed on an image ID needs a UNIQUE id per item (uncached items share the default icon),
   and ImgBtn derives the ImGui ID from the image id - swap one, keep the other stable.
 - 'Black backdrop.dds' is a dark gradient with a glow, not black.
+
+## 3.111 (2026-10-12) - thumbnail GENERATION via readback of the preview
+
+- The live preview's tonemapped RGBA8 (`s_ldr`) IS the DX11 grab. Generation = arm a one-shot request through
+  the live path, HOLD until `GGObjectPreview_RenderedSinceArm` >= N (+ streaming epoch stable for objects),
+  `GGObjectPreview_CaptureLDR` (wi::helper::saveTextureToMemory - submit + WaitForGPU, so BETWEEN frames only:
+  GrabBackBufferCopy), write .jpg + 288 icon .png with `WickedCall_SaveRGBA8Region`, library reloads the item.
+- ★ A multi-frame hold changes every assumption a one-call DX11 grab made: the library must not entity_load
+  into slot 0 meanwhile (bDoneOneThumbPerSync = g_bThumbGenInFlight), the full preview must cancel it, the
+  reload must survive folder changes (queue), and Finish must clear only its own request.
+- ★ A loop guard must not outlive its reason: block a written name only while the file exists (Update
+  Thumbnail deletes it on purpose), and per write area.
+- Particle library loads EVERY item (bReleaseIconsDynamic false): opening it generates all uncached effects.
+- Bare 'Black backdrop' particle capture = mean 8.0, no channel > 50: weather/birds draw nothing at preview
+  scale - keep the icon.
