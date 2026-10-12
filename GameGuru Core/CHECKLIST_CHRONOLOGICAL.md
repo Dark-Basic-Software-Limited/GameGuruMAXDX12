@@ -299,6 +299,7 @@ DX12 ported them later (most in the 3.44–3.50 parity round, 2026-09-16/17).
 | 236 | **Placing a character no longer flashes corrupt polygons** - in a level with Lower Animation ticked (Reduction Scale on), pick a character from Level Items and place several of them far from the camera: no frame of polygons splayed across the view. Also: while a character is held on the cursor and you move the mouse, distant characters animate smoothly instead of flicking between two poses | L |
 | 237 | **Trees no longer pop lighter as you back away** - in Test Game on a level with trees, walk backwards away from a tree you are facing: its shading fades smoothly instead of the whole tree suddenly turning lighter, at any Tree Shadow LOD Distance (3.108b, Lee-confirmed) | L |
 | 238 | **Tree Shadow LOD Distance runs 750 to 2000, default 2000** - Visuals > Shadows: the slider stops at 2000 and a new level (or Reset Visuals) starts at 2000 | L |
+| 239 | **Particles panel button reads "New Particle" in full** - select a particle object, open Object Tools > Particles: the button beside Delete Particle reads "New Particle" (was cut off as "Add New Partic") and still opens the Particle Library | U |
 
 ---
 

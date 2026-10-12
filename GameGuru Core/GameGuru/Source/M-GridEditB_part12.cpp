@@ -1628,10 +1628,10 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 		#endif
 		ImGui::Text("");
 
-		if (ImGui::StyleButton("Add New Particle##+", ImVec2((particle_w*0.5f) - 4.0f, 0)) || iSelectedLibraryStingReturnID == window->GetID("Add New Particle##+"))
+		if (ImGui::StyleButton("New Particle##+", ImVec2((particle_w*0.5f) - 4.0f, 0)) || iSelectedLibraryStingReturnID == window->GetID("New Particle##+"))
 		{
 			bPossibleWickedParticleSelectionChanged = true;
-			if (iSelectedLibraryStingReturnID == window->GetID("Add New Particle##+"))
+			if (iSelectedLibraryStingReturnID == window->GetID("New Particle##+"))
 			{
 				//This goes to the saved in pref. find free.
 				int iSaveTo = -1;
@@ -1724,7 +1724,7 @@ void DisplayFPEBehavior(bool readonly, int entid, entityeleproftype* edit_gridel
 				//Open select particle window.
 				bExternal_Entities_Window = true;
 				iDisplayLibraryType = 5;
-				iLibraryStingReturnToID = window->GetID("Add New Particle##+");
+				iLibraryStingReturnToID = window->GetID("New Particle##+");
 			}
 		}
 

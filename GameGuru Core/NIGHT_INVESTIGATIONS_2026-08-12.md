@@ -15492,3 +15492,15 @@ Verified (exe `8b7fa02bf0964bcdd01e9d4829ee15ce`): the saved 1002 shows as "1002
 stores 2000 and reads "2000". MAX relaunched afterwards so the level is back as saved.
 
 ### LEE-CONFIRMED 3.108d, 2026-10-12: "Works now" - report #5 closed (3.108, 3.108b, 3.108c superseded, 3.108d)
+
+
+### 3.109 Particles panel: "Add New Particle" button renamed "New Particle" - 2026-10-12
+
+Lee: the button was truncated to "Add New Partic" in the Object Tools > Particles panel (it shares the
+row with Delete Particle, each half the panel width). Renamed to "New Particle" in
+`M-GridEditB_part12.cpp`. The label doubles as the ImGui ID the Particle Library hands its pick back
+to (`window->GetID("...##+")` at three sites), so all three changed together. The Game Elements
+tooltip "Add New Particle" (`M-GridEdit_part1.cpp`) is a tooltip, not truncated, and is unchanged.
+Verified (exe `e025801d551e63f8071aa9833a37f1d3`, TESTPRO2 > testpro2snow, nothing saved): the button reads "New Particle" in
+full and still opens the Particle Library (closed without picking - a pick writes a saved slot into
+the preferences).
