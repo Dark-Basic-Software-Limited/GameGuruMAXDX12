@@ -298,6 +298,7 @@ void gridedit_clear_map ( void )
 {
 	//Stop delete any particle effects.
 	gpup_deleteAllEffects();
+	BackBufferParticleEmitter = -1; // GGMAX 3.110: its slot is gone; a stale id would later delete whatever reuses it
 
 	// GGMAX 3.66: let the shadow atlas shrink for the incoming level. wi::renderer only ever GREW
 	// it, so a single light-heavy level ratcheted it to 16384x4096 = 260 MB and every level after
@@ -711,6 +712,7 @@ void gridedit_new_map_quick(void)
 
 	//Stop delete any particle effects.
 	gpup_deleteAllEffects();
+	BackBufferParticleEmitter = -1; // GGMAX 3.110: its slot is gone; a stale id would later delete whatever reuses it
 
 	lighting_free();
 	gridedit_deletelevelobjects();
@@ -794,6 +796,7 @@ void gridedit_load_map ( void )
 	//Stop delete any particle effects.
 	TDRTrace("[LOADMAP] gpup_deleteAllEffects");
 	gpup_deleteAllEffects();
+	BackBufferParticleEmitter = -1; // GGMAX 3.110: its slot is gone; a stale id would later delete whatever reuses it
 
 	//  Load map data
 	TDRTrace("[LOADMAP] editor_hideall3d");

@@ -300,6 +300,7 @@ DX12 ported them later (most in the 3.44–3.50 parity round, 2026-09-16/17).
 | 237 | **Trees no longer pop lighter as you back away** - in Test Game on a level with trees, walk backwards away from a tree you are facing: its shading fades smoothly instead of the whole tree suddenly turning lighter, at any Tree Shadow LOD Distance (3.108b, Lee-confirmed) | L |
 | 238 | **Tree Shadow LOD Distance runs 750 to 2000, default 2000** - Visuals > Shadows: the slider stops at 2000 and a new level (or Reset Visuals) starts at 2000 | L |
 | 239 | **Particles panel button reads "New Particle" in full** - select a particle object, open Object Tools > Particles: the button beside Delete Particle reads "New Particle" (was cut off as "Add New Partic") and still opens the Particle Library | U |
+| 240 | **Particle Library thumbnails play the effect when hovered** - select a particle object, Object Tools > Particles > New Particle, rest the pointer on a thumbnail: after half a second the effect plays in it (legacy .arx and Wpe .pe alike), and the thumbnail comes back when you move off. Afterwards the Object Library hover preview still works (using the Particle Library used to stop it for the session) | U |
 
 ---
 

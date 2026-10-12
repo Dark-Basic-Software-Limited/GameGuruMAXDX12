@@ -957,6 +957,25 @@ extern "C" void gpup_draw_bydistance(const wiScene::CameraComponent & camera, wi
 int gg_gpup_solo = -1;
 void gpup_debug_solo( int enr ) { gg_gpup_solo = enr; }
 
+// GGMAX 3.110: draw ONE effect with any camera - the Particle Library live preview draws the
+// hovered effect into its own render target with the preview camera (master_part2.cpp).
+// The effect is kept INVISIBLE to the main view (which would otherwise draw it off-screen, 39000
+// units up, every frame), so the visible flag is lifted for this one call. Simulation ignores the
+// flag (gpup_update), so a hidden effect keeps animating.
+// ⚠ MAIN THREAD ONLY: it goes through gpup_draw, which re-sorts into the shared g_emitterSorting
+// and writes the effect's CPU-side constants - never call it from a render job.
+void gpup_draw_single( int ID, const CameraComponent& camera, CommandList cmd )
+{
+	if ( ID < 0 || ID >= (int)gpup_maxeffects || gpup_emitter[ID].effectLoaded == 0 ) return;
+	const int oldSolo = gg_gpup_solo;
+	const int oldVisible = gpup_emitter[ID].effectVisible;
+	gg_gpup_solo = ID;
+	gpup_emitter[ID].effectVisible = 1;
+	gpup_draw( camera, cmd );
+	gpup_emitter[ID].effectVisible = oldVisible;
+	gg_gpup_solo = oldSolo;
+}
+
 // GGMAX 2026-08-08 (task #122 round 7): force full descriptor re-dirty per gpup draw —
 // see the decoy-bind block in gpup_draw.
 int gg_gpup_rebind = 0;

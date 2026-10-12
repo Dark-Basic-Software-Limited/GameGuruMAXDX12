@@ -3593,7 +3593,7 @@ static bool AutoHarness_MouseCommands(const char* cmd, const char* arg, char* re
 		extern float BackBufferRotateY;
 		extern bool GGObjectPreview_IsActive(void);
 		extern void GGObjectPreview_DebugStatus(char* buf, int bufsize);
-		char st[1024]; st[0] = 0;   // 3.97: 512 truncated the studio fields
+		char st[2048]; st[0] = 0;   // 3.97: 512 truncated the studio fields; 3.110: 1024 the particle fields
 		GGObjectPreview_DebugStatus(st, sizeof(st));
 		extern bool ImGui_DX12_IsInitialized();
 		_snprintf(result, resultSize,

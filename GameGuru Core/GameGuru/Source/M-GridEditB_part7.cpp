@@ -1,4 +1,9 @@
-﻿void GrabBackBufferCopy(void)
+﻿// GGMAX 3.110: a Particle Library hover changed bloom / the thumb lights and they still need putting
+// back (GrabBackBufferCopy's DX12 reject branch does it). Set by GrabBackBufferCopy when it sees a
+// particle request, and by the library's close handler when it tears one down unseen.
+bool g_bParticleHoverRestoreOwed = false;
+
+void GrabBackBufferCopy(void)
 {
 #ifdef OPTICK_ENABLE
 	OPTICK_EVENT();
@@ -17,8 +22,9 @@
 	// What still cannot run: everything that ends in GrabImage(). That reads pixels through
 	// g_pGlob->pCurrentBitmapSurface with the legacy DBP DX11 image layer, and in DX12
 	// m_pD3D is NULL (master_part0.cpp:94) so GrabImageCore() returns false on its first
-	// line. Thumbnail GENERATION to disk, snapshot mode and the particle-thumb mode all
-	// need a GPU->CPU readback that does not exist yet, and stay switched off.
+	// line. Thumbnail GENERATION to disk and snapshot mode need a GPU->CPU readback that
+	// does not exist yet, and stay switched off. (3.110: the particle HOVER preview never
+	// did - it was switched off with them by mistake, and now rides the live preview below.)
 	//
 	// What CAN run: the live object preview. It does not want pixels on the CPU at all - it
 	// wants a texture ImGui can sample - so it takes the camera this function works out and
@@ -30,12 +36,56 @@
 	const bool bDX12 = ImGui_DX12_IsInitialized();
 	const bool bDX12LivePreview = bDX12 && bLoopBackBuffer && BackBufferObjectID > 0
 				  && !BackBufferSnapShotMode && !BackBufferParticlesMode && !BackBufferGrabGameScreen;
-	if (bDX12 && !bDX12LivePreview)
+
+	// GGMAX 3.110: the Particle Library hover preview rides the same live preview. It never needed a
+	// readback either - 3.83 switched it off together with thumbnail GENERATION, which does. The
+	// effect is drawn into the preview by GGObjectPreview_DrawParticles (master_part2.cpp).
+	// The WPE root counts only while it is still the one the LIBRARY loaded: PreviewWPERoot is shared
+	// with the level's own particle preview (the Particles panel, RenderPreviewEmitter), which can
+	// take it over the moment the library lets go of it.
+	extern uint32_t PreviewWPERoot;
+	extern uint32_t g_LibraryPreviewWPERoot;
+	extern bool GGObjectPreview_IsParticleActive(void);
+	const uint32_t uDX12PreviewWPE = (g_LibraryPreviewWPERoot != 0 && g_LibraryPreviewWPERoot == PreviewWPERoot) ? PreviewWPERoot : 0;
+	const bool bDX12ParticleSource = (BackBufferParticleEmitter != -1 || uDX12PreviewWPE != 0);
+	const bool bDX12ParticlePreview = bDX12 && bLoopBackBuffer && BackBufferParticlesMode && BackBufferObjectID == 0
+				  && BackBufferImageID > 0 && bDX12ParticleSource && !BackBufferSnapShotMode && !BackBufferGrabGameScreen;
+	// ★ HOLD. The library does not ask every frame: its hover code only runs when its wait counter is
+	// 0, and every item drawn after the hovered one sets it back to 3 while the request is up - so it
+	// re-requests one frame in three, and not at all for the 500 ms after it starts an effect. DX11
+	// simply kept showing the last grab in between. Here the engine keeps rendering the preview camera
+	// for as long as its resolution is set, so in between we only have to NOT tear it down.
+	const bool bDX12ParticleHold = bDX12 && !BackBufferParticlesMode && bLoopBackBuffer && BackBufferObjectID == 0
+				  && BackBufferImageID > 0 && bDX12ParticleSource && GGObjectPreview_IsParticleActive();
+	// CreateBackdropObject switches bloom off and the thumb lights on for every particle hover, and
+	// nothing on the particle path ever switched them back (not in DX11 either). File scope, because
+	// the library's close handler (M-GridEditB_part9.cpp) can clear the request before we see it.
+	if (bDX12 && BackBufferParticlesMode) g_bParticleHoverRestoreOwed = true;
+	bool& bParticleHoverRestoreOwed = g_bParticleHoverRestoreOwed;
+
+	if (bDX12 && !bDX12LivePreview && !bDX12ParticlePreview)
 	{
+		if (bDX12ParticleHold) return;
 		// not previewing (or previewing something we cannot do): make sure any object we
 		// parked out in preview space gets put back. This is the ONLY teardown path - the
 		// early returns below fire the instant the UI clears BackBufferObjectID on un-hover.
-		if (GGObjectPreview_IsActive()) GGObjectPreview_Stop();
+		const bool bWasActive = GGObjectPreview_IsActive();
+		if (bWasActive) GGObjectPreview_Stop();
+		if (bParticleHoverRestoreOwed)
+		{
+			master_renderer->setBloomEnabled(t.visuals.bBloomEnabled);
+			if (!bWasActive) WickedCall_EnableThumbLight(false);	// Stop has already done it
+			bParticleHoverRestoreOwed = false;
+		}
+		// ★★★ GGMAX 3.110: THE LATCH. These are per-frame REQUESTS that the end of this function
+		// clears on every call (DX11 M-GridEditB.cpp:13524) - and the early return above skipped
+		// that, so in DX12 the first particle request was never cleared. The library then reset its
+		// wait counter on every item it drew, its hover AND un-hover code never ran again, and
+		// because the object gate above requires !BackBufferParticlesMode, the Object Library live
+		// preview was dead for the rest of the session too. Opening the library was enough: the
+		// thumbnail generator raised it for the first effect without a cached thumbnail.
+		BackBufferParticlesMode = false;
+		iBackBufferParticlesTrigger = 0;
 		return;
 	}
 
@@ -49,7 +99,8 @@
 			return;
 	}
 
-	if (BackBufferParticlesMode && iBackBufferParticlesTrigger > 0)
+	// (3.110: never in DX12 - only thumbnail generation sets the trigger, and DX12 cannot generate)
+	if (!bDX12 && BackBufferParticlesMode && iBackBufferParticlesTrigger > 0)
 	{
 		// wait some frames before capture.
 		iBackBufferParticlesTrigger--;
@@ -430,11 +481,16 @@
 		// snap shop mode.
 		if (BackBufferParticlesMode)
 		{
+			// GGMAX 3.110: DX11 showed the 800/400 START frame frozen for 500 ms, then switched to
+			// 700/250 once the effect was running. A live preview would visibly jump between them, so
+			// DX12 uses the running framing from the first frame.
+			float fParticleZoom = BackBufferZoom, fParticleCamUp = BackBufferCamUp;
+			if (bDX12ParticlePreview) { fParticleZoom = 700.0f; fParticleCamUp = 250.0f; }
 			RotateCamera(0, 0, 0);
 			PositionCamera(centerx, centery, centerz);
 			PointCamera(centerx, centery, centerz);
-			MoveCamera(-BackBufferZoom);
-			MoveCameraUp(0, BackBufferCamUp);
+			MoveCamera(-fParticleZoom);
+			MoveCameraUp(0, fParticleCamUp);
 			PointCamera(centerx, centery, centerz);
 			if (bUseBackDropImage && ObjectExist(backdropobj))
 			{
@@ -490,7 +546,7 @@
 
 	// force a render of the backbuffer to do the grab
 	bool renderstate = true;
-	if (bDX12LivePreview)
+	if (bDX12LivePreview || bDX12ParticlePreview)
 	{
 		// GGMAX 3.83: DX12 path. Everything above has already positioned the object out in
 		// preview space, framed GG camera 0 on it, lit it with the thumb lights and placed the
@@ -504,6 +560,9 @@
 		// framing comes out where those constants expect it.
 		float fFullFrameFov = XM_PI / ((t.visuals.CameraFOV_f > 1.0f ? t.visuals.CameraFOV_f : 45.0f) / 15.0f);
 		extern void GGObjectPreview_Submit(int,int,int,float,float,float,float,float,float,float,float,float);
+		extern void GGObjectPreview_SetParticleSource(int gpupEmitter, uint32_t wpeRoot);
+		GGObjectPreview_SetParticleSource(bDX12ParticlePreview ? BackBufferParticleEmitter : -1,
+						  bDX12ParticlePreview ? uDX12PreviewWPE : 0);
 		GGObjectPreview_Submit(
 			BackBufferImageID,
 			(int)grabx, (int)graby,
@@ -515,7 +574,7 @@
 	{
 		renderstate = master.ForceRender(rendertarget);
 	}
-	if (bDX12LivePreview)
+	if (bDX12LivePreview || bDX12ParticlePreview)
 	{
 		extern void GGObjectPreview_HoldBackdrop(int backdropObject);
 		GGObjectPreview_HoldBackdrop((bUseBackDropImage && ObjectExist(backdropobj)) ? backdropobj : 0);
@@ -578,7 +637,9 @@
 	}
 	else
 	{
-		if (bUseBackDropImage && ObjectExist(backdropobj))
+		// GGMAX 3.110: not in a DX12 particle preview - the engine renders it next frame, and
+		// GGObjectPreview_Stop hides the plane when the preview ends (same as the object path).
+		if (bUseBackDropImage && ObjectExist(backdropobj) && !bDX12ParticlePreview)
 		{
 			HideObject(backdropobj);
 		}

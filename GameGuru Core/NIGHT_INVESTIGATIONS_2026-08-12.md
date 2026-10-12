@@ -15504,3 +15504,70 @@ tooltip "Add New Particle" (`M-GridEdit_part1.cpp`) is a tooltip, not truncated,
 Verified (exe `e025801d551e63f8071aa9833a37f1d3`, TESTPRO2 > testpro2snow, nothing saved): the button reads "New Particle" in
 full and still opens the Particle Library (closed without picking - a pick writes a saved slot into
 the preferences).
+
+
+### 3.110 Particle Library: live hover preview restored, legacy and WPE - 2026-10-12
+
+Lee: in the Particle Library (Object Tools > Particles > New Particle), hovering a thumbnail does nothing.
+DX11 replaced it with the effect playing live, the way the Object Library shows an object turning.
+
+**Cause - two defects, the second hiding the first.**
+1. **Switched off by 3.83.** 3.83 grouped the particle HOVER preview with thumbnail GENERATION, which needs
+   a GPU->CPU readback DX12 does not have. The hover never needed one - it wants a texture, exactly like the
+   object preview. But admitting it would not have been enough: the engine's render-to-texture pass
+   (`RenderCameraComponents`) draws objects and sky only - no emitters, no customDraw hooks - so neither
+   particle system could reach the preview. And a WPE emitter is simulated for the camera that is BOUND
+   (simulateCS frustum-culls and billboards against it): the main view simulated the preview emitter,
+   parked 39000 units up, every frame into a draw list of zero.
+2. **THE LATCH (DX12 only, since 3.83).** `GrabBackBufferCopy`'s DX12 early return skipped its per-call
+   clear of `BackBufferParticlesMode` (DX11 clears it on every call, `M-GridEditB.cpp:13524`). The thumbnail
+   generator raises it for the first effect without a cached thumbnail - so OPENING the Particle Library
+   latched it. From then the library reset its wait counter on every item it drew, so its hover and un-hover
+   code never ran again; the Object Library live preview (its gate requires `!BackBufferParticlesMode`) was
+   dead for the rest of the session; and the bloom-off / thumb-lights-on of the first hover was never undone.
+   Runtime check after the fix: the flag reads 0 with the library open and nothing hovered.
+
+**Fix - game only, no engine change.**
+- `GrabBackBufferCopy` admits a particle request (live effect + live image id) and **holds** the preview on
+  the frames the library does not re-request it (it re-arms one frame in three, and not at all for 500 ms
+  after starting an effect). Its reject branch clears the request (the latch) and restores bloom and the
+  thumb lights after a particle hover.
+- `GGObjectPreview_DrawParticles` (`master_part2.cpp`): on the main thread after `RenderPath3D::Render` has
+  waited on its jobs, on the preview's own command list - simulates the library's WPE emitters with the
+  PREVIEW camera bound, draws them, and draws the legacy effect through the new `gpup_draw_single`, onto
+  mip 0 of the preview's HDR image before the tonemap. Depth is cleared (the engine stores it DONTCARE).
+- The effect is taken off the main view: WPE `SetVisible(false)` (a second simulate in one frame corrupts
+  the alive lists), gpup invisible (the main view drew it off-screen every frame). WPE depth collision off:
+  a render-to-texture camera has no depth history (an invalid bindless index).
+- Each item previews under its own live image id (`0x30000000 + uniqueId`): every effect without a cached
+  thumbnail shares the default icon's id, so all of them would have gone live together. The cell switches
+  to it only once a frame exists (ImgBtn draws nothing at all for a texture-less id), and keeps ONE ImGui
+  ID across the switch (review: a click held across it was dropped).
+- Thumbnail generator off in DX12 (it could never save; it only loaded an effect and raised the flag).
+  Effects without a thumbnail keep the default icon, or their folder's .jpg, and still preview on hover.
+- Closing the library tears the hover effect down and resets the hover tracking (the same item would not
+  preview on the next open), and owes the bloom restore (review: a double-click on the 500 ms frame).
+- `BackBufferParticleEmitter = -1` after every editor `gpup_deleteAllEffects` - a stale slot id would later
+  delete whichever level effect reused it.
+- Framing: DX11's running 700/250 from the first frame (DX11 froze the 800/400 start grab for 500 ms; a live
+  preview would jump). Backdrop: the library's `Black backdrop.dds` is not black - a dark gradient with a
+  soft glow, which every DX11 particle thumbnail shows - so it comes through as for objects; black only if
+  the plane has no texture.
+
+**Verified** (exe `e2a57571e97a53865c543da37a13a100`, TESTPRO2 > testpro2snow, nothing saved) with the new
+`tools/harness/particle_preview_probe.sh` (five shots 0.4 s apart: every pair must differ in the tile, the
+neighbour tile must not change, un-hover must return to the baseline):
+- `beam_fire.arx` (legacy): PASS - pair diffs 1.0-1.3, neighbour 0.00, un-hover 0.00. Position and backdrop
+  match the DX11 cached thumbnail.
+- `firearea.pe` (WPE, no cached thumbnail): PASS - pair diffs 5.6-6.5, 18-22% of the tile lit, the
+  neighbouring default-icon tile unchanged. `Explosion Burst.pe` plays its burst; the one-shot
+  `burst-explosion2-g.pe` had finished before the 2.5 s probe looked (it plays once, as in DX11).
+- The Object Library live preview after particle hovers: Futuristic Girl animates (the latch killed it).
+- A single click pressed on a tile before its live frame and released after: the tile is selected.
+- Review workflow (four lenses + adversarial verify): two low-severity findings survived, both fixed above
+  and re-tested; the GPU-safety and WPE lenses found nothing.
+
+**Known, not changed:** follow-camera WPE effects (downpour, heavy-rain3) and find-floor effects are moved
+by `WickedCall_UpdateEmitters` every frame, so their preview is empty - as in DX11. Hovering an effect
+still deletes the selected level particle's own WPE preview (they share `PreviewWPERoot`; DX11 behaviour,
+the panel reloads it). Lit WPE particles take the level's lighting, as in DX11, not the studio rig.

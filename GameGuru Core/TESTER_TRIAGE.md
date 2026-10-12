@@ -65,6 +65,7 @@ a new data point, not a regression, until it is compared on the same hardware.
 | A thumbnail / image that should come from a capture never appears, or vanishes on reopen | DX12 image layer: relative load of a writables file fails, `SaveImage` writes nothing (3.103) | is the file on disk in `Documents/GameGuruApps/GameGuruMAX/Files/...`? then it is the load, not the capture |
 | A character splays into huge sheets for a frame or few when placed or spawned; distant characters flick between two poses | 3.107 skinning ping-pong under Reduction Scale (fixed after the tester build) | `SET_SKINFRESHGUARD` -> `drawnGarbage` and `drawnStale` must stay 0; ask them to untick Lower Animation |
 | A tree pops lighter (its self-shadow vanishes) as the camera backs away | 3.108 - fixed after the tester build; if seen on a dev build, the slider is below the reach (it still switches there) | `SET_SHADOWDISTFADE` -> `fadingCasters` > 0 near trees; slider at "Max"; `DUMP_POSTFX` -> `treelod` |
+| Particle Library hover shows nothing, or the Object Library hover preview stopped working after the Particle Library was opened | 3.110 (fixed after the tester build): the BackBufferParticlesMode latch; the particle preview pass | `DUMP_OBJPREVIEW` -> `bbParticlesMode=` must be 0 when nothing is hovered; while hovering `particle=1`, `particleFrames=` rising, `wpeSim=` > 0 for a .pe |
 | Terrain torn into white sheets / spikes, trees floating, after clicking palette trees | 3.102 billboard atlas slice overrun (fixed after the tester build) | `SET_FARTREES` (no argument = read-only) -> `ATLAS (3.102): sliceCopiesRefused=` must stay 0 |
 
 ## 5. Reproducing — the tool belt
@@ -82,6 +83,8 @@ a new data point, not a regression, until it is compared on the same hardware.
   player straight back from a tree and log its crown brightness per step (3.108). In Test Game
   `SetFreezePosition(x,y,z)` + `TransportToFreezePosition()` via `RUN_LUA` moves the player - put it 60 u
   above `GetTerrainHeight`, or it falls through.
+- `tools/harness/particle_preview_probe.sh <tag> x0 y0 x1 y1 [neighbour rect]` - with the Particle Library
+  open, hover a tile and require five spaced shots to differ (3.110). Works for any live hover preview.
 - Debug views (`SET_TANGENTVIS n`, 0 = off): 2 vertex normal · 3 bumped normal · 1 world tangent ·
   4 handedness · 16 world-position grid · 23 albedo. Exact black in 2/3 = a NaN normal.
 - `FIND_OBJECT x y z r` lists scene objects near a point; `SET_CAMERA x y z ax ay` moves the editor
@@ -97,4 +100,5 @@ a new data point, not a regression, until it is compared on the same hardware.
 | 3 | 2026-10-10 | Lee | - | dev build | RPG HUD on-screen map + Save New Level | the HUD map shows nothing after a Map Snapshot; a generated level gets no thumbnail | no | **fixed** (DX12 image loader now uses the writables redirect) | 3.104 / `e715e5c3` (+3.105b guards) |
 | 4 | 2026-10-11 | Lee | RX 9060 XT | dev build | Level editor > placing a character (Christmas Zombie, TESTPRO2 > testpro2) | for ONE frame as the character is put down its polygons splay out, then it looks fine | no | **fixed, Lee-confirmed** (also: distant characters drew an old pose whenever an object was on the cursor) | 3.107 / `c8e5a62b` (engine `c1f54bd9`) |
 | 5 | 2026-10-11 | Lee | RX 9060 XT | dev build | Test Game > tree shadows (TESTPRO2 > testpro2snow) | backing the camera away from a tree, its shadowing changes and the whole tree pops lighter; tied to Tree Shadow LOD Distance (7000 shows it, 750 moves it closer) | no | **fixed, Lee-confirmed** (options 1 + 3, then 2 as 3.108b - any slider value fades; slider 750..2000, default 2000 as 3.108d: the mesh shadow dissolves with the mesh; honest slider stopping at the preset's reach, "Max") | 3.108 / `81aaba31` + `3bbddd5e` (engine `d1e972a6`) + `81320752` (engine `090ad5c7`) + `013e30d4` (3.108d) |
+| 6 | 2026-10-12 | Lee | RX 9060 XT | dev build | Particle Library (Object Tools > Particles > New Particle) | hovering a particle thumbnail does nothing; DX11 played the effect in it | no | **fixed** (also: opening the Particle Library latched a flag that froze its hover code and killed the Object Library live preview for the session) | 3.110 / `__HASH__` |
 | | | | | | | | | | |

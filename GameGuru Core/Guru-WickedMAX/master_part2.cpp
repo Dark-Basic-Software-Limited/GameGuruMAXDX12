@@ -45,10 +45,10 @@
 //
 // SCOPE
 // -----
-// This restores the LIVE PREVIEW only. GrabBackBufferCopy's other three customers - thumbnail
-// generation to disk (BackBufferSaveCacheName), snapshot mode and the particle-thumb mode -
-// still need a GPU->CPU readback that does not exist in DX12 yet, and are left switched off
-// exactly as they were. See M-GridEditB_part7.cpp for the gate that says so.
+// This restores the LIVE PREVIEW only. GrabBackBufferCopy's other customers - thumbnail generation
+// to disk (BackBufferSaveCacheName) and snapshot mode - still need a GPU->CPU readback that does
+// not exist in DX12 yet, and are left switched off. See M-GridEditB_part7.cpp for the gate.
+// 3.110: the Particle Library's hover preview rides this too (GGObjectPreview_DrawParticles).
 //
 
 // GGMAX 3.83 bisect switch - see SET_OBJPREVIEW in AutomationHarness.cpp.
@@ -216,6 +216,15 @@ namespace GGObjectPreview
 	static float s_studioCubeBuiltScale = -1.0f;
 	static int s_studioFrames = 0;			// frames the override has actually been applied (diagnostic)
 	static float s_subAng[3] = { 0, 0, 0 };	// 3.99 diag: angles handed to Submit (GG camera 0)
+
+	// 3.110 PARTICLE LIBRARY. The same camera and render target, with no object: the hovered
+	// effect is drawn over the engine's render of the black backdrop (GGObjectPreview_DrawParticles).
+	static bool						s_particleMode = false;
+	static int						s_gpupEmitter = -1;		// legacy .arx effect slot (BackBufferParticleEmitter)
+	static uint32_t					s_wpeRoot = 0;			// WPE .pe root entity the LIBRARY loaded
+	static int						s_particleFrames = 0;	// diag: frames the overlay pass ran
+	static int						s_wpeSimulated = 0;		// diag: WPE emitters simulated on the last frame
+	static int						s_wpeSkipped = 0;		// diag: emitters the main view still had that frame
 }
 
 // Is a live preview currently being driven? (used by the image-id override and by the
@@ -223,6 +232,50 @@ namespace GGObjectPreview
 bool GGObjectPreview_IsActive(void)
 {
 	return GGObjectPreview::s_active;
+}
+
+// GGMAX 3.110: is the live preview currently showing a Particle Library effect? GrabBackBufferCopy
+// uses this to HOLD the preview on the frames the library does not re-request it (see there).
+bool GGObjectPreview_IsParticleActive(void)
+{
+	return GGObjectPreview::s_active && GGObjectPreview::s_particleMode;
+}
+
+// GGMAX 3.110: say what the next Submit previews. (-1, 0) = an object, which is every caller
+// before 3.110. Called by GrabBackBufferCopy immediately before every Submit.
+//
+// ★ THE PREVIEW EFFECT IS TAKEN OFF THE MAIN VIEW. A WPE emitter is simulated on the GPU once per
+// frame for the camera that is BOUND - its particles are frustum-culled against that camera and
+// turned to face it (emittedparticle_simulateCS.hlsl) - and the main view only ever binds the
+// editor camera. Parked 39000 units up, it simulated every frame into a draw list of zero. So the
+// preview simulates it ITSELF, with the preview camera bound (GGObjectPreview_DrawParticles), and
+// the main view must not: two simulations in one frame re-run the kickoff over an alive list the
+// CPU swapped once, and age every particle twice. Hidden emitters still get their CPU update
+// (Scene::Update ignores the flag), which is where emission and dt come from.
+// The legacy .arx effect is hidden from the main view too - not for correctness (gpup's simulation
+// is camera-free) but because the main view was drawing it, off-screen, every frame.
+void GGObjectPreview_SetParticleSource(int gpupEmitter, uint32_t wpeRoot)
+{
+	using namespace GGObjectPreview;
+	s_gpupEmitter = gpupEmitter;
+	s_wpeRoot = wpeRoot;
+	s_particleMode = (gpupEmitter >= 0 || wpeRoot != 0);
+	if (gpupEmitter >= 0) GPUParticles::gpup_setEffectVisible(gpupEmitter, 0);
+	if (wpeRoot != 0)
+	{
+		wi::scene::Scene& scene = wi::scene::GetScene();
+		for (size_t i = 0; i < scene.emitters.GetCount(); ++i)
+		{
+			const wi::scene::HierarchyComponent* h = scene.hierarchy.GetComponent(scene.emitters.GetEntity(i));
+			if (!h || h->parentID != wpeRoot) continue;
+			wi::EmittedParticleSystem& em = scene.emitters[i];
+			em.SetVisible(false);
+			// ⚠ Depth collision reads texture_depth_history through the camera's
+			// texture_depth_index_prev, which a render-to-texture camera never sets (-1): an invalid
+			// bindless index, undefined on DX12. The preview has no ground to collide with anyway.
+			em.SetDepthCollisionEnabled(false);
+		}
+	}
 }
 
 static void GGObjectPreview_RestoreParked(void);
@@ -285,8 +338,12 @@ void GGObjectPreview_HoldBackdrop(int backdropObject)
 	// 3.99: only touch the material when it is not already in the wanted state, so running this
 	// every frame costs a few compares and never re-uploads a material that is already right.
 	const bool bTextured = bHasTexture && gg_objpreview_backdrop == 1;
-	const XMFLOAT4 want = bTextured ? XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f)	// the image comes through untinted
+	XMFLOAT4 want = bTextured ? XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f)	// the image comes through untinted
 		: XMFLOAT4(PREVIEW_BACKDROP_R, PREVIEW_BACKDROP_G, PREVIEW_BACKDROP_B, 1.0f);
+	// 3.110: a particle preview sits on the library's 'Black backdrop.dds' - which is NOT black: a dark
+	// gradient with a soft glow low in the middle, exactly what every DX11 particle thumbnail shows. So
+	// the texture comes through as for objects; only the untextured fallback is black, not 0.8 grey.
+	if (s_particleMode && !bTextured) want = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
 	s_backdropDiag = bTextured ? 1 : 2;
 	const XMFLOAT4 bc = mat->baseColor;
 	if (mat->shaderType != wi::scene::MaterialComponent::SHADERTYPE_UNLIT
@@ -355,6 +412,11 @@ void GGObjectPreview_Stop(void)
 	s_active = false;
 	s_haveFrame = false;
 	s_imageId = 0;
+	// 3.110: the effects themselves belong to the library (M-GridEditB_part9.cpp deletes them on
+	// un-hover and on close); the preview only forgets them.
+	s_particleMode = false;
+	s_gpupEmitter = -1;
+	s_wpeRoot = 0;
 }
 
 // ★★★ THE FIX FOR DEFECTS 1 AND 2.
@@ -643,6 +705,10 @@ void GGObjectPreview_Submit(int imageId, int width, int height,
 	// facing UP (the cartridges inside the pistol-ammo box) got almost nothing. Lights now sit on a
 	// sphere around the SUBJECT, placed in the camera's own frame (gg_objpreview_stage), so the
 	// stage stays put while the turntable carries each face through it.
+	// 3.110: not for a particle preview - there is no subject to light, and a lit WPE effect takes
+	// the level's lighting, as it did in DX11 (it is drawn by GGObjectPreview_DrawParticles with the
+	// level's frame constants, not inside the studio-lit engine pass).
+	if (!s_particleMode)
 	{
 		extern wi::ecs::Entity g_entityThumbLight, g_entityThumbLight2;
 		extern float BackBufferCamMove;
@@ -772,6 +838,104 @@ void GGObjectPreview_Submit(int imageId, int width, int height,
 	s_active = true;
 }
 
+// ============================================================================ 3.110 PARTICLES
+// Draw the Particle Library's hovered effect over the engine's render of the preview camera.
+//
+// The engine's render-to-texture pass (RenderCameraComponents) draws objects and sky only: no
+// emitters, no customDraw hooks - so neither particle system ever reached the preview. Rather
+// than add an engine hook, the effect is drawn here, on the main thread, after RenderPath3D::Render
+// has waited on all its jobs: the RTT image for this frame is already recorded, and gpup's shared
+// sort/constant state (unsafe from a render job) is free.
+//
+// ⚠ Depth is CLEARED, not loaded: the engine's colour pass stores the RTT depth as DONTCARE. Lost
+//   occlusion costs nothing - the only thing behind the effect is the backdrop, 21200 units away.
+// ⚠ gpup binds b0/b1 with its own constants and never restores them (the 2.13 rule), so the state
+//   cache is invalidated after it, and the tonemap that follows rebinds both.
+static void GGObjectPreview_DrawParticles(wi::scene::CameraComponent& cam, const wi::graphics::Texture& src, wi::graphics::CommandList cmd)
+{
+	using namespace GGObjectPreview;
+	if (!cam.render_to_texture.depthstencil.IsValid()) return;
+	wi::graphics::GraphicsDevice* device = wi::graphics::GetDevice();
+	wi::scene::Scene& scene = wi::scene::GetScene();
+
+	// the library's WPE emitters: children of the root it loaded
+	static wi::vector<uint32_t> wpe;	// main thread only
+	wpe.clear();
+	s_wpeSkipped = 0;
+	if (s_wpeRoot != 0)
+	{
+		for (size_t i = 0; i < scene.emitters.GetCount(); ++i)
+		{
+			const wi::scene::HierarchyComponent* h = scene.hierarchy.GetComponent(scene.emitters.GetEntity(i));
+			if (!h || h->parentID != s_wpeRoot) continue;
+			wi::EmittedParticleSystem& em = scene.emitters[i];
+			// Still visible = the main view culled it in this frame and has ALREADY simulated it (an
+			// emitter something re-showed). Hide it and leave it alone until next frame - simulating
+			// it a second time is the double-step SetParticleSource exists to prevent.
+			if (em.IsVisible()) { em.SetVisible(false); s_wpeSkipped++; continue; }
+			wpe.push_back((uint32_t)i);
+		}
+	}
+	s_wpeSimulated = (int)wpe.size();
+
+	device->EventBegin("GGMax - Particle Library Preview", cmd);
+	wi::renderer::BindCommonResources(cmd);
+	wi::renderer::BindCameraCB(cam, cam, cam, cmd);
+
+	// WPE simulation for THIS camera - compute, so outside the render pass. Same call and instance
+	// index as the main view's (wiRenderer.cpp UpdateRenderDataAsync).
+	for (uint32_t i : wpe)
+	{
+		const wi::EmittedParticleSystem& em = scene.emitters[i];
+		const wi::scene::MeshComponent* mesh = scene.meshes.GetComponent(em.meshID);
+		const uint32_t instanceIndex = uint32_t(scene.objects.GetCount() + scene.hairs.GetCount()) + i;
+		em.UpdateGPU(instanceIndex, mesh, cmd);
+	}
+
+	wi::graphics::RenderPassImage rp[] = {
+		wi::graphics::RenderPassImage::RenderTarget(&src, wi::graphics::RenderPassImage::LoadOp::LOAD),
+		wi::graphics::RenderPassImage::DepthStencil(&cam.render_to_texture.depthstencil,
+			wi::graphics::RenderPassImage::LoadOp::CLEAR, wi::graphics::RenderPassImage::StoreOp::DONTCARE,
+			wi::graphics::ResourceState::SHADER_RESOURCE, wi::graphics::ResourceState::DEPTHSTENCIL,
+			wi::graphics::ResourceState::SHADER_RESOURCE),
+	};
+	device->RenderPassBegin(rp, arraysize(rp), cmd);
+	wi::graphics::Viewport vp;
+	vp.width = (float)src.desc.width;
+	vp.height = (float)src.desc.height;
+	device->BindViewports(1, &vp, cmd);
+	wi::graphics::Rect scissor;
+	scissor.left = 0; scissor.top = 0;
+	scissor.right = (int32_t)src.desc.width;
+	scissor.bottom = (int32_t)src.desc.height;
+	device->BindScissorRects(1, &scissor, cmd);
+
+	if (!wpe.empty())
+	{
+		// UpdateGPU bound compute state; give the draws a clean frame + camera binding
+		wi::renderer::BindCommonResources(cmd);
+		wi::renderer::BindCameraCB(cam, cam, cam, cmd);
+		for (uint32_t i : wpe)
+		{
+			const wi::EmittedParticleSystem& em = scene.emitters[i];
+			const wi::scene::MaterialComponent* material = scene.materials.GetComponent(scene.emitters.GetEntity(i));
+			if (material == nullptr) continue;
+			// distortion emitters only draw into the main view's distortion pass, which this has not got
+			if (em.shaderType == wi::EmittedParticleSystem::SOFT_DISTORTION) continue;
+			em.Draw(*material, cmd);
+		}
+	}
+	if (s_gpupEmitter >= 0)
+	{
+		GPUParticles::gpup_draw_single(s_gpupEmitter, cam, cmd);
+		device->GG_InvalidateCommandListState(cmd);
+	}
+
+	device->RenderPassEnd(cmd);
+	device->EventEnd(cmd);
+	s_particleFrames++;
+}
+
 // Per-frame GPU work. Called from MasterRenderer::Render() AFTER __super::Render(), which is
 // where RenderCameraComponents has just recorded the preview camera's own command list - lists
 // execute in the order they were begun, so its result is complete by the time ours runs.
@@ -817,6 +981,9 @@ void GGObjectPreview_Render(float fExposure)
 	if (gg_objpreview_mode < 2) return;   // stage 1: engine render only
 
 	wi::graphics::CommandList cmd = device->BeginCommandList();
+	// 3.110: a Particle Library effect goes onto mip 0 of the HDR image before it is tonemapped
+	// (Postprocess_Tonemap samples mip 0 only, so the stale mips the engine built do not matter).
+	if (s_particleMode) GGObjectPreview_DrawParticles(*cam, src, cmd);
 	device->EventBegin("GGMax - Object Preview Tonemap", cmd);
 	wi::renderer::BindCommonResources(cmd);
 	// ★ Both, not one. tonemapCS reads GetCamera() before it does anything else, and an
@@ -958,6 +1125,18 @@ void GGObjectPreview_DebugStatus(char* buf, int bufsize)
 		if (cam && used + 120 < (size_t)bufsize)
 			_snprintf(buf + used, bufsize - used, " subAng=(%.1f,%.1f,%.1f) camAt=(%.3f,%.3f,%.3f) camUp=(%.3f,%.3f,%.3f) backdropFixes=%d",
 				s_subAng[0], s_subAng[1], s_subAng[2], cam->At.x, cam->At.y, cam->At.z, cam->Up.x, cam->Up.y, cam->Up.z, s_backdropFixes);
+	}
+	{
+		// 3.110: the Particle Library half. BackBufferParticlesMode is a per-frame request (cleared by
+		// every GrabBackBufferCopy), so 1 here means it was set in THIS frame and not yet consumed.
+		extern bool BackBufferParticlesMode;
+		extern int BackBufferParticleEmitter;
+		extern uint32_t PreviewWPERoot;
+		const size_t used = strlen(buf);
+		if (used + 140 < (size_t)bufsize)
+			_snprintf(buf + used, bufsize - used, " particle=%d gpup=%d wpeRoot=%u particleFrames=%d wpeSim=%d wpeSkip=%d bbParticlesMode=%d bbEmitter=%d previewWPERoot=%u",
+				s_particleMode ? 1 : 0, s_gpupEmitter, s_wpeRoot, s_particleFrames, s_wpeSimulated, s_wpeSkipped,
+				BackBufferParticlesMode ? 1 : 0, BackBufferParticleEmitter, PreviewWPERoot);
 	}
 	buf[bufsize - 1] = 0;
 }

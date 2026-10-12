@@ -1,6 +1,34 @@
 ﻿bool bPopModalOpenEntity = false;
+
+// GGMAX 3.110: Particle Library live hover preview (DX12, see GrabBackBufferCopy / master_part2.cpp).
+// The WPE root the LIBRARY loaded for its hover - PreviewWPERoot is shared with the level's own
+// particle preview, so the preview only draws it while the two still match.
+uint32_t g_LibraryPreviewWPERoot = 0;
+// The live render stands in for an image id. A particle item's own id is no good: every effect
+// without a cached thumbnail shares the default particle icon's id, so all of them would show the
+// live render at once. This id is the item's own, moved out of every real image range (thumbnails
+// are 4000-43000), and only ever drawn while the preview has a frame for it.
+static inline int GGParticleLiveImageId(int iItemUniqueId) { return 0x30000000 + iItemUniqueId; }
+extern bool ImGui_DX12_IsInitialized();
+// An ImgBtn whose ImGui ID does not depend on the image it shows (the particle cell swaps to the
+// live id mid-hover). Its own sub-scope, because the free-trial overlay in the same cell already
+// takes the cell scope's plain "#image" id (useownid).
+static bool GGImgBtnStableId(int iImageID, const ImVec2& btn_size, const ImVec4& bg_col, const ImVec4& drawCol_normal,
+	const ImVec4& drawCol_hover, const ImVec4& drawCol_Down, int frame_padding)
+{
+	ImGui::PushID("##ggstablecell");
+	const bool bPressed = ImGui::ImgBtn(iImageID, btn_size, bg_col, drawCol_normal, drawCol_hover, drawCol_Down, frame_padding,
+		0, 0, 0, false, false, false, false, true);
+	ImGui::PopID();
+	return bPressed;
+}
+
 void process_entity_library_v2(void)
 {
+	// the item whose hover preview is running, and the media-hover timer (both were block statics
+	// in the hover code until GGMAX 3.110 - the library-close handler at the end resets them)
+	static void* additionalcheck = NULL;
+	static bool bTriggerTimer = false;
 	static int iStopVideoInNextFrame = 0;
 	static int iStartVideoInNextFrame = 0;
 	static int iVideoGetFirstFrame = 0;
@@ -3277,7 +3305,12 @@ void process_entity_library_v2(void)
 													}
 												}
 											}
-											else if (iDisplayLibraryType == 5)
+											// GGMAX 3.110: not in DX12. Generating a thumbnail means grabbing pixels back to
+											// the CPU, which DX12 cannot do (see GrabBackBufferCopy), so it never produced
+											// one - it only loaded an effect, raised BackBufferParticlesMode and waited.
+											// Items without a cached thumbnail keep the default particle icon, or their own
+											// .jpg if the folder has one (the branch below), and still preview on hover.
+											else if (iDisplayLibraryType == 5 && !ImGui_DX12_IsInitialized())
 											{
 												//Create particle thumb here.
 												BackBufferIsGroup = false;
@@ -3786,7 +3819,21 @@ void process_entity_library_v2(void)
 							}
 
 							total_files_displayed_in_library++;
-							if ((iDelayedImgClick == 1 && iDelayedClickFile == myfiles) || ImGui::ImgBtn(textureId, imgsize, drawCol_black, ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1), drawCol_Down, -1, 0, 0, 0, false))
+							// GGMAX 3.110: the hovered effect's live render (DX12). Only once a frame exists -
+							// ImgBtn draws NOTHING, not even the cell, for an id with no texture behind it.
+							if (iDisplayLibraryType == 5 && ImGui_DX12_IsInitialized())
+							{
+								extern void* GGObjectPreview_GetImageOverride(int iID);
+								const int iLiveImageId = GGParticleLiveImageId(myfiles->uniqueId);
+								if (GGObjectPreview_GetImageOverride(iLiveImageId)) textureId = iLiveImageId;
+							}
+							// ...and ImgBtn builds the button's ImGui ID from the image id unless told to use the
+							// enclosing PushID(uniqueId). Swapping the image mid-hover would then swap the ID too,
+							// and ImGui drops a click that is held across the swap. So particle cells keep one ID.
+							const bool bCellOwnsImGuiId = (iDisplayLibraryType == 5);
+							if ((iDelayedImgClick == 1 && iDelayedClickFile == myfiles) || (bCellOwnsImGuiId
+								? GGImgBtnStableId(textureId, imgsize, drawCol_black, ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1), drawCol_Down, -1)
+								: ImGui::ImgBtn(textureId, imgsize, drawCol_black, ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1), drawCol_Down, -1, 0, 0, 0, false)))
 							{
 								iDelayedClickFile = myfiles;
 
@@ -4295,13 +4342,13 @@ void process_entity_library_v2(void)
 							//---
 
 							// hovering over an object library item
-							static void* additionalcheck = NULL;
+							// (GGMAX 3.110: additionalcheck and bTriggerTimer now live at the top of the
+							// function, so closing the library can reset them)
 							static cstr preload_fpe_file = "";
 							static bool preload_fpe_file_started = false;
 							if (iDisplayLibraryType > 0)
 							{
 								//Hover other media.
-								static bool bTriggerTimer = false;
 								if (iWaitFramesBeforeProceed == 0) //No hover while generating thumbs.
 								{
 									if (iDisplayLibraryType == 5 && bThumbHovered)
@@ -4346,6 +4393,9 @@ void process_entity_library_v2(void)
 												BackBufferEntityID = 0;
 												BackBufferObjectID = 0;
 												BackBufferImageID = myfiles->iPreview;
+												// GGMAX 3.110: DX12 draws the live render under the item's own live id (see
+												// GGParticleLiveImageId) - the cell switches to it once a frame exists.
+												if (ImGui_DX12_IsInitialized()) BackBufferImageID = GGParticleLiveImageId(myfiles->uniqueId);
 												BackBufferSizeX = 512;
 												BackBufferSizeY = 288;
 												BackBufferCamLeft = 0.0f;
@@ -4393,9 +4443,11 @@ void process_entity_library_v2(void)
 													WickedCall_PerformEmitterAction(1, PreviewWPERoot);
 													WickedCall_PerformEmitterAction(4, PreviewWPERoot);
 													WickedCall_PerformEmitterAction(5, PreviewWPERoot);
+													g_LibraryPreviewWPERoot = PreviewWPERoot; // GGMAX 3.110
 												}
 												else
 												{
+													g_LibraryPreviewWPERoot = 0; // GGMAX 3.110
 													// legacy particle init for library preview
 													sParticleName = sParticleName + "\\" + Left(myfiles->m_sName.Get(), Len(myfiles->m_sName.Get()) - 4);
 													if (BackBufferParticleEmitter == -1)
@@ -4461,6 +4513,7 @@ void process_entity_library_v2(void)
 													DeleteEmitterEffects(PreviewWPERoot);
 													PreviewWPERoot = 0;
 												}
+												g_LibraryPreviewWPERoot = 0; // GGMAX 3.110
 											}
 										}
 									}
@@ -6541,6 +6594,35 @@ void process_entity_library_v2(void)
 			//PE: If just closed, disable any thumb grab.
 			bLoopBackBuffer = false;
 			BackBufferImageID = 0;
+			// GGMAX 3.110: and drop a particle hover preview. Its un-hover cleanup only runs while the
+			// library is drawn, so clicking an effect (which closes the library) left the effect
+			// loaded - and a stale additionalcheck then stopped the SAME item previewing next time.
+			// ⚠ A hover that STARTED this very frame (a double-click landing on the 500 ms mark) has
+			// already switched bloom off and the thumb lights on, and GrabBackBufferCopy will never see
+			// its request - so the restore is owed from here, not left to that function noticing.
+			extern bool g_bParticleHoverRestoreOwed;
+			if (BackBufferParticlesMode || BackBufferParticleEmitter != -1 || g_LibraryPreviewWPERoot != 0)
+				g_bParticleHoverRestoreOwed = true;
+			if (BackBufferParticleEmitter != -1)
+			{
+				gpup_deleteEffect(BackBufferParticleEmitter);
+				BackBufferParticleEmitter = -1;
+			}
+			if (g_LibraryPreviewWPERoot != 0)
+			{
+				// only if the level's particle preview has not already taken the root over
+				if (PreviewWPERoot == g_LibraryPreviewWPERoot)
+				{
+					WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+					void DeleteEmitterEffects(uint32_t root);
+					DeleteEmitterEffects(PreviewWPERoot);
+					PreviewWPERoot = 0;
+				}
+				g_LibraryPreviewWPERoot = 0;
+			}
+			BackBufferParticlesMode = false;
+			additionalcheck = NULL;
+			bTriggerTimer = false;
 		}
 	}
 
