@@ -1488,8 +1488,8 @@ bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated)
 				ImGui::SetTooltip("How far trees cast their full, detailed shadow. Beyond it they cast simple card shadows.\n"
 					"It cannot reach past the trees drawn in full detail, which the Graphics Quality setting decides:\n"
 					"%.0f units at the current setting, so the slider stops there. 'Max' always follows that setting.\n"
-					"At Max the detailed shadow fades out smoothly with the tree. A lower value saves shadow work,\n"
-					"but switches each tree's detailed shadow off at that distance.", sliderMax);
+					"The detailed shadow fades out smoothly from this distance (at Max, together with the tree itself).\n"
+					"A lower value saves shadow work.", sliderMax);
 			}
 		}
 

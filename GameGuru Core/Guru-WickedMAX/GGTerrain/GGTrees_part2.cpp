@@ -621,6 +621,7 @@ static void GrowTreePool( wi::scene::Scene& scene, uint32_t want )
 		// mesh (3.03 fade) instead of staying solid until the engine culls the caster at the end of
 		// that band and dropping out in one frame - which took the tree's whole self-shadow with it.
 		obj.SetShadowDistanceFade( true );
+		obj.gg_shadow_fade_start = ggtrees_global_params.lod_dist_shadow;   // GGMAX 3.108b: slider distance fades too
 		obj.draw_distance = TreeMeshFadeDistance( 0.0f );   // GGMAX 3.03: placeholder, BindTreeSlot refines it
 		obj.cascadeMask = 2;
 		scene.transforms.Create( e );
@@ -764,8 +765,9 @@ static bool BindTreeSlot( wi::scene::Scene& scene, uint32_t slot, uint32_t treeI
 	// crispness and collapses the far-cascade caster count.
 	const uint8_t castShadow = g_treeShadow[ treeIdx ];
 	obj->SetCastShadow( TreeShadowsEnabled() && castShadow != 0 );
+	obj->gg_shadow_fade_start = ggtrees_global_params.lod_dist_shadow;   // GGMAX 3.108b
 
-	float scale = pTree->GetScaleFloat();  // ~0.5–1.5
+	float scale = pTree->GetScaleFloat();  // 0.5 .. ~1.99 (byte/170 + 0.5; the default paint range tops out at ~1.94)
 
 	// GGMAX 3.03: dissolve the mesh out where the billboard has finished dissolving in, instead of
 	// letting the pool cap hard-drop it. Scaled mesh radius approximates the world AABB radius that
@@ -1213,6 +1215,23 @@ void GGTrees_WickedUpdate()
 		{
 			s_lastLodDistShadow = ggtrees_global_params.lod_dist_shadow;
 			forceRescan = true;
+			// GGMAX 3.108b: every pool mesh carries the slider value as its shadow fade start (the
+			// engine dissolves the shadow from there). Cheap component writes, like the range below.
+			for ( uint32_t i = 0; i < g_treePoolBuilt; i++ )
+			{
+				wi::scene::ObjectComponent* obj = scene.objects.GetComponent( g_treePoolEntities[ i ] );
+				if ( obj ) obj->gg_shadow_fade_start = ggtrees_global_params.lod_dist_shadow;
+			}
+		}
+		// GGMAX 3.108b: the per-tree cast threshold depends on the engine's shadow fade lever and the
+		// mesh fade (see the selection pass), so a change to either must re-threshold on the same
+		// frame - otherwise a parked camera keeps the old cast set for up to the 256-frame heartbeat.
+		static int s_lastShadowFadeBand = -1;
+		const int shadowFadeBandNow = ( wi::renderer::gg_shadow_distance_fade && gg_tree_mesh_fade_dist != 0.0f ) ? 1 : 0;
+		if ( s_lastShadowFadeBand != shadowFadeBandNow )
+		{
+			s_lastShadowFadeBand = shadowFadeBandNow;
+			forceRescan = true;
 		}
 
 		// "Tree Shadow Range" slider: cascade reach. Existing proxies + pool
@@ -1511,7 +1530,18 @@ void GGTrees_WickedUpdate()
 	// Mark this frame's desired set + LOD band + mesh-shadow flag per tree.
 	constexpr float lod1Dist2 = GG_TREE_LOD1_DIST * GG_TREE_LOD1_DIST;
 	constexpr float lod2Dist2 = GG_TREE_LOD2_DIST * GG_TREE_LOD2_DIST;
-	const float shadowDist  = ggtrees_global_params.lod_dist_shadow;   // "Tree Shadow LOD Distance" slider
+	// GGMAX 3.108b: with the shadow distance fade on, the engine dissolves each mesh shadow over
+	// [slider, slider + tree radius] (gg_shadow_fade_start), so the per-tree cast flag must not cut it
+	// at the slider any more - it moves out past the end of that band, where the shadow has already
+	// gone (the engine also stops submitting a fully dissolved caster, so the extra trees cost only a
+	// cull test). The band must cover the BIGGEST tree: western pine / drypine reach an AABB radius of
+	// ~1134 at the maximum scale 1.994 (review measured the TreeMeshes data), so 1300 = 1.15x that.
+	// Fade off, or the harness mesh fade off (SET_TREEMESHFADE 0 - the engine cannot shift off a
+	// 1e30 fade distance): the old hard switch at the slider.
+	constexpr float GG_TREE_SHADOW_FADE_BAND = 1300.0f;
+	const bool  shadowFadeBand = wi::renderer::gg_shadow_distance_fade && gg_tree_mesh_fade_dist != 0.0f;
+	const float shadowDist  = ggtrees_global_params.lod_dist_shadow
+		+ ( shadowFadeBand ? GG_TREE_SHADOW_FADE_BAND : 0.0f );   // "Tree Shadow LOD Distance" slider
 	const float shadowDist2 = shadowDist * shadowDist;
 	g_treeEpoch++;
 	for ( size_t k = 0; k < poolFill; k++ )

@@ -15411,3 +15411,42 @@ tree's mesh shadow off at that distance (option 2, not chosen); (b) at High the 
 mesh to the lighter billboard brightens it at ~3750-3850 u whatever the shadow does - the billboard
 shader lifts the darks (shade wrap 0.5) - not seen at Test Game's Low preset; (c) near trees still cast
 a card shadow under their mesh shadow (option 4).
+
+
+### 3.108b The slider distance fades too - 2026-10-12
+
+Lee, after 3.108: "At 2000 the transition is sufficient, but when I set the distance to 1000 I saw the
+shadow pop in, no fade transition was evident." He saved testpro2snow at 1002 for the test.
+
+That was option 2 (not chosen first time): below the pool's reach the per-tree cast flag
+`g_treeShadow` (XZ < slider) still switched each mesh shadow off in one frame.
+
+**Fix.** New runtime `ObjectComponent::gg_shadow_fade_start` (FLT_MAX = none). One engine helper,
+`gg_ShadowFadeBatchDistance`, now used by the SUN, SPOT and POINT shadow gathers: for a
+`SHADOW_DISTANCE_FADE` object the batch distance is the eye distance SHIFTED by `fadeDistance -
+gg_shadow_fade_start` when the shadow should start fading first, so RenderMeshes' existing dither reads
+`(d - start) / radius` - the shadow dissolves over [slider, slider + radius] while the tree stays - and
+a fully dissolved caster is dropped (no batch, not counted). The game writes the slider value into every
+pool tree (creation, bind, slider change) and moves the cast flag out to slider + 1300, past the end of
+any tree's band. Tooltip: "fades out smoothly from this distance".
+
+**Review** (two lenses, refuters): survivors, all fixed in this change - (1) only the sun gather had the
+fade, so trees kept casting out to slider + band would have drawn SOLID into spot/point shadow maps
+(cost, and a pop there) -> the helper is shared by all three gathers; (2) the first band (1000) was
+narrower than the biggest trees: western pine / drypine reach an AABB radius ~1134 at the maximum scale
+1.994 (measured from the TreeMeshes data; the "radius under ~900" comment was wrong) -> 1300; (3) the
+cast threshold depends on the fade lever but nothing re-thresholded when it flipped -> change-detected,
+forces a rescan; (4) the harness `SET_TREEMESHFADE 0` gives fadeDistance 1e30, which the half-range
+batch distance cannot shift -> the shift and the band apply only to a real fade distance.
+
+**Verified** (exe `62250336c4961f8317cfce21f3a282bc`, Test Game Low, slider 1002 as Lee saved it; the step lands at d~900 on my
+line because the pick point is ~100 units in front of the trunk):
+
+| run | crown brightness | largest step |
+|---|---|---|
+| slider 1002, fade OFF | 32.0 -> 37.6 at 875 -> 900 | **5.6** |
+| slider 1002, fade ON | 32 -> 41, rising steadily over 950-1375 | **0.9** |
+| Max (2000), fade ON - 3.108 unchanged | 47 -> 61 over 1600-1850 | 2.5 |
+
+A small step at 1425 and 1525 (~6) is identical with the fade on and off at every slider value - not this
+mechanism (a cascade boundary on that line of travel).
