@@ -15490,3 +15490,5 @@ Note for the record: the tree draw distance (and so the reach) only follows the 
 settings menu (`M-LUA-General.cpp`); a quality change made elsewhere does not move it.
 Verified (exe `8b7fa02bf0964bcdd01e9d4829ee15ce`): the saved 1002 shows as "1002"; the end of the track
 stores 2000 and reads "2000". MAX relaunched afterwards so the level is back as saved.
+
+### LEE-CONFIRMED 3.108d, 2026-10-12: "Works now" - report #5 closed (3.108, 3.108b, 3.108c superseded, 3.108d)

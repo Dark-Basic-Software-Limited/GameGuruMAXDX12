@@ -5,10 +5,14 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 9a28c586-4c13-4447-916e-7fb51301bfa8
-  modified: 2026-10-11T01:40:00.000Z
+  modified: 2026-10-12T14:20:00.000Z
 ---
 
-# ▶▶ RESUME HERE — 2026-10-11: TESTER FIX CYCLE IN PROGRESS
+# ▶▶ RESUME HERE — 2026-10-12: TESTER FIX CYCLE IN PROGRESS
+
+2026-10-12: report #5 (tree shadow pop) CLOSED, Lee-confirmed: 3.108 (mesh shadow dissolves with the mesh, engine SHADOW_DISTANCE_FADE), 3.108b (any slider value fades: per-object gg_shadow_fade_start, sun+spot+point gathers, engine 090ad5c7), 3.108d (slider 750..2000, default 2000; game 013e30d4). All 5 tester reports so far Lee-confirmed. Engine changes since the tester build 680a30b0: c1f54bd9 (3.107), d1e972a6 (3.108), 090ad5c7 (3.108b) - testers need a new build. Next: Lee has 'something else to fix'. Kill MAX freely; parallel review per fix; NO heredocs for C/C++ strings (hit again 3.108c).
+
+## 2026-10-11
 
 2026-10-11 evening: report #5 (tree shadow pop) FIXED 3.108 - game 3bbddd5e, engine d1e972a6; awaiting Lee. 3.107 Lee-confirmed.
 2026-10-11: report #4 fixed (3.107, game `c8e5a62b`, ENGINE `c1f54bd9` - first engine change since the tester build): placing a character drew its never-written skinning buffer (splayed polygons) + held characters drew an old pose whenever an object was on the cursor. Awaiting Lee. Kill MAX freely; parallel review per fix.
