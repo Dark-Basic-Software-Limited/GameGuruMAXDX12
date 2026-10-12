@@ -43,6 +43,7 @@ a new data point, not a regression, until it is compared on the same hardware.
 | A zombie that "cannot find the nav mesh" is standing on a non-walkable spot — generation works | explained | 3.100 |
 | Z Island's poly count wanders by ~4000 between runs | by nature, not a regression | 3.95 |
 | Soak (many levels in one session) VRAM climbs ~90 MB per level load | accumulation, advisory | 3.66 |
+| Particle Library shows a "PARTICLE" picture for most effects | by design for now - the stock default icon for an effect with no cached thumbnail; DX11 generated thumbnails on first view, DX12 cannot yet (no readback). Hovering still plays the effect live | 3.110 |
 
 ## 4. Symptom → where to look first
 
@@ -100,5 +101,5 @@ a new data point, not a regression, until it is compared on the same hardware.
 | 3 | 2026-10-10 | Lee | - | dev build | RPG HUD on-screen map + Save New Level | the HUD map shows nothing after a Map Snapshot; a generated level gets no thumbnail | no | **fixed** (DX12 image loader now uses the writables redirect) | 3.104 / `e715e5c3` (+3.105b guards) |
 | 4 | 2026-10-11 | Lee | RX 9060 XT | dev build | Level editor > placing a character (Christmas Zombie, TESTPRO2 > testpro2) | for ONE frame as the character is put down its polygons splay out, then it looks fine | no | **fixed, Lee-confirmed** (also: distant characters drew an old pose whenever an object was on the cursor) | 3.107 / `c8e5a62b` (engine `c1f54bd9`) |
 | 5 | 2026-10-11 | Lee | RX 9060 XT | dev build | Test Game > tree shadows (TESTPRO2 > testpro2snow) | backing the camera away from a tree, its shadowing changes and the whole tree pops lighter; tied to Tree Shadow LOD Distance (7000 shows it, 750 moves it closer) | no | **fixed, Lee-confirmed** (options 1 + 3, then 2 as 3.108b - any slider value fades; slider 750..2000, default 2000 as 3.108d: the mesh shadow dissolves with the mesh; honest slider stopping at the preset's reach, "Max") | 3.108 / `81aaba31` + `3bbddd5e` (engine `d1e972a6`) + `81320752` (engine `090ad5c7`) + `013e30d4` (3.108d) |
-| 6 | 2026-10-12 | Lee | RX 9060 XT | dev build | Particle Library (Object Tools > Particles > New Particle) | hovering a particle thumbnail does nothing; DX11 played the effect in it | no | **fixed** (also: opening the Particle Library latched a flag that froze its hover code and killed the Object Library live preview for the session) | 3.110 / `3ca93575` |
+| 6 | 2026-10-12 | Lee | RX 9060 XT | dev build | Particle Library (Object Tools > Particles > New Particle) | hovering a particle thumbnail does nothing; DX11 played the effect in it | no | **fixed, Lee-confirmed** (also: opening the Particle Library latched a flag that froze its hover code and killed the Object Library live preview for the session) | 3.110 / `3ca93575` |
 | | | | | | | | | | |

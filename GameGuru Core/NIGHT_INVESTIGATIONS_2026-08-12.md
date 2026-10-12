@@ -15571,3 +15571,20 @@ neighbour tile must not change, un-hover must return to the baseline):
 by `WickedCall_UpdateEmitters` every frame, so their preview is empty - as in DX11. Hovering an effect
 still deletes the selected level particle's own WPE preview (they share `PreviewWPERoot`; DX11 behaviour,
 the panel reloads it). Lit WPE particles take the level's lighting, as in DX11, not the studio rig.
+
+
+### LEE-CONFIRMED 3.110, 2026-10-12: "Works now" - report #6 closed
+
+**Where the "PARTICLE" thumbnail comes from** (Lee asked whether it is old thumbnails carried forward):
+it is not a thumbnail at all. It is the stock default icon `Files/editors/uiv3/filetype-particle.png`
+(dated 2021, byte-identical to the one in the Steam DX11 install - md5 `74811cda`), loaded once as image
+`FILETYPE_PARTICLE` (`M-GridEdit_part0.cpp:1227`) and shown for every effect that has no cached thumbnail.
+- The REAL thumbnails are the other way round: generated on the user's machine. The Steam DX11 install
+  ships NO `thumbbank/particlesbank_*` files; DX11's generator rendered each effect the first time the
+  library showed it and saved the result into thumbbank, replacing the icon.
+- The 7 that exist in our build area (beam_fire, beam_hot, camp smoke, default, dome, embers2, explosion -
+  `.png` dated 2025-04-25 / 2025-05-04, `.dds` from the 08-16 DDS conversion) ARE carried forward: DX11
+  runs in this build area generated them before the DX12 work. None is in git.
+- DX12 cannot generate (no GPU->CPU readback), so every other effect keeps the icon - and since 3.110 the
+  generator does not even try in DX12. A user on a fresh install sees the icon for ALL effects until a
+  readback exists. The hover preview works either way.
