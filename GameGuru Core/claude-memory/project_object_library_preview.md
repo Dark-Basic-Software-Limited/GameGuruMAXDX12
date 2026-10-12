@@ -129,7 +129,8 @@ Notes: `NIGHT_INVESTIGATIONS_2026-08-12.md` §3.83.
 
 ## Still open
 
-Thumbnail **generation to disk**, snapshot mode and particle-thumb mode remain disabled in DX12 —
+Thumbnail **generation to disk** and snapshot mode remain disabled in DX12 (the particle HOVER
+preview was wrongly grouped with them - restored 3.110, see below) —
 they need a GPU→CPU readback that does not exist yet. Only bites imported/user content; stock
 content ships its thumbnails. The preview render target is now exactly what a readback would read.
 
@@ -150,3 +151,17 @@ content ships its thumbnails. The preview render target is now exactly what a re
 - **3.99**: the full-size preview REBUILDS the backdrop under the SAME object id, so 3.83's id-keyed
   fix skipped it; the transparent plane was overdrawn by the sky wherever no ground lay behind it.
   Now the material STATE is checked every call. ★ A guard keyed on an ID cannot see a rebuild under that ID.
+
+## 3.110 (2026-10-12) - the Particle Library rides the same preview
+
+- ★ **The engine's RTT pass draws NO emitters and NO customDraw hooks**, and a WPE emitter is simulated
+  for the BOUND camera (simulateCS culls + billboards against it) - so a WPE effect needs its own
+  `UpdateGPU` with the preview camera bound, exactly once per frame: hide it from the main view
+  (`SetVisible(false)`) or it simulates twice. Done on the main thread after Render's wait, on the
+  preview's own list, onto mip 0 before the tonemap (`GGObjectPreview_DrawParticles`). No engine change.
+- ★★ **An early return that skips a per-call CLEAR turns a request into a latch.** GrabBackBufferCopy's
+  DX12 return skipped `BackBufferParticlesMode = false`; opening the Particle Library latched it, froze
+  the library's hover code (wait counter re-armed per item) and killed the Object Library preview.
+- A preview keyed on an image ID needs a UNIQUE id per item (uncached items share the default icon),
+  and ImgBtn derives the ImGui ID from the image id - swap one, keep the other stable.
+- 'Black backdrop.dds' is a dark gradient with a glow, not black.

@@ -9,6 +9,8 @@ metadata:
 ---
 
 # ▶▶ RESUME HERE — 2026-10-12: TESTER FIX CYCLE IN PROGRESS
+2026-10-12 afternoon: 3.109 'New Particle' button label (4fc175ed, Lee-confirmed). Report #6 FIXED 3.110 (`3ca93575`, game only): Particle Library live hover preview (legacy + WPE) drawn by GGObjectPreview_DrawParticles + the BackBufferParticlesMode LATCH (opening the Particle Library froze its hover code and killed the Object Library preview for the session). Awaiting Lee's hands-on test. Probe: tools/harness/particle_preview_probe.sh.
+
 
 2026-10-12: report #5 (tree shadow pop) CLOSED, Lee-confirmed: 3.108 (mesh shadow dissolves with the mesh, engine SHADOW_DISTANCE_FADE), 3.108b (any slider value fades: per-object gg_shadow_fade_start, sun+spot+point gathers, engine 090ad5c7), 3.108d (slider 750..2000, default 2000; game 013e30d4). All 5 tester reports so far Lee-confirmed. Engine changes since the tester build 680a30b0: c1f54bd9 (3.107), d1e972a6 (3.108), 090ad5c7 (3.108b) - testers need a new build. Next: Lee has 'something else to fix'. Kill MAX freely; parallel review per fix; NO heredocs for C/C++ strings (hit again 3.108c).
 
