@@ -322,4 +322,7 @@ bool WickedCall_CaptureBackbufferRegionToJPG(int x, int y, int w, int h, const c
 // GGMAX 3.103: same, box-downscaled to fit maxOutW x maxOutH. Writes by extension (.jpg/.png). No default
 // arguments: this header has no include guard and is included twice in one project (C2572).
 bool WickedCall_CaptureBackbufferRegionToJPGScaled(int x, int y, int w, int h, const char* outputPath, int maxOutW, int maxOutH);
+// GGMAX 3.111: crop a tightly packed RGBA8 image, force it opaque, optionally box-scale it down to fit
+// maxOutW x maxOutH (0 = no scaling), and write it - format from the extension (.jpg/.png/...).
+bool WickedCall_SaveRGBA8Region(const unsigned char* rgba, int srcW, int srcH, int x, int y, int w, int h, const char* outputPath, int maxOutW, int maxOutH);
 

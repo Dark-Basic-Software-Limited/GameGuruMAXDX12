@@ -43,7 +43,7 @@ a new data point, not a regression, until it is compared on the same hardware.
 | A zombie that "cannot find the nav mesh" is standing on a non-walkable spot — generation works | explained | 3.100 |
 | Z Island's poly count wanders by ~4000 between runs | by nature, not a regression | 3.95 |
 | Soak (many levels in one session) VRAM climbs ~90 MB per level load | accumulation, advisory | 3.66 |
-| Particle Library shows a "PARTICLE" picture for most effects | by design for now - the stock default icon for an effect with no cached thumbnail; DX11 generated thumbnails on first view, DX12 cannot yet (no readback). Hovering still plays the effect live | 3.110 |
+| Particle Library shows a "PARTICLE" picture for an effect | since 3.111 only for effects that draw nothing at preview scale (weather volumes, birds) - every other effect gets a generated thumbnail the first time the library opens. On the tester build (before 3.111) it is every effect without a cached thumbnail | 3.110 / 3.111 |
 
 ## 4. Symptom → where to look first
 
@@ -67,6 +67,7 @@ a new data point, not a regression, until it is compared on the same hardware.
 | A character splays into huge sheets for a frame or few when placed or spawned; distant characters flick between two poses | 3.107 skinning ping-pong under Reduction Scale (fixed after the tester build) | `SET_SKINFRESHGUARD` -> `drawnGarbage` and `drawnStale` must stay 0; ask them to untick Lower Animation |
 | A tree pops lighter (its self-shadow vanishes) as the camera backs away | 3.108 - fixed after the tester build; if seen on a dev build, the slider is below the reach (it still switches there) | `SET_SHADOWDISTFADE` -> `fadingCasters` > 0 near trees; slider at "Max"; `DUMP_POSTFX` -> `treelod` |
 | Particle Library hover shows nothing, or the Object Library hover preview stopped working after the Particle Library was opened | 3.110 (fixed after the tester build): the BackBufferParticlesMode latch; the particle preview pass | `DUMP_OBJPREVIEW` -> `bbParticlesMode=` must be 0 when nothing is hovered; while hovering `particle=1`, `particleFrames=` rising, `wpeSim=` > 0 for a .pe |
+| A library item never gets a thumbnail, or keeps a black backdrop / gets a wrong one | 3.111 thumbnail generation (fixed after the tester build) | `DUMP_OBJPREVIEW` -> `thumbgen[...]`: armed/written/aborted/refused, last path, mean; the file is in Documents/GameGuruApps/GameGuruMAX/Files/thumbbank |
 | Terrain torn into white sheets / spikes, trees floating, after clicking palette trees | 3.102 billboard atlas slice overrun (fixed after the tester build) | `SET_FARTREES` (no argument = read-only) -> `ATLAS (3.102): sliceCopiesRefused=` must stay 0 |
 
 ## 5. Reproducing — the tool belt

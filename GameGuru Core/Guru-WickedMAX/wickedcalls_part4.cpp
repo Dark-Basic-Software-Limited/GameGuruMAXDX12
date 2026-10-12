@@ -161,7 +161,13 @@ void WickedCall_UpdateEmitters(void)
 			HierarchyComponent* hier = scene.hierarchy.GetComponent(emitter);
 			if (hier)
 			{
-				if (hier->parentID != wiECS::INVALID_ENTITY)
+				// GGMAX 3.111: never the Particle Library's own preview effect. It is parked in front of the
+				// library's preview camera, 39000 units up, and dragging it to the EDITOR camera every frame
+				// guaranteed a follow-camera effect could not appear in the hover preview or the thumbnail.
+				// (Measured: birds, downpour and heavy-rain3 still draw nothing visible at preview scale -
+				// their thumbnails keep the PARTICLE icon, see GGThumbGen_Hold.)
+				extern uint32_t g_LibraryPreviewWPERoot;
+				if (hier->parentID != wiECS::INVALID_ENTITY && !(g_LibraryPreviewWPERoot != 0 && hier->parentID == g_LibraryPreviewWPERoot))
 				{
 					bool bAlreadySet = false;
 					// GGMAX 2.00: was 'a > parent_used.size()' - the loop never ran, so the

@@ -15588,3 +15588,67 @@ it is not a thumbnail at all. It is the stock default icon `Files/editors/uiv3/f
 - DX12 cannot generate (no GPU->CPU readback), so every other effect keeps the icon - and since 3.110 the
   generator does not even try in DX12. A user on a fresh install sees the icon for ALL effects until a
   readback exists. The hover preview works either way.
+
+
+### 3.111 DX12 thumbnail GENERATION restored - a readback of the live preview - 2026-10-12
+
+Lee: "Yes, build the DX12 readback for thumbnail generation."
+
+**What was dead.** DX11 rendered bitmap 99, `GrabImage`'d the centre and `SaveImage`'d it inside one
+`GrabBackBufferCopy` call. None of that layer exists in DX12 (`m_pD3D` is NULL; `SaveImage` writes nothing).
+So no library item without a cached thumbnail ever got one: measured 1521 of 3804 stock .fpe have no install
+thumbnail (~1140 showed a black backdrop), every particle effect but 7 showed the stock "PARTICLE" icon,
+imported/user content got nothing, and the large preview's Update Thumbnail deleted the old file and made
+no new one.
+
+**How it works now** (`M-GridEditB_part7.cpp` GGThumbGen, `master_part2.cpp`, game only, no engine change):
+- A one-shot request (bLoopBackBuffer false + a save name) for an object or a particle takes EXACTLY the live
+  preview's path - same DX11 framing maths, same Submit - and is then ARMED instead of grabbed.
+- HOLD: `GrabBackBufferCopy` returns early each frame until the preview has rendered the framing
+  (`GGObjectPreview_RenderedSinceArm`, a per-request counter - `s_haveFrame` cannot tell requests apart), and
+  for objects until texture streaming has settled (`gg_streaming_descriptor_epoch` stable 8 frames, capped) -
+  the first frame of a freshly loaded object would bake a blurry low mip into the thumbnail for good. Particles
+  wait DX11's own 25-160 frame warm-up.
+- READBACK: `GGObjectPreview_CaptureLDR` = `wi::helper::saveTextureToMemory` on the tonemapped RGBA8 preview
+  (the engine path the Lee-confirmed 3.103 capture already uses). Submit + WaitForGPU, so about a one-frame
+  stall per thumbnail - called only BETWEEN frames, never from Render.
+- WRITE: thumbnail (512x288 .jpg) + centre 288x288 icon (.png) to the paths DX11 used (writable thumbbank, or
+  the custom project folder), via `WickedCall_SaveRGBA8Region` (split out of the 3.103 capture).
+- TEARDOWN: Stop + the DX11 one-shot restores (backdrop, sky, probes, sun, bloom, thumb lights); the library
+  reloads the item through its normal cache loader.
+- One at a time: the library holds new requests and object hovers while a generation is in flight.
+- Loop guard: a written name is blocked only while its file exists, per write area; failures are blocked for
+  the session.
+- Particle captures that show nothing but the backdrop (weather volumes, birds) are NOT written - the icon is
+  better than a picture of the empty backdrop (measured: bare backdrop = mean 8.0, no channel above 50).
+
+**Two more latches found and fixed on the way** (the 3.110 shape - a DX12 early return skipping DX11's per-call
+clears): group thumbnails (Ctrl+G, the Group button, leaving Group Edit) set `BackBufferSnapShotMode` and
+nothing cleared it, so BOTH live hover previews died until the screen editor or terrain generator ran; and every
+uncached object the library looked at left the thumb lights at the world origin with bloom, light shafts and
+lens flare off. Also: a hover could leave its save name on another item's request (a mislabel DX11 had too,
+harmless only because DX12 never saved).
+
+**Review** (four lenses + adversarial verify): 13 survivors, all fixed - Update Thumbnail refused by the loop
+guard; the full preview opened during a hold bound to the captured object (now cancels the generation);
+particle generator not gated by the in-flight flag; a single pending reload lost on a folder change (now a
+queue); a failed effect load re-requested every few frames; hovers lost during a hold; a refused request's .fpe
+camera inherited by the next hover; device loss during a hold becoming an access violation.
+
+**Verified** (exe `3a68ca6b307745d717d216506606cae1`, TESTPRO2 > testpro2snow):
+- False Wall 2 (no install thumbnail): 512x288 JPG + 288x288 PNG written to Documents thumbbank (mean 37.7),
+  the tile updated at once, framed like the stock False Wall 1 beside it. After a full restart it loads from
+  disk and is not regenerated.
+- Opening the Particle Library generated thumbnails for every uncached effect in seconds (the particle
+  library loads every item, not just the visible ones - DX11 did the same); the Particles panel's preset
+  palette now shows them too.
+- Object Library and Particle Library hover previews still pass their probes.
+- Files written by the tests (Lee does cleanup): Aztec False Wall 2; User Apartment Complex ac01/ac02/ac03;
+  User SNIFF shells (two); and 30 `particlesbank_*` pairs. Four of those (birds, downpour, heavy-rain3,
+  waterleak) are empty-backdrop pictures made BEFORE the empty-capture rule - deleting them gives the icon back.
+
+**Known, not done:** Lee's call - the ~1140 stock items will generate into Documents as people browse (as in
+DX11); pre-generating into the install thumbbank is a separate job. Group thumbnails, video thumbnails and the
+other `SaveImage` callers can reuse the same primitive later. DX12 thumbnails match the studio-lit hover, not
+the DX11 stock thumbnails (Lee's 3.98 decision). Abalone shell (user content) frames low - the DX11 framing
+maths on that item's bounds.

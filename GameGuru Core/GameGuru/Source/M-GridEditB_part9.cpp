@@ -110,7 +110,7 @@ void process_entity_library_v2(void)
 		}
 		//PE: Make sure we dont use all memory.
 		//PE: 03-18-2021: Decreased from 50 to 20 as some users reported it used all there memory.
-		if (!bLoopBackBuffer && g_imageList.size() > g_TempimageList.size() + 20)
+		if (!bLoopBackBuffer && !g_bThumbGenInFlight && g_imageList.size() > g_TempimageList.size() + 20) // (3.111: not under a generation - it frees slot 0)
 		{
 			//PE: After we cached 50 textures free all so we dont run out of mem. We might auto generate 1000 thumbs :)
 			//PE: This is like allowing around 15 fpe with objects textures to be cached.
@@ -195,7 +195,10 @@ void process_entity_library_v2(void)
 		int thumb_y = 288;
 		int iColumnsWidth = 110;
 
-		bDoneOneThumbPerSync = false;
+		// GGMAX 3.111: while a DX12 thumbnail generation is in flight (GrabBackBufferCopy holds it over
+		// several frames, where DX11 finished it inside one call) no new request and no hover may
+		// entity_load into slot 0 - that would delete the object being captured.
+		bDoneOneThumbPerSync = g_bThumbGenInFlight;
 
 		if (iDeleteInNextUpdate > 0)
 		{
@@ -2448,6 +2451,8 @@ void process_entity_library_v2(void)
 										iLastDisplayLibraryType = -1;
 										//Refresh with new search.
 										//Load dbo and display large preview.
+										// GGMAX 3.111: the full preview needs slot 0 and the preview camera now
+										if (g_bThumbGenInFlight) { GGThumbGen_Cancel(); bDoneOneThumbPerSync = false; }
 										pPreviewFile = myfiles;
 										bLargePreview = true;
 										bDoBackbufferUpdate = true;
@@ -3015,6 +3020,21 @@ void process_entity_library_v2(void)
 						uniqueId = myfiles->uniqueId;
 						ImGui::PushID(uniqueId); //Already unique: +preview_count);
 
+						// GGMAX 3.111: a thumbnail was just generated for this item (GGThumbGen_Finish). Drop
+						// what the cell holds and let the normal cache load below find the new file - the
+						// same path, and the same writables rules, as any cached thumbnail.
+						if (GGThumbGen_HasReloads() && GGThumbGen_TakeReload(myfiles->uniqueId))
+						{
+							if (myfiles->iPreview >= 4000 && myfiles->iPreview < UIV3IMAGES && GetImageExistEx(myfiles->iPreview))
+							{
+								image_setlegacyimageloading(true);
+								DeleteImage(myfiles->iPreview);
+								image_setlegacyimageloading(false);
+							}
+							myfiles->iPreview = 0;
+							myfiles->iBigPreview = 0;
+						}
+
 						bool bLoadedInNewFormat = true;
 						int iDefaultTexture = TOOL_ENTITY;
 						int textureId = 0;
@@ -3070,7 +3090,8 @@ void process_entity_library_v2(void)
 								}
 							}
 
-							if (iDisplayLibraryType == 5 && BackBufferParticlesMode)
+							// (3.111: or any generation in flight - one at a time, review)
+							if (iDisplayLibraryType == 5 && (BackBufferParticlesMode || g_bThumbGenInFlight))
 							{
 								bCheckForNewPreviewImage = false;
 								textureId = iDefaultTexture;
@@ -3305,12 +3326,12 @@ void process_entity_library_v2(void)
 													}
 												}
 											}
-											// GGMAX 3.110: not in DX12. Generating a thumbnail means grabbing pixels back to
-											// the CPU, which DX12 cannot do (see GrabBackBufferCopy), so it never produced
-											// one - it only loaded an effect, raised BackBufferParticlesMode and waited.
-											// Items without a cached thumbnail keep the default particle icon, or their own
-											// .jpg if the folder has one (the branch below), and still preview on hover.
-											else if (iDisplayLibraryType == 5 && !ImGui_DX12_IsInitialized())
+											// GGMAX 3.110 switched this off in DX12, which then had no GPU->CPU readback.
+											// 3.111: back on - GrabBackBufferCopy generates it through the live preview and a
+											// readback (GGThumbGen). Not for a name already generated or given up on this
+											// session: that falls to the branch below (the folder's own .jpg, or the default
+											// icon) instead of asking again every few frames.
+											else if (iDisplayLibraryType == 5 && (!ImGui_DX12_IsInitialized() || (!g_bThumbGenInFlight && !GGThumbGen_IsBlocked(BackBufferCacheName.Get()))))
 											{
 												//Create particle thumb here.
 												BackBufferIsGroup = false;
@@ -3352,6 +3373,7 @@ void process_entity_library_v2(void)
 												}
 												CreateBackBufferCacheName(cTmp, thumb_x, thumb_y);
 												BackBufferSaveCacheName = BackBufferCacheName;
+												g_iThumbGenRequestUniqueId = myfiles->uniqueId; // GGMAX 3.111: the item to reload
 
 												if (BackBufferParticleEmitter != -1)
 												{
@@ -3383,9 +3405,11 @@ void process_entity_library_v2(void)
 													WickedCall_PerformEmitterAction(4, PreviewWPERoot);
 													WickedCall_PerformEmitterAction(5, PreviewWPERoot);
 													fLive = 350.0f;
+													g_LibraryPreviewWPERoot = PreviewWPERoot; // GGMAX 3.111: the preview only draws the library's own root
 												}
 												else
 												{
+													g_LibraryPreviewWPERoot = 0; // GGMAX 3.111
 													sParticleName = sParticleName + "\\" + Left(myfiles->m_sName.Get(), Len(myfiles->m_sName.Get()) - 4);
 													if (BackBufferParticleEmitter == -1)
 													{
@@ -4321,6 +4345,9 @@ void process_entity_library_v2(void)
 
 									if (ImGui::ImgBtn(KEY_MAXIMIZE, ImVec2(iImageSize, iImageSize), ImColor(0, 0, 0, 0), ImColor(255, 255, 255, 180), ImColor(255, 255, 255, 180), ImColor(255, 255, 255, 180), 0, 0, 0, 0, false, false, false, false, true, bBoostIconColors))
 									{
+										// GGMAX 3.111: the full preview needs slot 0 and the preview camera now (review:
+										// opened during a generation it bound to the object being captured)
+										if (g_bThumbGenInFlight) { GGThumbGen_Cancel(); bDoneOneThumbPerSync = false; }
 										pPreviewFile = myfiles;
 										bLargePreview = true;
 										bDoBackbufferUpdate = true;
@@ -4332,6 +4359,7 @@ void process_entity_library_v2(void)
 
 									if (bThumbHovered && ImGui::IsMouseDoubleClicked(0))
 									{
+										if (g_bThumbGenInFlight) { GGThumbGen_Cancel(); bDoneOneThumbPerSync = false; } // GGMAX 3.111
 										pPreviewFile = myfiles;
 										bLargePreview = true;
 										bDoBackbufferUpdate = true;
@@ -4576,15 +4604,17 @@ void process_entity_library_v2(void)
 											{
 												GG_SetWritablesToRoot(true);
 											}
-											if (FileExist(BackBufferCacheName.Get()) == 0)
-											{
-												// only save new thumb if not exist in root
-												BackBufferSaveCacheName = BackBufferCacheName;
-											}
+											// GGMAX 3.111: no save name from a HOVER. The hover request clears it again
+											// ("No saving on tooltip images") - but only when it gets to run; on a frame
+											// another item's generation request runs instead, this name was left on THAT
+											// request and its thumbnail was written under this item's name.
 											GG_SetWritablesToRoot(false);
 											bDoBackbufferUpdate = true;
 											iTooltipTimer = iTooltipHoveredTimer - 750;
-											iTooltipObjectReady = true;
+											// GGMAX 3.111: not 'ready' while a generation blocks the request this frame -
+											// the 'not ready' branch below then asks again every frame until it can run
+											// (review: the hover was spent on a blocked frame and never retried)
+											iTooltipObjectReady = !bDoneOneThumbPerSync;
 											preload_fpe_file = "";
 										}
 										else
@@ -4613,11 +4643,7 @@ void process_entity_library_v2(void)
 												{
 													GG_SetWritablesToRoot(true);
 												}
-												if (FileExist(BackBufferCacheName.Get()) == 0)
-												{
-													// only save new thumb if not exist in root
-													BackBufferSaveCacheName = BackBufferCacheName;
-												}
+												// GGMAX 3.111: no save name from a hover - see the site above
 												GG_SetWritablesToRoot(false);
 												bDoBackbufferUpdate = true;
 											}
@@ -4773,6 +4799,7 @@ void process_entity_library_v2(void)
 										{
 											// only save new thumb if not exist in root
 											BackBufferSaveCacheName = BackBufferCacheName;
+											g_iThumbGenRequestUniqueId = myfiles->uniqueId; // GGMAX 3.111: the item to reload
 										}
 										GG_SetWritablesToRoot(false);
 

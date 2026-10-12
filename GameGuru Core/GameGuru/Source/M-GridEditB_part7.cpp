@@ -3,6 +3,299 @@
 // particle request, and by the library's close handler when it tears one down unseen.
 bool g_bParticleHoverRestoreOwed = false;
 
+// ============================================================================ GGMAX 3.111
+// DX12 THUMBNAIL GENERATION. DX11 rendered bitmap 99, GrabImage'd the centre and SaveImage'd it, all
+// inside one GrabBackBufferCopy call. None of that layer exists in DX12 (m_pD3D is NULL), so a library
+// item without a cached thumbnail never got one: ~1140 stock objects show a black backdrop, every
+// particle effect but seven shows the "PARTICLE" icon, and imported/user content and the large
+// preview's Update lost theirs. The live preview already renders exactly the picture DX11 grabbed
+// (same camera maths, same crop FOV) into an RGBA8 texture, so generation now ARMS a preview of the
+// requested framing, HOLDS until the engine has rendered it (a frame later - plus texture streaming
+// for objects, plus the effect's warm-up for particles), reads it back (GGObjectPreview_CaptureLDR),
+// writes the thumbnail and the 288x288 icon where DX11 wrote them, and tells the library to reload
+// the item. One at a time: the library holds off new requests while one is in flight.
+bool g_bThumbGenInFlight = false;		// read by the library - no new request, no entity load into slot 0
+int g_iThumbGenRequestUniqueId = 0;		// set by the library with each request: the item's uniqueId
+static struct GGThumbGenState
+{
+	int			state = 0;				// 0 idle, 1 holding
+	bool		bParticle = false;
+	int			objectId = 0;
+	int			imageId = 0;			// BackBufferImageID as armed - Finish clears only its own request
+	int			reloadUniqueId = 0;
+	int			minFrames = 3;			// rendered frames to wait (particles: their warm-up)
+	int			maxFrames = 600;		// held frames before giving up
+	int			heldFrames = 0;
+	uint32_t	epoch = 0;				// texture streaming activity, see Hold
+	int			epochStable = 0;
+	std::string	saveName;
+	// diagnostics (DUMP_OBJPREVIEW)
+	int			armed = 0, written = 0, aborted = 0, refused = 0;
+	int			lastW = 0, lastH = 0;
+	float		lastMean = -1.0f;
+	std::string	lastPath, lastResult;
+} s_thumbGen;
+// The loop guard. Without it a thumbnail the library then cannot find - any mismatch between where it
+// looks and where we wrote - would be regenerated forever, and an effect that will not load would be
+// asked for every few frames. Review fixes:
+// - a WRITTEN name is blocked only while the file it wrote still exists. 'Update Thumbnail' / 'Add to
+//   Object Library' delete the thumbnail on purpose so it is made again, and a session-long block turned
+//   that into "delete it and refuse to make a new one";
+// - entries count only in the WRITE AREA they were made in (the writable root, or one custom project
+//   folder): another project looks somewhere else and must be allowed to generate its own copy.
+struct GGThumbGenDone { std::string saveName, realPath, area; bool bWritten; };
+static std::vector<GGThumbGenDone> s_thumbGenDone;
+
+static std::string GGThumbGen_WriteArea(void)
+{
+	if (strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0)
+		return std::string("custom|") + Storyboard.customprojectfolder + "|" + Storyboard.gamename;
+	return "root";
+}
+
+static void GGThumbGen_Block(const std::string& saveName, const char* pRealPath, bool bWritten)
+{
+	GGThumbGenDone e;
+	e.saveName = saveName;
+	e.realPath = pRealPath ? pRealPath : "";
+	e.area = GGThumbGen_WriteArea();
+	e.bWritten = bWritten;
+	s_thumbGenDone.push_back(e);
+}
+
+bool GGThumbGen_IsBlocked(const char* pSaveName)
+{
+	if (!pSaveName || !pSaveName[0]) return true;
+	const std::string area = GGThumbGen_WriteArea();
+	for (size_t i = 0; i < s_thumbGenDone.size(); )
+	{
+		const GGThumbGenDone& e = s_thumbGenDone[i];
+		if (_stricmp(e.saveName.c_str(), pSaveName) != 0 || e.area != area) { ++i; continue; }
+		if (!e.bWritten) return true;		// failed: not again this session
+		if (GetFileAttributesA(e.realPath.c_str()) != INVALID_FILE_ATTRIBUTES) return true;
+		s_thumbGenDone.erase(s_thumbGenDone.begin() + i);	// deleted since - may be made again
+	}
+	return false;
+}
+
+// Items whose thumbnail was just written (or whose generation ended): the library reloads each one the
+// next time it draws it. A LIST, because a folder or search change during a hold means the item is not
+// drawn for a while - a single slot was overwritten by the next generation and the new thumbnail never
+// appeared (review).
+static std::vector<int> s_thumbGenReload;
+static void GGThumbGen_QueueReload(int uniqueId)
+{
+	if (uniqueId <= 0) return;
+	for (int id : s_thumbGenReload) if (id == uniqueId) return;
+	if (s_thumbGenReload.size() >= 64) s_thumbGenReload.erase(s_thumbGenReload.begin());
+	s_thumbGenReload.push_back(uniqueId);
+}
+bool GGThumbGen_TakeReload(int uniqueId)
+{
+	for (size_t i = 0; i < s_thumbGenReload.size(); ++i)
+	{
+		if (s_thumbGenReload[i] != uniqueId) continue;
+		s_thumbGenReload.erase(s_thumbGenReload.begin() + i);
+		return true;
+	}
+	return false;
+}
+bool GGThumbGen_HasReloads(void) { return !s_thumbGenReload.empty(); }
+
+// What DX11 put back after a ONE-SHOT grab (the !bLoopBackBuffer restores below): CreateBackdropObject
+// switched bloom off, swapped the sky for an _fpe_cube and moved the probe, and the request turned the
+// thumb lights on. Shared by a completed or aborted generation and by a refused request.
+static void GGThumbGen_RestoreAfterOneShot(void)
+{
+	int backdropobj = BACKDROPMAGE;
+	if (bUseBackDropImage && ObjectExist(backdropobj)) HideObject(backdropobj);
+	RevertBackbufferCubemap();
+	WickedCall_UpdateProbes();
+	WickedCall_SetSunDirection(t.visuals.SunAngleX, t.visuals.SunAngleY, t.visuals.SunAngleZ);
+	master_renderer->setBloomEnabled(t.visuals.bBloomEnabled);
+	WickedCall_MoveReflectionProbe(GGORIGIN_X, GGORIGIN_Y + 5000, GGORIGIN_Z, "editorProbe", 500);
+	WickedCall_EnableThumbLight(false);
+}
+
+static void GGThumbGen_Finish(const char* pAbortReason)
+{
+	extern void GGObjectPreview_Stop(void);
+	extern uint32_t PreviewWPERoot;
+	extern uint32_t g_LibraryPreviewWPERoot;
+	GGThumbGenState& g = s_thumbGen;
+	GGObjectPreview_Stop();		// gives the parked object back, hides the backdrop, frees the camera's targets
+	if (g.bParticle)
+	{
+		// DX11's end-of-grab teardown for a one-shot particle capture - plus the WPE root, which DX11
+		// left loaded (hidden, still CPU-updating, and free for the level's particle preview to grab)
+		if (BackBufferParticleEmitter != -1) { gpup_deleteEffect(BackBufferParticleEmitter); BackBufferParticleEmitter = -1; }
+		if (g_LibraryPreviewWPERoot != 0 && g_LibraryPreviewWPERoot == PreviewWPERoot)
+		{
+			WickedCall_PerformEmitterAction(6, PreviewWPERoot);
+			void DeleteEmitterEffects(uint32_t root);
+			DeleteEmitterEffects(PreviewWPERoot);
+			PreviewWPERoot = 0;
+		}
+		g_LibraryPreviewWPERoot = 0;
+		BackBufferParticlesMode = false;
+		iBackBufferParticlesTrigger = 0;
+		BackBufferZoom = 0.0f;
+		BackBufferCamUp = 0.0f;
+		master_renderer->setBloomEnabled(t.visuals.bBloomEnabled);
+		g_bParticleHoverRestoreOwed = false;
+	}
+	else
+	{
+		GGThumbGen_RestoreAfterOneShot();
+	}
+	// only what is still OURS (review): a new request raised meanwhile keeps its id and name
+	if (BackBufferImageID == g.imageId)
+	{
+		BackBufferImageID = 0;
+		BackBufferSaveCacheName = "";
+	}
+	if (pAbortReason)
+	{
+		g.aborted++;
+		g.lastResult = std::string("aborted: ") + pAbortReason;
+		// a request that can never complete (a readback or write that fails, a hold that never settles)
+		// is not retried this session - the library would otherwise ask for it again at once. The rest
+		// (the library closed, the folder changed, the user opened a full preview) were interruptions.
+		if (strcmp(pAbortReason, "timed out") == 0 || strcmp(pAbortReason, "readback failed") == 0
+			|| strcmp(pAbortReason, "thumbnail write failed") == 0)
+			GGThumbGen_Block(g.saveName, nullptr, false);
+	}
+	// reload either way: a particle cell holds an image id with nothing behind it until it does, and an
+	// interrupted object cell holds the black backdrop with its 'requested' mark set
+	GGThumbGen_QueueReload(g.reloadUniqueId);
+	g.state = 0;
+	g_bThumbGenInFlight = false;
+}
+
+// The library is about to do something that needs slot 0 and the preview NOW - open the full-size
+// preview (review: during a hold it bound to the object being captured, went blank when the capture
+// finished, and its 'Update Thumbnail' rewrote THAT item's .fpe). Stand the generation down; it is
+// not blocked, so the item is simply generated again later. No readback here - safe mid-frame.
+void GGThumbGen_Cancel(void)
+{
+	if (s_thumbGen.state != 1) return;
+	GGThumbGen_Finish("superseded");
+}
+
+// One frame of an armed generation. GrabBackBufferCopy returns straight after it.
+static void GGThumbGen_Hold(void)
+{
+	extern bool GGObjectPreview_IsActive(void);
+	extern uint32_t GGObjectPreview_RenderedSinceArm(void);
+	extern bool GGObjectPreview_CaptureLDR(wi::vector<uint8_t>& outRGBA, int& outW, int& outH);
+	extern uint32_t PreviewWPERoot;
+	extern uint32_t g_LibraryPreviewWPERoot;
+	GGThumbGenState& g = s_thumbGen;
+	g.heldFrames++;
+
+	const char* pAbort = nullptr;
+	if (wiGraphics::GetDevice() == nullptr || wiGraphics::GetDevice()->IsDeviceRemoved()) pAbort = "device lost";
+	else if (!GGObjectPreview_IsActive()) pAbort = "preview stopped";
+	else if (BackBufferImageID != g.imageId) pAbort = "library closed";	// the close handler zeroes it
+	else if (!g.bParticle && (g.objectId <= 0 || ObjectExist(g.objectId) != 1)) pAbort = "object gone";	// folder change frees slot 0
+	else if (g.bParticle && BackBufferParticleEmitter == -1 && !(g_LibraryPreviewWPERoot != 0 && g_LibraryPreviewWPERoot == PreviewWPERoot)) pAbort = "library closed";
+	else if (g.heldFrames > g.maxFrames) pAbort = "timed out";
+	if (pAbort && strcmp(pAbort, "device lost") == 0)
+	{
+		// the app is on its way out (3.26 dialog + exit) - just stand down, touch nothing on the GPU
+		g.aborted++;
+		g.lastResult = "aborted: device lost";
+		g.state = 0;
+		g_bThumbGenInFlight = false;
+		return;
+	}
+	if (pAbort) { GGThumbGen_Finish(pAbort); return; }
+
+	// ★ A freshly loaded object streams its textures in over the next frames. Saving the first frame
+	// would bake a blurry low mip into the thumbnail FOR GOOD, so wait until the streaming descriptor
+	// epoch has stopped moving (capped - a level that streams continuously must not stall this forever).
+	const uint32_t epoch = wi::resourcemanager::gg_streaming_descriptor_epoch.load(std::memory_order_relaxed);
+	if (epoch != g.epoch) { g.epoch = epoch; g.epochStable = 0; }
+	else g.epochStable++;
+	const bool bSettled = g.bParticle || g.epochStable >= 8 || g.heldFrames >= 240;
+	if ((int)GGObjectPreview_RenderedSinceArm() < g.minFrames || !bSettled) return;
+
+	wi::vector<uint8_t> rgba;
+	int w = 0, h = 0;
+	if (!GGObjectPreview_CaptureLDR(rgba, w, h)) { GGThumbGen_Finish("readback failed"); return; }
+
+	// ★ An effect that draws nothing at preview scale (weather volumes such as downpour and heavy-rain3,
+	// birds) would be saved as a picture of the empty backdrop - worse than the PARTICLE icon it replaces,
+	// and permanent. Measured on the first batch: the bare 'Black backdrop' comes out at mean 8.0 with no
+	// channel above 50 anywhere; every effect that drew something had pixels well above that or a clearly
+	// higher mean (the dimmest, fire_bigsprites: max 54 but mean 15.5). Keep the icon for those.
+	if (g.bParticle)
+	{
+		size_t bright = 0;
+		double lumSum = 0.0;
+		for (size_t i = 0; i + 3 < rgba.size(); i += 4)
+		{
+			const int mx = (std::max)(rgba[i], (std::max)(rgba[i + 1], rgba[i + 2]));
+			if (mx > 56) bright++;
+			lumSum += (double)rgba[i] + rgba[i + 1] + rgba[i + 2];
+		}
+		const size_t px = rgba.size() / 4;
+		const double mean = px ? lumSum / ((double)px * 3.0) : 0.0;
+		if (px && bright * 2000 < px && mean < 10.0)
+		{
+			g.lastMean = (float)mean;
+			g.lastW = w;
+			g.lastH = h;
+			GGThumbGen_Block(g.saveName, nullptr, false);	// do not ask again this session
+			GGThumbGen_Finish("nothing visible - kept the icon");
+			return;
+		}
+	}
+
+	// where DX11 wrote them (the !bDX12 blocks below): the writable area's thumbbank, or the custom
+	// project folder; the icon is the same name as a .png
+	const bool bCustomProject = strlen(Storyboard.gamename) > 0 && strlen(Storyboard.customprojectfolder) > 0;
+	char pRealThumbFile[MAX_PATH];
+	char pRealIconFile[MAX_PATH];
+	strcpy_s(pRealThumbFile, MAX_PATH, g.saveName.c_str());
+	strcpy_s(pRealIconFile, MAX_PATH, g.saveName.c_str());
+	if (strlen(pRealIconFile) > 4) pRealIconFile[strlen(pRealIconFile) - 4] = 0;
+	strcat_s(pRealIconFile, MAX_PATH, ".png");
+	if (!bCustomProject) GG_SetWritablesToRoot(true);
+	GG_GetRealPath(pRealThumbFile, 1);
+	GG_GetRealPath(pRealIconFile, 1);
+	if (FileExist(pRealThumbFile) == 1) DeleteAFile(pRealThumbFile);
+	if (FileExist(pRealIconFile) == 1) DeleteAFile(pRealIconFile);
+	if (!bCustomProject) GG_SetWritablesToRoot(false);
+
+	const bool bThumb = WickedCall_SaveRGBA8Region(rgba.data(), w, h, 0, 0, w, h, pRealThumbFile, 0, 0);
+	// DX11's icon was the centre 288x288 of the same frame the thumbnail was the centre of
+	const int iconSize = (std::min)(288, (std::min)(w, h));
+	const bool bIcon = WickedCall_SaveRGBA8Region(rgba.data(), w, h, (w - iconSize) / 2, (h - iconSize) / 2, iconSize, iconSize, pRealIconFile, 0, 0);
+
+	double sum = 0.0;
+	for (size_t i = 0; i + 3 < rgba.size(); i += 4) sum += (double)rgba[i] + rgba[i + 1] + rgba[i + 2];
+	g.lastMean = rgba.empty() ? -1.0f : (float)(sum / ((double)(rgba.size() / 4) * 3.0));
+	g.lastW = w;
+	g.lastH = h;
+	g.lastPath = pRealThumbFile;
+	if (!bThumb) { GGThumbGen_Finish("thumbnail write failed"); return; }
+	GGThumbGen_Block(g.saveName, pRealThumbFile, true);
+	g.written++;
+	g.lastResult = bIcon ? "written" : "written (icon failed)";
+	GGThumbGen_Finish(nullptr);
+}
+
+void GGThumbGen_DebugStatus(char* buf, int bufsize)
+{
+	const GGThumbGenState& g = s_thumbGen;
+	if (!buf || bufsize < 64) return;
+	_snprintf(buf, bufsize, " thumbgen[state=%d particle=%d armed=%d written=%d aborted=%d refused=%d held=%d minFrames=%d epochStable=%d last=%dx%d mean=%.1f result='%s' path='%s']",
+		g.state, g.bParticle ? 1 : 0, g.armed, g.written, g.aborted, g.refused, g.heldFrames, g.minFrames, g.epochStable,
+		g.lastW, g.lastH, g.lastMean, g.lastResult.c_str(), g.lastPath.c_str());
+	buf[bufsize - 1] = 0;
+}
+
 void GrabBackBufferCopy(void)
 {
 #ifdef OPTICK_ENABLE
@@ -34,7 +327,15 @@ void GrabBackBufferCopy(void)
 	extern void GGObjectPreview_Stop(void);
 	extern bool GGObjectPreview_IsActive(void);
 	const bool bDX12 = ImGui_DX12_IsInitialized();
-	const bool bDX12LivePreview = bDX12 && bLoopBackBuffer && BackBufferObjectID > 0
+
+	// GGMAX 3.111: a thumbnail generation in flight owns this function until it completes or aborts.
+	if (bDX12 && s_thumbGen.state == 1)
+	{
+		GGThumbGen_Hold();
+		return;
+	}
+
+	const bool bDX12LiveObject = bDX12 && bLoopBackBuffer && BackBufferObjectID > 0
 				  && !BackBufferSnapShotMode && !BackBufferParticlesMode && !BackBufferGrabGameScreen;
 
 	// GGMAX 3.110: the Particle Library hover preview rides the same live preview. It never needed a
@@ -48,8 +349,20 @@ void GrabBackBufferCopy(void)
 	extern bool GGObjectPreview_IsParticleActive(void);
 	const uint32_t uDX12PreviewWPE = (g_LibraryPreviewWPERoot != 0 && g_LibraryPreviewWPERoot == PreviewWPERoot) ? PreviewWPERoot : 0;
 	const bool bDX12ParticleSource = (BackBufferParticleEmitter != -1 || uDX12PreviewWPE != 0);
-	const bool bDX12ParticlePreview = bDX12 && bLoopBackBuffer && BackBufferParticlesMode && BackBufferObjectID == 0
+	const bool bDX12ParticleLive = bDX12 && bLoopBackBuffer && BackBufferParticlesMode && BackBufferObjectID == 0
 				  && BackBufferImageID > 0 && bDX12ParticleSource && !BackBufferSnapShotMode && !BackBufferGrabGameScreen;
+
+	// GGMAX 3.111: thumbnail GENERATION requests - a one-shot (bLoopBackBuffer false) with a save name.
+	// They take exactly the live preview's path below (same framing, same Submit) and then ARM instead of
+	// running the DX11 grab; see GGThumbGen_Hold.
+	const bool bDX12GenRequest = bDX12 && !bLoopBackBuffer && BackBufferImageID > 0 && BackBufferSaveCacheName.Len() > 0
+				  && !BackBufferSnapShotMode && !BackBufferGrabGameScreen;
+	const bool bDX12GenBlocked = bDX12GenRequest && GGThumbGen_IsBlocked(BackBufferSaveCacheName.Get());
+	const bool bDX12GenObject = bDX12GenRequest && !bDX12GenBlocked && BackBufferObjectID > 0 && !BackBufferParticlesMode;
+	const bool bDX12GenParticle = bDX12GenRequest && !bDX12GenBlocked && BackBufferObjectID == 0 && BackBufferParticlesMode && bDX12ParticleSource;
+	const bool bDX12GenParticleNoSource = bDX12GenRequest && !bDX12GenBlocked && BackBufferObjectID == 0 && BackBufferParticlesMode && !bDX12ParticleSource;
+	const bool bDX12LivePreview = bDX12LiveObject || bDX12GenObject;
+	const bool bDX12ParticlePreview = bDX12ParticleLive || bDX12GenParticle;
 	// ★ HOLD. The library does not ask every frame: its hover code only runs when its wait counter is
 	// 0, and every item drawn after the hovered one sets it back to 3 while the request is up - so it
 	// re-requests one frame in three, and not at all for the 500 ms after it starts an effect. DX11
@@ -86,6 +399,35 @@ void GrabBackBufferCopy(void)
 		// thumbnail generator raised it for the first effect without a cached thumbnail.
 		BackBufferParticlesMode = false;
 		iBackBufferParticlesTrigger = 0;
+		// GGMAX 3.111: a one-shot OBJECT request we did not take (already generated this session) - the
+		// request and CreateBackdropObject still switched bloom, the thumb lights and the sky. In DX12
+		// before 3.111 this was every uncached item the library looked at: thumb lights left at the origin,
+		// bloom / light shafts / lens flare off, until something else happened to put them back.
+		if (!bLoopBackBuffer && BackBufferObjectID > 0 && BackBufferImageID > 0)
+		{
+			GGThumbGen_RestoreAfterOneShot();
+			if (bDX12GenBlocked) s_thumbGen.refused++;
+		}
+		// A particle generation whose effect did not load (no gpup slot, no library WPE root): block the
+		// name, or the library loads it again every few frames (review), and give the cell back its icon.
+		if (bDX12GenParticleNoSource)
+		{
+			GGThumbGen_Block(BackBufferSaveCacheName.Get(), nullptr, false);
+			GGThumbGen_QueueReload(g_iThumbGenRequestUniqueId);
+			g_iThumbGenRequestUniqueId = 0;
+			s_thumbGen.refused++;
+		}
+		// consumed only by the object path below; a refused request must not hand its .fpe camera to
+		// the next live hover (review)
+		bBackBufferRestoreCamera = false;
+		// ★ The same latch, the other requests: the DX11 end of this function clears these on every call
+		// too. A group thumbnail (Ctrl+G, the Group button, leaving Group Edit) set BackBufferSnapShotMode
+		// and nothing on the DX12 path cleared it - so both live previews above stayed dead until the
+		// screen editor or the terrain generator happened to reset it.
+		BackBufferSnapShotMode = false;
+		BackBufferGrabGameScreen = false;
+		BackBufferSaveCacheName = "";
+		if (!bLoopBackBuffer) BackBufferImageID = 0;
 		return;
 	}
 
@@ -484,8 +826,9 @@ void GrabBackBufferCopy(void)
 			// GGMAX 3.110: DX11 showed the 800/400 START frame frozen for 500 ms, then switched to
 			// 700/250 once the effect was running. A live preview would visibly jump between them, so
 			// DX12 uses the running framing from the first frame.
+			// (3.111: a generated thumbnail keeps the generator's own 800/400, as DX11's did)
 			float fParticleZoom = BackBufferZoom, fParticleCamUp = BackBufferCamUp;
-			if (bDX12ParticlePreview) { fParticleZoom = 700.0f; fParticleCamUp = 250.0f; }
+			if (bDX12ParticlePreview && bLoopBackBuffer) { fParticleZoom = 700.0f; fParticleCamUp = 250.0f; }
 			RotateCamera(0, 0, 0);
 			PositionCamera(centerx, centery, centerz);
 			PointCamera(centerx, centery, centerz);
@@ -614,7 +957,9 @@ void GrabBackBufferCopy(void)
 				WickedCall_UpdateProbes();
 			}
 		}
-		if (!bLoopBackBuffer)
+		// (3.111: not yet for a DX12 generation - the preview renders next frame and needs the thumb
+		// lights; GGThumbGen_Finish puts all of this back when it is done)
+		if (!bLoopBackBuffer && !bDX12GenObject)
 		{
 			WickedCall_SetSunDirection(t.visuals.SunAngleX, t.visuals.SunAngleY, t.visuals.SunAngleZ);
 			master_renderer->setBloomEnabled(t.visuals.bBloomEnabled);
@@ -657,6 +1002,36 @@ void GrabBackBufferCopy(void)
 	{
 		BackBufferSnapShotMode = false;
 		BackBufferParticlesMode = false;
+		return;
+	}
+
+	// GGMAX 3.111: a DX12 generation request has now been framed and submitted exactly like a live
+	// preview. ARM it and leave - the DX11 grab-and-save below cannot run here, and its end-of-call
+	// clears must not either: BackBufferImageID is the hold's "library still open" signal, and for a
+	// particle BackBufferParticlesMode is the library's own "capture in flight" gate.
+	if (bDX12GenObject || bDX12GenParticle)
+	{
+		extern void GGObjectPreview_ArmCapture(void);
+		GGThumbGenState& g = s_thumbGen;
+		g.state = 1;
+		g.bParticle = bDX12GenParticle;
+		g.objectId = bDX12GenObject ? BackBufferObjectID : 0;
+		g.imageId = BackBufferImageID;
+		g.reloadUniqueId = g_iThumbGenRequestUniqueId;
+		g.saveName = BackBufferSaveCacheName.Get();
+		// objects: a couple of rendered frames (the backdrop material is fixed a frame after it is made)
+		// and then the streaming settle; particles: DX11's own warm-up wait, 25-160 frames by lifespan
+		g.minFrames = bDX12GenParticle ? (std::max)(3, iBackBufferParticlesTrigger) : 3;
+		g.maxFrames = g.minFrames + 600;
+		g.heldFrames = 0;
+		g.epoch = wi::resourcemanager::gg_streaming_descriptor_epoch.load(std::memory_order_relaxed);
+		g.epochStable = 0;
+		g.armed++;
+		g.lastResult = "holding";
+		g_iThumbGenRequestUniqueId = 0;
+		BackBufferSaveCacheName = "";
+		g_bThumbGenInFlight = true;
+		GGObjectPreview_ArmCapture();
 		return;
 	}
 

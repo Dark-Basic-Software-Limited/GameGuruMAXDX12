@@ -225,6 +225,12 @@ namespace GGObjectPreview
 	static int						s_particleFrames = 0;	// diag: frames the overlay pass ran
 	static int						s_wpeSimulated = 0;		// diag: WPE emitters simulated on the last frame
 	static int						s_wpeSkipped = 0;		// diag: emitters the main view still had that frame
+
+	// 3.111 THUMBNAIL GENERATION. Tonemapped frames since GrabBackBufferCopy armed a capture. s_haveFrame
+	// cannot say WHICH request a frame belongs to - it stays set from one hover to the next - so the
+	// generator waits on this instead: the engine renders a Submit on the NEXT frame.
+	static uint32_t					s_renderedSinceArm = 0;
+	static int						s_captures = 0;			// diag: successful readbacks
 }
 
 // Is a live preview currently being driven? (used by the image-id override and by the
@@ -239,6 +245,41 @@ bool GGObjectPreview_IsActive(void)
 bool GGObjectPreview_IsParticleActive(void)
 {
 	return GGObjectPreview::s_active && GGObjectPreview::s_particleMode;
+}
+
+// GGMAX 3.111: thumbnail generation (GrabBackBufferCopy). Arm right after the Submit whose framing is
+// to be saved; read back once RenderedSinceArm() says the engine has rendered it.
+void GGObjectPreview_ArmCapture(void)
+{
+	GGObjectPreview::s_renderedSinceArm = 0;
+}
+uint32_t GGObjectPreview_RenderedSinceArm(void)
+{
+	return GGObjectPreview::s_renderedSinceArm;
+}
+// The tonemapped preview, read back to the CPU as tightly packed RGBA8 (already sRGB-encoded by the
+// tonemap, so it goes straight to a JPG/PNG). wi::helper::saveTextureToMemory submits and WAITS FOR THE
+// GPU - the same engine path the 3.103 storyboard capture uses - so this stalls for about a frame.
+// Thumbnail generation is one item at a time and each one already costs an entity load (objects) or
+// 25-160 frames of simulation (particles), so the stall does not register.
+// ⚠ Call it BETWEEN frames only (GrabBackBufferCopy): its extra SubmitCommandLists would close and
+//   submit any half-recorded list - never from Render, a customDraw hook or GGObjectPreview_Render.
+bool GGObjectPreview_CaptureLDR(wi::vector<uint8_t>& outRGBA, int& outW, int& outH)
+{
+	using namespace GGObjectPreview;
+	outW = outH = 0;
+	if (!s_active || !s_ldr.IsValid() || s_renderedSinceArm == 0) return false;
+	// ⚠ Not on a lost device (review): GrabBackBufferCopy still runs for a frame or two after a loss,
+	// and the helper's READBACK CreateTexture then Maps a null resource - an access violation in place
+	// of the 3.26 'graphics device lost' message.
+	wi::graphics::GraphicsDevice* device = wi::graphics::GetDevice();
+	if (!device || device->IsDeviceRemoved()) return false;
+	if (!wi::helper::saveTextureToMemory(s_ldr, outRGBA)) return false;
+	if (outRGBA.size() < (size_t)s_ldrW * (size_t)s_ldrH * 4) return false;
+	outW = s_ldrW;
+	outH = s_ldrH;
+	s_captures++;
+	return true;
 }
 
 // GGMAX 3.110: say what the next Submit previews. (-1, 0) = an object, which is every caller
@@ -417,6 +458,7 @@ void GGObjectPreview_Stop(void)
 	s_particleMode = false;
 	s_gpupEmitter = -1;
 	s_wpeRoot = 0;
+	s_renderedSinceArm = 0;
 }
 
 // ★★★ THE FIX FOR DEFECTS 1 AND 2.
@@ -1008,6 +1050,7 @@ void GGObjectPreview_Render(float fExposure)
 		1.0f
 	);
 	device->EventEnd(cmd);
+	s_renderedSinceArm++;	// 3.111: one more frame of the armed request is in s_ldr
 
 	// hand the result to ImGui. The resource pointer is stable for the life of s_ldr, so the
 	// bridge creates its descriptor once and returns the cached handle after that.
@@ -1137,6 +1180,17 @@ void GGObjectPreview_DebugStatus(char* buf, int bufsize)
 			_snprintf(buf + used, bufsize - used, " particle=%d gpup=%d wpeRoot=%u particleFrames=%d wpeSim=%d wpeSkip=%d bbParticlesMode=%d bbEmitter=%d previewWPERoot=%u",
 				s_particleMode ? 1 : 0, s_gpupEmitter, s_wpeRoot, s_particleFrames, s_wpeSimulated, s_wpeSkipped,
 				BackBufferParticlesMode ? 1 : 0, BackBufferParticleEmitter, PreviewWPERoot);
+	}
+	{
+		// 3.111: the thumbnail generator (its own state is in DUMP_THUMBGEN)
+		const size_t used = strlen(buf);
+		if (used + 60 < (size_t)bufsize)
+			_snprintf(buf + used, bufsize - used, " renderedSinceArm=%u captures=%d", s_renderedSinceArm, s_captures);
+	}
+	{
+		extern void GGThumbGen_DebugStatus(char* buf, int bufsize);	// M-GridEditB_part7.cpp
+		const size_t used = strlen(buf);
+		if (used + 64 < (size_t)bufsize) GGThumbGen_DebugStatus(buf + used, bufsize - (int)used);
 	}
 	buf[bufsize - 1] = 0;
 }

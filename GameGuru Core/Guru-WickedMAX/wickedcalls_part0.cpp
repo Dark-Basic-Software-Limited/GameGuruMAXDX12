@@ -2466,13 +2466,30 @@ bool WickedCall_CaptureBackbufferRegionToJPGScaled(int x, int y, int w, int h, c
 	}
 	// else: assume R8G8B8A8_UNORM, no conversion needed
 
+	// GGMAX 3.111: crop, opaque, scale and write now live in WickedCall_SaveRGBA8Region (shared with
+	// the DX12 thumbnail generator, which reads back the library preview instead of the backbuffer).
+	return WickedCall_SaveRGBA8Region(texturedata.data(), (int)desc.width, (int)desc.height, x, y, w, h, outputPath, maxOutW, maxOutH);
+}
+
+// GGMAX 3.111: crop a tightly packed RGBA8 image (srcW*4 bytes per row), force it opaque, optionally
+// box-scale it to fit maxOutW x maxOutH, and write it. The file format follows the extension.
+bool WickedCall_SaveRGBA8Region(const unsigned char* rgba, int srcW, int srcH, int x, int y, int w, int h, const char* outputPath, int maxOutW, int maxOutH)
+{
+	using namespace wi::graphics;
+	if (!rgba || !outputPath || srcW <= 0 || srcH <= 0) return false;
+	if (x < 0) x = 0;
+	if (y < 0) y = 0;
+	if (x + w > srcW) w = srcW - x;
+	if (y + h > srcH) h = srcH - y;
+	if (w <= 0 || h <= 0) return false;
+
 	// Crop the specified region into a new packed buffer
-	const uint32_t srcRowPitch = desc.width * 4;
+	const uint32_t srcRowPitch = (uint32_t)srcW * 4;
 	const uint32_t dstRowPitch = (uint32_t)w * 4;
 	wi::vector<uint8_t> croppedData((size_t)w * h * 4);
 	for (int row = 0; row < h; ++row)
 	{
-		const uint8_t* srcRow = texturedata.data() + (size_t)(y + row) * srcRowPitch + (size_t)x * 4;
+		const uint8_t* srcRow = rgba + (size_t)(y + row) * srcRowPitch + (size_t)x * 4;
 		uint8_t* dstRow = croppedData.data() + (size_t)row * dstRowPitch;
 		std::memcpy(dstRow, srcRow, dstRowPitch);
 	}
