@@ -1451,7 +1451,8 @@ bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		ImGui::PushItemWidth(-10);
 		{
 			// ★ GGMAX 3.108 (tester report #5) / 3.108c - Lee 2026-10-12: "allow a maximum of 5000 instead
-			// of 2000, and set the default to 2000". The range is a fixed 750..5000: 5000 is the furthest any
+			// of 2000, and set the default to 2000". [SUPERSEDED by 3.108d below: now 750..2000.]
+			// 3.108c made the range a fixed 750..5000: 5000 is the furthest any
 			// Graphics Quality setting draws trees in full detail (Ultra's tree pool reach), so it is the
 			// honest top - the old 7000 was reached by no setting at all. Tree mesh shadows still cannot reach
 			// past the trees drawn as meshes, whose reach the CURRENT quality setting decides (Low 2000,
@@ -1459,16 +1460,20 @@ bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			// A value beyond that acts as the reach, and the label says so instead of looking like a value
 			// that does something it cannot (the 3.108 dead-range lesson). The stored value is written only
 			// when the slider is dragged, so the editor's value is never cut down by a lower Test Game setting.
+			// ★ 3.108d - Lee 2026-10-12, after trying 3.108c: "It seems you are capping at 2000 ... best to
+			// set max at 2000 and default at this." Range 750..2000: 2000 is the reach of the LOWEST quality
+			// setting (Low's tree pool), so every value means the same thing at every setting and the
+			// "at this quality" label below can only fire on a non-stock pool cap (harness).
 			const float reach = GGTrees::GGTrees_GetMeshShadowReach();
 			float shown = t.visuals.fTreeShadowLODDist;
-			if (shown > 5000.0f) shown = 5000.0f;
+			if (shown > 2000.0f) shown = 2000.0f;
 			if (shown < 750.0f) shown = 750.0f;
 			char sliderFmt[64];
 			if (shown > reach + 0.5f)
 				sprintf_s(sliderFmt, sizeof(sliderFmt), "%%.0f (%.0f at this quality)", reach);
 			else
 				strcpy_s(sliderFmt, sizeof(sliderFmt), "%.0f");
-			if (ImGui::SliderFloat("##setshadow_TreeShadowLODDist", &shown, 750, 5000, sliderFmt))
+			if (ImGui::SliderFloat("##setshadow_TreeShadowLODDist", &shown, 750, 2000, sliderFmt))
 			{
 				t.visuals.fTreeShadowLODDist = shown;
 				t.gamevisuals.fTreeShadowLODDist = shown;
@@ -1477,11 +1482,8 @@ bool Shadows_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			}
 			if (ImGui::IsItemHovered())
 			{
-				ImGui::SetTooltip("How far trees cast their full, detailed shadow (up to 5000). Beyond it they cast simple card\n"
-					"shadows, and the detailed shadow fades out smoothly from this distance. A lower value saves shadow work.\n"
-					"It cannot reach past the trees drawn in full detail, which the Graphics Quality setting decides:\n"
-					"%.0f units at the current setting. A higher value acts as %.0f here, and takes full effect at a\n"
-					"higher quality setting.", reach, reach);
+				ImGui::SetTooltip("%s", "How far trees cast their full, detailed shadow (750 to 2000). Beyond it they cast simple card\n"
+					"shadows, and the detailed shadow fades out smoothly from this distance. A lower value saves shadow work.");
 			}
 		}
 

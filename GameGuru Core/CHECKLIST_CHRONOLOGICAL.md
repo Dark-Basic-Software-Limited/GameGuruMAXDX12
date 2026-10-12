@@ -298,7 +298,7 @@ DX12 ported them later (most in the 3.44–3.50 parity round, 2026-09-16/17).
 | 235 | **Grass selection survives save and reload** - add a custom grass (palette Add New Grass), select it with a stock grass, save the level, restart MAX and reopen it: open Add Vegetation and both are still selected, and painting uses both. Trees: an old level's palette selection now restores instead of resetting to Birch | U |
 | 236 | **Placing a character no longer flashes corrupt polygons** - in a level with Lower Animation ticked (Reduction Scale on), pick a character from Level Items and place several of them far from the camera: no frame of polygons splayed across the view. Also: while a character is held on the cursor and you move the mouse, distant characters animate smoothly instead of flicking between two poses | L |
 | 237 | **Trees no longer pop lighter as you back away** - in Test Game on a level with trees, walk backwards away from a tree you are facing: its shading fades smoothly instead of the whole tree suddenly turning lighter, at any Tree Shadow LOD Distance (3.108b, Lee-confirmed) | L |
-| 238 | **Tree Shadow LOD Distance goes to 5000, default 2000** - Visuals > Shadows: the slider runs 750 to 5000 and a new level (or Reset Visuals) starts at 2000. Past what the current quality setting can draw it reads e.g. "5000 (2000 at this quality)" | U |
+| 238 | **Tree Shadow LOD Distance runs 750 to 2000, default 2000** - Visuals > Shadows: the slider stops at 2000 and a new level (or Reset Visuals) starts at 2000 | U |
 
 ---
 

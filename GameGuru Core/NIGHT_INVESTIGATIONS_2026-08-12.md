@@ -15477,3 +15477,16 @@ back exactly as saved.
 ★ Reset Visuals opens a native Yes/No/Cancel box, which owns the message pump - the harness goes deaf
 (every command TIMEOUT) until it is answered. Answered here with WScript.Shell AppActivate
 ("Confirmation") + SendKeys ENTER (the default button is Yes).
+
+
+### 3.108d Tree Shadow LOD Distance: range 750..2000, default 2000 - 2026-10-12
+
+Lee, after trying 3.108c: "It seems you are capping at 2000, if that is the deal, even when I set graphics
+mode to HIGH, best to set max at 2000 and default at this." Range now 750..2000 (2000 = the LOWEST
+quality setting's tree pool reach, so every value means the same thing at every setting); default
+2000 (unchanged from 3.108c); the loader maps anything above 2000 to 2000. Tooltip simplified.
+Note for the record: the tree draw distance (and so the reach) only follows the quality preset where
+`SetGlobalGraphicsSettings` is called - Test Game start (Preferences > Test Game quality) and the in-game
+settings menu (`M-LUA-General.cpp`); a quality change made elsewhere does not move it.
+Verified (exe `8b7fa02bf0964bcdd01e9d4829ee15ce`): the saved 1002 shows as "1002"; the end of the track
+stores 2000 and reads "2000". MAX relaunched afterwards so the level is back as saved.

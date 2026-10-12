@@ -1758,7 +1758,7 @@ void visuals_load ( void )
 
 			t.try_s = "visuals.bTransparentShadows"; if (t.tfield_s == t.try_s)  t.visuals.bTransparentShadows = ValF(t.tvalue_s.Get());
 
-			t.try_s = "visuals.TreeShadowLODDist"; if (t.tfield_s == t.try_s)  { t.visuals.fTreeShadowLODDist = ValF(t.tvalue_s.Get()); if (t.visuals.fTreeShadowLODDist < 750.0f) t.visuals.fTreeShadowLODDist = 2000.0f; if (t.visuals.fTreeShadowLODDist > 5000.0f) t.visuals.fTreeShadowLODDist = 5000.0f; }   // GGMAX 3.108c: range 750..5000; an older 7000 ('Max') becomes 5000, the furthest any quality setting reaches
+			t.try_s = "visuals.TreeShadowLODDist"; if (t.tfield_s == t.try_s)  { t.visuals.fTreeShadowLODDist = ValF(t.tvalue_s.Get()); if (t.visuals.fTreeShadowLODDist < 750.0f) t.visuals.fTreeShadowLODDist = 2000.0f; if (t.visuals.fTreeShadowLODDist > 2000.0f) t.visuals.fTreeShadowLODDist = 2000.0f; }   // GGMAX 3.108d: range 750..2000 (Lee 2026-10-12); older, larger values become 2000
 			t.try_s = "visuals.TreeShadowRange"; if (t.tfield_s == t.try_s)  { t.visuals.iTreeShadowRange = (int)ValF(t.tvalue_s.Get()); if (t.visuals.iTreeShadowRange < 0 || t.visuals.iTreeShadowRange > 5) t.visuals.iTreeShadowRange = 5; }
 
 			t.try_s = "visuals.SunAngleX"; if (t.tfield_s == t.try_s)  t.visuals.SunAngleX = ValF(t.tvalue_s.Get());
