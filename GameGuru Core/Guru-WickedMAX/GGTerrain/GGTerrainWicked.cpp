@@ -42,6 +42,17 @@ static int g_layer1MaterialSlot = -1;                             // Extra slot 
 static std::unordered_set<uint64_t> dx11BlendProcessedKeys;       // Chunks already given DX11-shape auto weights
 static std::unordered_map<uint64_t, wi::ecs::Entity> dx11BlendChunkKeyToEntity;
 
+// GGMAX 3.113: GG's auto-blend (ApplyDX11StyleAutoBlend / FillChunkBlendmapGG) writes DX11 SPLAT
+// weights - base starts at 1 and every height/slope ramp cross-fades, so they SUM TO 1 - but Wicked's
+// terrain compositor is a front-to-back DECAL stack that wants opacities (stock keeps base = 1). Fed
+// splat weights it covered only 1 - prod(1 - w): blended ground was up to 25% too dark everywhere two
+// layers mixed, and its normal map (BC5, 0.5 = flat) collapsed toward (-1,-1) - a consistent tilt that
+// dimmed the sun by ~40% on DX12TESTLEVEL. Found chasing Lee's "baked ground is a different colour".
+// The engine now has a SPLAT mode (wi::terrain::gg_splat_blend: average the weights), which is exact
+// between vertices too (splat weights interpolate linearly, opacities do not) - so the weights stay
+// as DX11 wrote them. setup.ini terrainsplatblend=0 / harness SET_TERRAINSPLATBLEND 0 = the old look.
+bool gg_terrain_splat_blend = true;
+
 // Phase 3: Blendmap state tracking — which chunks have had painted weights applied
 static std::unordered_set<uint64_t> processedChunkKeys;
 // Track which entity was at each grid key when we last painted it.
@@ -956,6 +967,8 @@ static void RegisterPaintedMaterialSlot(int matIndex)
 // Runs BEFORE ProcessPaintedChunkBlendmaps so painted materials still override correctly.
 // Returns true when every discovered chunk was processed; false when the batch
 // was capped (call again to drain the backlog).
+static bool FillChunkBlendmapGG(wi::terrain::ChunkData& cd, const wi::scene::MeshComponent& mesh); // GGMAX 3.113: below
+
 static bool ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 {
 	if (!terrain) return true;
@@ -1084,63 +1097,74 @@ static bool ApplyDX11StyleAutoBlend(wi::terrain::Terrain* terrain)
 		for (int i = 0; i < slotsNeeded; i++)
 			chunk_data->enable_blendmap_layer(i);
 
-		XMMATRIX worldMatrix = XMLoadFloat4x4(&pc.transform->world);
-
-		for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
+		// GGMAX 3.113: write the COMPLETE, paint-aware weight set - the same writer the generator thread
+		// uses for born-correct chunks (FillChunkBlendmapGG: every layer zeroed, a painted vertex wins
+		// outright, else the DX11 auto weights). The loop below wrote only the five auto slots and left
+		// a painted slot as it was. The stock decal stack hid that (the top slot won), but under the
+		// splat compositor a stale 255 left by Restore, a paint undo, or a re-blend wider than the
+		// painted pass's 64-chunk window averaged to a 50/50 mix of paint and auto ground (review
+		// 3.113). One writer = the pass order no longer matters. The old loop stays as the fallback
+		// for a chunk FillChunkBlendmapGG refuses (materials not set up yet, odd mesh).
+		if (!FillChunkBlendmapGG(*chunk_data, *pc.mesh))
 		{
-			XMVECTOR wp = XMVector3Transform(XMLoadFloat3(&pc.mesh->vertex_positions[vi]), worldMatrix);
-			XMFLOAT3 worldPos;
-			XMStoreFloat3(&worldPos, wp);
-			float height = worldPos.y;
+			XMMATRIX worldMatrix = XMLoadFloat4x4(&pc.transform->world);
 
-			const XMFLOAT3& normal = pc.mesh->vertex_normals[vi];
-			float normaly = 1.0f - fabsf(normal.y);
-
-			// Per-slot weight accumulator. We only care about the 5 auto slots; anything else
-			// stays zero and will be overwritten by ProcessPaintedChunkBlendmaps if painted.
-			float w[8] = { 0 };
-			w[baseSlot] = 1.0f;
-
-			// Layer 0: replace/blend at height ramp
-			// (targetSlot bounds guard: the auto slots are 0-4 today, but slot mappings
-			// have grown dynamic — an out-of-range slot must never scribble the stack)
-			auto applyLayer = [&](int layerIdx, int targetSlot)
+			for (size_t vi = 0; vi < wi::terrain::vertexCount; vi++)
 			{
-				if (targetSlot < 0 || targetSlot >= 8) return;
-				if (layerRcpWidth[layerIdx] == 0.0f) return; // start == end -> unused
-				float t = (height - layerStart[layerIdx]) * layerRcpWidth[layerIdx];
-				if (t <= 0.0f) return;
-				if (t > 1.0f) t = 1.0f;
-				for (int s = 0; s < 8; s++) w[s] *= (1.0f - t);
-				w[targetSlot] += t;
-			};
-			auto applySlope = [&](int slopeIdx, int targetSlot)
-			{
-				if (targetSlot < 0 || targetSlot >= 8) return;
-				if (slopeRcpWidth[slopeIdx] == 0.0f) return;
-				float t = (normaly - slopeStart[slopeIdx]) * slopeRcpWidth[slopeIdx];
-				if (t <= 0.0f) return;
-				if (t > 1.0f) t = 1.0f;
-				for (int s = 0; s < 8; s++) w[s] *= (1.0f - t);
-				w[targetSlot] += t;
-			};
+				XMVECTOR wp = XMVector3Transform(XMLoadFloat3(&pc.mesh->vertex_positions[vi]), worldMatrix);
+				XMFLOAT3 worldPos;
+				XMStoreFloat3(&worldPos, wp);
+				float height = worldPos.y;
 
-			// DX11 iteration order: all layers, then all slopes.
-			applyLayer(0, lowSlot);
-			if (layer1Slot >= 0) applyLayer(1, layer1Slot);
-			applyLayer(2, highSlot);
-			// layers 3, 4 in TESTPRO1 have start==end (59055 marker) -> no-op via layerRcpWidth==0
-			applyLayer(3, highSlot);
-			applyLayer(4, highSlot);
-			applySlope(0, slopeSlot);
-			applySlope(1, slopeSlot);
+				const XMFLOAT3& normal = pc.mesh->vertex_normals[vi];
+				float normaly = 1.0f - fabsf(normal.y);
 
-			chunk_data->blendmap_layers[baseSlot ].pixels[vi] = (uint8_t)(w[baseSlot ] * 255.0f);
-			chunk_data->blendmap_layers[slopeSlot].pixels[vi] = (uint8_t)(w[slopeSlot] * 255.0f);
-			chunk_data->blendmap_layers[lowSlot  ].pixels[vi] = (uint8_t)(w[lowSlot  ] * 255.0f);
-			chunk_data->blendmap_layers[highSlot ].pixels[vi] = (uint8_t)(w[highSlot ] * 255.0f);
-			if (layer1Slot >= 0 && layer1Slot < (int)chunk_data->blendmap_layers.size())
-				chunk_data->blendmap_layers[layer1Slot].pixels[vi] = (uint8_t)(w[layer1Slot] * 255.0f);
+				// Per-slot weight accumulator. We only care about the 5 auto slots; anything else
+				// stays zero and will be overwritten by ProcessPaintedChunkBlendmaps if painted.
+				float w[8] = { 0 };
+				w[baseSlot] = 1.0f;
+
+				// Layer 0: replace/blend at height ramp
+				// (targetSlot bounds guard: the auto slots are 0-4 today, but slot mappings
+				// have grown dynamic — an out-of-range slot must never scribble the stack)
+				auto applyLayer = [&](int layerIdx, int targetSlot)
+				{
+					if (targetSlot < 0 || targetSlot >= 8) return;
+					if (layerRcpWidth[layerIdx] == 0.0f) return; // start == end -> unused
+					float t = (height - layerStart[layerIdx]) * layerRcpWidth[layerIdx];
+					if (t <= 0.0f) return;
+					if (t > 1.0f) t = 1.0f;
+					for (int s = 0; s < 8; s++) w[s] *= (1.0f - t);
+					w[targetSlot] += t;
+				};
+				auto applySlope = [&](int slopeIdx, int targetSlot)
+				{
+					if (targetSlot < 0 || targetSlot >= 8) return;
+					if (slopeRcpWidth[slopeIdx] == 0.0f) return;
+					float t = (normaly - slopeStart[slopeIdx]) * slopeRcpWidth[slopeIdx];
+					if (t <= 0.0f) return;
+					if (t > 1.0f) t = 1.0f;
+					for (int s = 0; s < 8; s++) w[s] *= (1.0f - t);
+					w[targetSlot] += t;
+				};
+
+				// DX11 iteration order: all layers, then all slopes.
+				applyLayer(0, lowSlot);
+				if (layer1Slot >= 0) applyLayer(1, layer1Slot);
+				applyLayer(2, highSlot);
+				// layers 3, 4 in TESTPRO1 have start==end (59055 marker) -> no-op via layerRcpWidth==0
+				applyLayer(3, highSlot);
+				applyLayer(4, highSlot);
+				applySlope(0, slopeSlot);
+				applySlope(1, slopeSlot);
+
+				chunk_data->blendmap_layers[baseSlot ].pixels[vi] = (uint8_t)(w[baseSlot ] * 255.0f);
+				chunk_data->blendmap_layers[slopeSlot].pixels[vi] = (uint8_t)(w[slopeSlot] * 255.0f);
+				chunk_data->blendmap_layers[lowSlot  ].pixels[vi] = (uint8_t)(w[lowSlot  ] * 255.0f);
+				chunk_data->blendmap_layers[highSlot ].pixels[vi] = (uint8_t)(w[highSlot ] * 255.0f);
+				if (layer1Slot >= 0 && layer1Slot < (int)chunk_data->blendmap_layers.size())
+					chunk_data->blendmap_layers[layer1Slot].pixels[vi] = (uint8_t)(w[layer1Slot] * 255.0f);
+			}
 		}
 
 		// Rebuild the GPU blendmap texture and refresh the VT. For INTERACTIVE edits,
@@ -3236,6 +3260,9 @@ void GGTerrainWicked_Init()
 
 	auto& scene = wi::scene::GetScene();
 
+	// GGMAX 3.113: the compositor's blend rule (see gg_terrain_splat_blend) - before any chunk renders.
+	wi::terrain::gg_splat_blend = gg_terrain_splat_blend;
+
 	// GGMAX 3.112: leaving a Terrain Bake - the grass emitters it left go, with their grass; the
 	// real chunks this Init brings back regrow it (no-op on the startup Init and after Terrain Off).
 	ReleaseBakeGrassEmitters();
@@ -4656,3 +4683,27 @@ void GGTerrainWicked_OnPaintDataChanged()
 }
 
 } // namespace GGTerrain
+
+// GGMAX 3.113: the setup.ini key. FPSC_LoadSETUPINI runs AFTER the startup GGTerrainWicked_Init has
+// copied the flag into the engine (review 3.113), so the key sets both; the first level load's
+// material setup ends in Generation_Restart, so every chunk renders with it.
+void GGTerrainWicked_SetSplatBlendFlag(bool on)
+{
+	gg_terrain_splat_blend = on;
+	wi::terrain::gg_splat_blend = on;
+}
+
+// GGMAX 3.113: flip the compositor's blend rule live (harness A/B). The blendmaps do not change, only
+// how they are composited - but the chunks must re-render, and that goes through the full chunk wipe
+// the Terrain Generator uses (GGResetTerrainChunks: Generation_Restart joins the async VT job, then the
+// ring regenerates born-correct). ⚠ Invalidating every chunk's virtual texture in one go instead
+// crashed the engine's tile writeback (WritebackTileRequestsGPU -> CopyResource on a freed resource).
+// A bake holding the terrain down keeps its old textures until it is re-baked.
+void GGTerrainWicked_SetSplatBlend(bool on)
+{
+	gg_terrain_splat_blend = on;
+	wi::terrain::gg_splat_blend = on;
+	wi::terrain::Terrain* terrain = GetWickedTerrain();
+	if (terrain == nullptr) return;
+	GGTerrain::GGResetTerrainChunks(terrain);
+}

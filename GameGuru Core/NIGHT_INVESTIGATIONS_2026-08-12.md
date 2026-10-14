@@ -15730,3 +15730,90 @@ itself is most of the frame (~1M strands; Grass Off = 151 -> 272 FPS) - Grass Of
 Unticking the bake drops the baked ground before the live terrain has regenerated (pre-existing).
 
 ### LEE-CONFIRMED 3.112, 2026-10-14: "Grass confirmed working" - Terrain Bake keeps the grass
+
+
+### 3.113 The baked ground was a different colour - and so, it turned out, was the live terrain - 2026-10-14
+
+Lee: "Grass confirmed working, now fix the baked terrain colour." Measured with grass off, same camera
+(TESTPRO2 > DX12TESTLEVEL editor view): the baked ground was **1.30-1.35x brighter** than the live terrain on
+every channel, with less local contrast. New tools: `tools/harness/bake_colour_probe.sh` (+ `bake_colour_measure.py`)
+- baked vs live mean colour / contrast in three screen regions, per SET_BAKESHADING mask, AO on and off - and
+`tools/harness/bake_component_probe.sh` - the same, ONE LIGHTING TERM AT A TIME.
+
+**The instrument.** The engine already had `SET_TANGENTVIS` debug views for objects (albedo, occlusion, sun
+diffuse, ambient, reflections...). The bake pixel shader now answers the same views with the same quantities,
+so live and baked can be compared term by term. ⚠ The existing lighting views encode `c/(1+c)` and SATURATE on a
+bright sun - view 17 said "baked sun = 0.94 of live" for a term that was really ~2x. Added views **25/26/27** in
+both shaders (engine `objectHF.hlsli` + bake PS): the three SUMMANDS of the final colour (sun share, ambient
+share, specular share), unencoded. Those named the culprits in one run.
+
+**Five differences in the bake's own shading** (`GGTerrainBakePS.hlsl`), each now a `ggCustomFrame.ggOptions`
+bit (`GG_OPT_BAKE_*`, harness `SET_BAKESHADING <mask>`, all on = 31 by default, DUMP_BAKE shows it):
+1. **A defect since 3.25:** the vertex normal is packed `n*0.5+0.5` into `R8G8B8A8_UNORM` and was never unpacked,
+   so flat ground was lit as if tilted ~35 degrees toward +X+Z (brighter or darker by sun direction; slope relief
+   cut to ~40%). Alone it took the near field from 1.12x to 1.02x (AO off).
+2. **SSAO** - the live terrain reads the camera AO texture; the bake read none.
+3. **Probe ambient** - the engine's ambient is the global probe's last mip + the flat colour; GG's GetAmbient
+   is the flat colour only.
+4. **Full sun** - the "simple" directional light skipped the atmosphere's transmittance.
+5. **Live material** - the live chunk ends up f0 0.005 with SSAO as its only occlusion; the bake used f0 0.04
+   (8x the sky reflection) and a constant 0.9.
+No frame-rate cost measured (558-564 FPS across masks).
+
+**...and the LIVE terrain was wrong too - the real finding.** With those five fixed, the summand views still
+showed the live SUN share at about HALF the baked one. The live bumped normal (view 3) was uniformly tilted
+toward -X (display R 172 -> 154 against the vertex normal), and the sun on this level comes from +X - so N.L fell
+from 0.71 to ~0.40. The terrain normal maps themselves average flat (decoded every mat*/Normal.dds: tangent x
+within +-0.05), and the normal-map sample (view 5) was biased EQUALLY in both channels (140/140 vs neutral 172):
+a coverage shortfall, not a tangent-frame bug.
+- GG's auto-blend (3.x `ApplyDX11StyleAutoBlend` / `FillChunkBlendmapGG`, the July DX11-parity fix `42e927b8`)
+  writes DX11 **SPLAT** weights - base starts at 1, every ramp cross-fades, they sum to 1.
+- Wicked's compositor (`terrainVirtualTextureUpdateCS.hlsl`, and the bake's `terrainBakeChunkCS.hlsl`) is a
+  front-to-back **DECAL** stack that wants OPACITIES - stock Wicked keeps base = 1 ("blending shader wants
+  unnormalized!"). Splat weights composited as opacities cover only 1 - prod(1 - w): a 50/50 mix reaches 0.75.
+- So wherever two layers mix, the live terrain's albedo was up to ~25% too dark, and its BC5 normal map (0.5 =
+  flat) shrank toward (-1,-1) - the tilt. July's fix was signed off on WHICH material shows WHERE (green slopes,
+  grey cliffs), never on brightness, so this has shipped since then. The bake shares the albedo (same compositor)
+  but has no normal map, which is why the gap between them was mostly the SUN.
+- **Fix (engine 3.113):** a SPLAT mode for the compositor - `wi::terrain::gg_splat_blend` sets bit 0 of the
+  existing `push.gg_tile_share` (bits 0..15 were free); the shaders then take sum(w*c)/sum(w). Exact even between
+  vertices, which matters: the blendmap is per-vertex and sampled bilinearly, splat weights interpolate linearly
+  and opacities do not (review: a per-vertex opacity conversion, tried first, still left 0.75-coverage bands one
+  vertex wide along cliff rims and paint borders). Robust to 8-bit rounding. GG sets it in `GGTerrainWicked_Init`;
+  the weights GG writes are unchanged. setup.ini `terrainsplatblend=0` / harness `SET_TERRAINSPLATBLEND 0` = the
+  old look (the toggle re-renders through the Terrain Generator's chunk wipe; ⚠ invalidating every chunk's VT at
+  once instead crashed the engine's tile writeback).
+
+**Review** (three rounds over the evolving change): the bake-shading + opacity-conversion round found the
+between-vertex coverage loss (-> the engine splat mode) and a paint race in the harness re-blend (gone with it);
+the splat round found two more, both fixed: GG's bulk auto-blend pass rewrote only the five auto slots, so under
+splat averaging a painted slot left at 255 by Restore, a paint undo or a wide re-blend showed a 50/50 mix (the
+stock stack hid it - the top slot won) - the pass now calls the same complete, paint-aware writer as the
+generator thread (`FillChunkBlendmapGG`), verified with `PAINT_TEST`: paint, then erase, returns the ground
+pixel-identical (mean diff 0.3); and the setup.ini key is read after the startup Init, so it now sets the
+engine flag too.
+
+**Measured** (DESKTOP, exe `50a69a4f604d9381bf995a652dc7a7f7`, engine `c81d3fed`):
+
+| live terrain, field view (display RGB) | before | after |
+|---|---|---|
+| bumped normal (view 3) vs vertex normal 172.9 / 204.7 / 168.1 | 154.1 / 203.4 / 166.2 | 171.9 / 204.4 / 167.0 |
+| albedo (view 9) | 41.4 / 33.9 / 17.9 | 56.0 / 44.4 / 26.2 |
+| final colour | 72.2 / 59.5 / 35.9 | 115.7 / 92.9 / 59.3 |
+
+Baked vs live, all fixes, splat blend: field view luminance **0.99 / 0.99 / 1.00** (near/mid/far) AO on, 0.99
+AO off; overview **1.01 / 1.02 / 0.99**; sun / ambient / albedo summands within 1-4%. Still different by design:
+the bake has no normal map (slopes facing away from the sun read 3-11% darker baked; the baked ground is flatter in
+detail - sd 13 vs 17 near) and no sky reflection (live specular share is small; baked ~5% less blue far away).
+Close to the ground on a FAR-tier chunk (256 per chunk) the bake is a blur of a few texels - resolution, not colour.
+The grass-under-bake probe (3.112) re-run on the final exe: unchanged - 22 of 22 systems kept, grass follows the camera, Grass Off demote / promote, released on untick.
+
+**Lee's call:** the live terrain itself changes - every level's BLENDED ground gets brighter (up to ~1.3x in mixed
+areas; pure single-material ground is unchanged), the soil between grass reads as lit ground instead of dark
+stripes, and sun-lit slopes no longer lose light to the normal tilt. This is the DX11 mix (DX11 weights summed to
+1 by construction); `terrainsplatblend=0` restores today's look if he prefers it.
+
+**Known, not done:** the bake's mips are a plain GenerateMipChain on the 8192 base (averages sRGB-encoded values,
+a few % darker, and keeps the near-field tiling at every mip, so mid/far baked ground is flatter than live);
+rendering each mip through the compositor like the VT does would fix both. Grass and tree billboards share GG's
+flat-only GetAmbient and never got the probe ambient either - a separate pass.

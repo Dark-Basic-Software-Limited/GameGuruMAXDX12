@@ -33,6 +33,7 @@ extern bool gg_terrain_bake;
 // else. Cost grows with the SQUARE: 84 MB at 256, 142 MB at 512, 377 MB at 1024 (about 67 MB of
 // each is chunk vertex buffers, which do not scale). Drop it on a card short of memory.
 extern int  gg_terrain_bake_res;
+extern uint32_t gg_terrain_bake_shading;   // GGMAX 3.113: GG_OPT_BAKE_* bits for the bake pixel shader
 
 // Diagnostics, all read by the harness DUMP_TERRAINBAKE.
 extern int  gg_terrain_bake_chunks;      // chunks with a built mesh

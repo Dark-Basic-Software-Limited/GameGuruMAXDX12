@@ -6476,6 +6476,30 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_TERRAINSPLATBLEND") == 0)
+	{
+		// GGMAX 3.113: 1 = the terrain compositor AVERAGES GG's splat blend weights (default); 0 = the
+		// stock opacity stack (pre-3.113 look). Re-renders every live chunk's virtual texture; re-bake after.
+		extern void GGTerrainWicked_SetSplatBlend(bool on);
+		extern bool gg_terrain_splat_blend;
+		if (arg && arg[0]) GGTerrainWicked_SetSplatBlend(atoi(arg) != 0);
+		_snprintf(result, resultSize, "OK: SET_TERRAINSPLATBLEND - now %d (1 = splat average, 0 = old opacity stack); live chunks re-rendering",
+			gg_terrain_splat_blend ? 1 : 0);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_BAKESHADING") == 0)
+	{
+		// GGMAX 3.113: GG_OPT_BAKE_* bits for the Terrain Bake pixel shader - 1 decode normal, 2 SSAO,
+		// 4 probe ambient, 8 full sun, 16 live material; 31 (0x1F) = all on = the shipped setting.
+		// Live, next frame - no re-bake. For A/B'ing the baked ground against the live terrain.
+		extern uint32_t gg_terrain_bake_shading;
+		if (arg && arg[0]) gg_terrain_bake_shading = (uint32_t)strtoul(arg, nullptr, 0) & 0xFFu;
+		_snprintf(result, resultSize, "OK: SET_BAKESHADING - mask now 0x%02X (1 normal, 2 ssao, 4 probe ambient, 8 full sun, 16 live material)",
+			gg_terrain_bake_shading);
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_BAKERES") == 0)
 	{
 		// Per-chunk bake resolution. Takes effect on the NEXT bake, so the reply says so rather
@@ -10420,16 +10444,17 @@ void AutoHarness_CheckForCommand(void)
 			g_tvCycleActive = true;
 			_snprintf(result, sizeof(result), "OK: SET_TANGENTVIS CYCLE (3s per mode, 0->20, normal shading = loop marker; any SET_TANGENTVIS <n> stops)");
 		}
-		else if (sscanf_s(arg, "%d", &mode) >= 1 && mode >= 0 && mode <= 24) // GGMAX 3.35e: +albedo, +F
+		else if (sscanf_s(arg, "%d", &mode) >= 1 && mode >= 0 && mode <= 27) // GGMAX 3.35e: +albedo, +F; 3.113: +25-27 final-colour summands
 		{
 			g_tvCycleActive = false;
 			wi::renderer::gg_debugvis = mode;
-			static const char* tvNames[25] = { "off", "world tangent", "vertex normal", "bumped normal", "handedness", "normal-map sample",
+			static const char* tvNames[28] = { "off", "world tangent", "vertex normal", "bumped normal", "handedness", "normal-map sample",
 				"basecolor UV raw", "basecolor UV x64 grid", "basecolor tex sample", "final albedo input", "ORM sample",
 				"roughness", "specular F0", "occlusion", "vertex color", "emissive", "world-pos grid",
 				"direct diffuse", "direct specular", "indirect diffuse", "indirect specular",
 				"RAW normal-map texels", "RAW normal-map mip0",
-				"albedo (post-create)", "F (diffuse scaled by 1-F)" };
+				"albedo (post-create)", "F (diffuse scaled by 1-F)",
+				"SUN share of final (linear)", "AMBIENT share of final (linear)", "SPECULAR share of final (linear)" };
 			_snprintf(result, sizeof(result), "OK: SET_TANGENTVIS %d (%s)", mode, tvNames[mode]);
 		}
 		else

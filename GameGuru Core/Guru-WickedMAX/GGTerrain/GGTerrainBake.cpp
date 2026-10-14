@@ -54,6 +54,10 @@ bool gg_terrain_bake = false;
 //     4096 -> 1.25 units per texel    8192 -> 0.6 units/texel
 // which is why the near tier is worth four to five doublings over the far one.
 int  gg_terrain_bake_res = 256;          // FAR tier - distant scenery
+// GGMAX 3.113: how the bake pixel shader shades - GG_OPT_BAKE_* bits (GGCustomFrameCB.hlsli), all on
+// = matches the live terrain. Rides to the GPU in ggCustomFrame.ggOptions (GGCustomFrame_Update).
+// Harness SET_BAKESHADING <mask> A/Bs one term at a time.
+uint32_t gg_terrain_bake_shading = 0x1Fu;
 int  gg_terrain_bake_res_near = 8192;    // NEAR tier - inside the play area
 // ⚠ HARD MEMORY BUDGET for the near tier, in MB. Without it this feature is unbounded: a level
 // whose objects are spread over the whole map promotes every chunk, and 625 chunks at 4096 is
@@ -864,6 +868,7 @@ const char* GGTerrainBake_Report()
 		"  video memory      : %d KB  (%.1f MB)\n"
 		"  last frame        : %d draw calls, %d frustum-culled\n"
 		"  wicked terrain    : %s\n"
+		"  shading           : 0x%02X  normal %s, ssao %s, probe ambient %s, full sun %s, live material %s   (SET_BAKESHADING)\n"
 		"  grass             : %d emitter chunks (%.1f MB of mesh) + %d bare (CPU copy), adopted in %.0f ms\n"
 		"                      %d systems moved at bake, %d bare chunks promoted since, %d systems live now\n",
 		gg_terrain_bake ? 1 : 0, g_shadersReady ? "ok" : "FAILED", g_shaderAttempts, g_ready ? 1 : 0,
@@ -881,6 +886,12 @@ const char* GGTerrainBake_Report()
 		gg_terrain_bake_vram_kb, gg_terrain_bake_vram_kb / 1024.0f,
 		gg_terrain_bake_drawcalls, gg_terrain_bake_culled,
 		gg_no_terrain ? "TORN DOWN (bake is what you are seeing)" : "still live",
+		gg_terrain_bake_shading & 0xFFu,
+		( gg_terrain_bake_shading & 0x01u ) ? "decoded" : "RAW (3.25 defect)",
+		( gg_terrain_bake_shading & 0x02u ) ? "on" : "off",
+		( gg_terrain_bake_shading & 0x04u ) ? "on" : "off",
+		( gg_terrain_bake_shading & 0x08u ) ? "on" : "off",
+		( gg_terrain_bake_shading & 0x10u ) ? "on" : "off (f0 0.04, occlusion 0.9)",
 		grassEmitters, grassMeshBytes / ( 1024.0 * 1024.0 ), grassBare, grassAdoptMs,
 		grassRehomed, grassPromoted, grassLive );
 	g_report[sizeof( g_report ) - 1] = 0;

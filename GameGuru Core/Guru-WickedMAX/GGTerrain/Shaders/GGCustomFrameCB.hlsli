@@ -40,9 +40,22 @@ struct GGCustomFrameData {
 	float     cloudiness;                  // offset 64
 	float     cloudScale;                  // offset 68
 	float     cloudSpeed;                  // offset 72
-	GG_UINT   ggOptions;                   // offset 76 (GG-specific option bits)
+	GG_UINT   ggOptions;                   // offset 76 (GG-specific option bits - GG_OPT_* below)
 	// struct size = 80 bytes (5*16), 16-byte aligned.
 };
+
+// ggOptions bits. GGMAX 3.113: how the Terrain Bake pixel shader shades (GGTerrainBakePS.hlsl).
+// Each bit brings one term in line with the LIVE terrain (the engine's object shader); all on is
+// the shipped setting. They are bits rather than #ifdefs so the harness can A/B each one in a
+// single session (SET_BAKESHADING <mask>) - the colour mismatch they fix was invisible until it
+// was measured against the live terrain from the same camera.
+#define GG_OPT_BAKE_DECODE_NORMAL  0x01u   // unpack the n*0.5+0.5 UNORM vertex normal (the 3.25 defect)
+#define GG_OPT_BAKE_SSAO           0x02u   // screen-space AO, as objectHF reads it
+#define GG_OPT_BAKE_PROBE_AMBIENT  0x04u   // global probe irradiance in the ambient, as the engine GetAmbient
+#define GG_OPT_BAKE_FULL_SUN       0x08u   // full directional light: atmosphere transmittance, all cascades
+#define GG_OPT_BAKE_LIVE_MATERIAL  0x10u   // f0 0.005 + no constant occlusion, as the live chunk material
+#define GG_OPT_BAKE_SHADING_ALL    0x1Fu
+#define GG_OPT_BAKE_SHADING_MASK   0xFFu   // the low byte of ggOptions belongs to the bake
 
 #ifdef __cplusplus
 	#undef GG_FLOAT3

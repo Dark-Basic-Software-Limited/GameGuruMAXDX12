@@ -184,6 +184,8 @@ extern int g_autoHarnessInjectedKey;
 // SET_FARTREES). Global scope so the harness can extern them the way it does gg_ftLoadReason.
 uint32_t gg_ddsSliceRefused = 0;
 char gg_ddsSliceRefusedWhat[ 200 ] = { 0 };   // the first refusal: file, slice, array size
+// GGMAX 3.113: Terrain Bake shading bits (GGTerrainBake.cpp, global scope) - uploaded in ggOptions.
+extern uint32_t gg_terrain_bake_shading;
 
 namespace GGTerrain
 {
@@ -819,6 +821,9 @@ void GGCustomFrame_Update( wiGraphics::CommandList cmd )
 		weather.oceanParameters.waterColor.z
 	);
 	ggCustomFrameStaging.waterHeight = weather.oceanParameters.waterHeight;
+	// GGMAX 3.113: the low byte of ggOptions is the Terrain Bake shading switch (GG_OPT_BAKE_*).
+	ggCustomFrameStaging.ggOptions = ( ggCustomFrameStaging.ggOptions & ~GG_OPT_BAKE_SHADING_MASK )
+		| ( ::gg_terrain_bake_shading & GG_OPT_BAKE_SHADING_MASK );
 
 	// Upload to GPU
 	wiGraphics::GetDevice()->UpdateBuffer(&ggCustomFrameBuffer, &ggCustomFrameStaging, cmd, sizeof(GGCustomFrameData));
