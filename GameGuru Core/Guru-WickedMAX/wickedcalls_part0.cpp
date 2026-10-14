@@ -1503,6 +1503,13 @@ void WickedCall_BuildStaticMeshBVHs(void)
 		Entity meshEntity = scene.meshes.GetEntity(m);
 		if (mesh.bvh.IsValid()) { iAlready++; continue; }
 		if (terrainMeshIDs.find((uint64_t)meshEntity) != terrainMeshIDs.end()) { iSkippedTerrain++; continue; }
+		// GGMAX 3.112: a Terrain Bake's grass emitters are terrain chunk meshes no object references -
+		// nothing ever intersects them, and the bake drops their BVH on purpose (~1.15 MB each).
+		// A level loaded while baked still has the old level's emitters for one more frame.
+		{
+			const wiScene::NameComponent* nm = scene.names.GetComponent(meshEntity);
+			if (nm != nullptr && nm->name == "GGGrassEmitter") { iSkippedTerrain++; continue; }
+		}
 		if (mesh.IsSkinned() || !mesh.vertex_boneindices.empty() || scene.softbodies.Contains(meshEntity)) { iSkippedSkinned++; continue; }
 		if (mesh.indices.size() < 128 * 3) { iSkippedSmall++; continue; }
 		mesh.BuildBVH();

@@ -83,6 +83,44 @@ struct ChunkGrassEntities
 static std::unordered_map<uint64_t, ChunkGrassEntities> grassChunkKeyToGrassEntities;
 static std::unordered_map<uint64_t, int> grassChunkKeyToTier;                    // current LOD tier per chunk
 
+// GGMAX 3.112: grass that OUTLIVES A TERRAIN BAKE.
+//
+// Every grass hair grows from a Wicked terrain chunk's MeshComponent (hair.meshID) and is
+// Component_Attach'ed to that chunk. The bake's teardown (GGTerrainWicked_Shutdown) Entity_Remove's
+// every chunk, recursively, so ticking Terrain Bake deleted all the grass with them - Lee,
+// DX12TESTLEVEL: HAIR_SYSTEMS 22 -> 0 - and GGTerrainWicked_Update then returned before the grass
+// manager every frame, so nothing could grow it back.
+//
+// So before the chunks go, every chunk inside the editable area keeps what grass needs of it:
+//  - a chunk with painted grass hands its mesh over to a GRASS EMITTER: a mesh-only entity (a
+//    MeshComponent + TransformComponent and NO ObjectComponent, so nothing draws, culls or shadows
+//    it - it is only what the hair simulate reads its emitter triangles from). The chunk's live grass
+//    is re-parented onto it untouched (no regrow, no pop);
+//  - a BARE chunk keeps a CPU-only copy of its shape (positions + normals, ~108 KB; the LOD0
+//    topology is identical for every chunk and kept once), holding no video memory at all. The
+//    moment grass is painted or Populated onto it, it is PROMOTED to an emitter.
+// The grass manager keeps running against the emitters while the bake holds, so Test Game LOD rings
+// still follow the player. Grass Off DEMOTES every emitter back to a CPU copy (its video memory is
+// for the grass alone); grass back on promotes them again. Released on the way back to a live
+// terrain (Init).
+// ⚠ The same per-level-value-in-a-process-global shape as every VRAM retention defect: anything
+// added here must be released by ReleaseBakeGrassEmitters.
+struct BakeGrassBareChunk
+{
+	XMFLOAT4X4 world;
+	wi::vector<XMFLOAT3> positions;   // chunk-LOCAL, exactly the chunk mesh's
+	wi::vector<XMFLOAT3> normals;
+};
+static wi::vector<wi::ecs::Entity> s_bakeGrassEmitters;                    // ProcessGrassChunks' chunk source while baked
+static std::unordered_map<uint64_t, wi::ecs::Entity> s_bakeGrassEmitterByKey;
+static std::unordered_map<uint64_t, BakeGrassBareChunk> s_bakeGrassBare;   // editable chunks with no emitter
+static wi::vector<uint32_t> s_bakeGrassLod0Indices;   // the shared LOD0 triangle list a promoted emitter is built with
+static bool s_bakeGrassPromotePending = false;        // promote every bare chunk that now holds grass (budgeted)
+static float s_bakeGrassChunkStride = 0.0f;   // the torn-down terrain's chunk stride
+static uint32_t s_bakeGrassRehomed = 0;       // DUMP_BAKE: live grass systems moved onto emitters at bake
+static uint32_t s_bakeGrassPromoted = 0;      // DUMP_BAKE: bare chunks promoted to emitters since the bake
+static float s_bakeGrassAdoptMs = 0.0f;       // DUMP_BAKE: what the adoption cost, once, at bake
+
 // GGMAX: how many distinct grass types are live in each chunk right now. One hair system
 // exists per (chunk x painted type), so this histogram IS the payoff available from merging a
 // chunk's types into a single system — a chunk with 1 type saves nothing, a chunk with N types
@@ -2189,7 +2227,10 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 	}
 
 	float editableSize = GGTerrain::GGTerrain_GetEditableSize();
-	float chunkStride = (wi::terrain::chunk_width - 1) * terrain->chunk_scale;
+	// GGMAX 3.112: terrain is NULL while a Terrain Bake holds - the chunks are the bake's grass
+	// emitters then, and the stride is the one the torn-down terrain had.
+	float chunkStride = terrain ? (wi::terrain::chunk_width - 1) * terrain->chunk_scale : s_bakeGrassChunkStride;
+	if (chunkStride <= 0.0f) return;
 
 	// LOD ring vs per-strand cull — these MUST be decoupled, or chunk pop-in happens.
 	// viewDistInches is the per-strand binary visibility cull (matches DX11 grassRadius =
@@ -2237,13 +2278,27 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 	// few chunks per pass; the settle-retry keeps the pass running until the queue drains
 	// (~140 chunks/s => the whole island greens up smoothly over ~2-3s). Removals are uncapped.
 	int creationBudget = 6;
-	for (size_t oi = 0; oi < scene.objects.GetCount(); oi++)
+	// GGMAX 3.112: the chunk source. Live terrain = the chunk objects in the scene; baked = the
+	// mesh-only grass emitters the bake's teardown left behind (no ObjectComponent, so the objects
+	// loop could never see them).
+	const size_t sourceCount = terrain ? scene.objects.GetCount() : s_bakeGrassEmitters.size();
+	for (size_t oi = 0; oi < sourceCount; oi++)
 	{
-		wi::scene::ObjectComponent& obj = scene.objects[oi];
-		wi::scene::MeshComponent* mesh = scene.meshes.GetComponent(obj.meshID);
+		wi::ecs::Entity entity;
+		wi::scene::MeshComponent* mesh;
+		if (terrain)
+		{
+			wi::scene::ObjectComponent& obj = scene.objects[oi];
+			mesh = scene.meshes.GetComponent(obj.meshID);
+			entity = scene.objects.GetEntity(oi);
+		}
+		else
+		{
+			entity = s_bakeGrassEmitters[oi];
+			mesh = scene.meshes.GetComponent(entity);
+		}
 		if (!mesh || mesh->vertex_positions.size() != wi::terrain::vertexCount) continue;
 
-		wi::ecs::Entity entity = scene.objects.GetEntity(oi);
 		const wi::scene::TransformComponent* transform = scene.transforms.GetComponent(entity);
 		if (!transform) continue;
 
@@ -2470,7 +2525,8 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 	if (pending.empty()) return;
 
 	// Generation cancelled = safe window to mutate the scene (no generator-thread race).
-	terrain->Generation_Cancel();
+	// (Baked: there is no generator - GGMAX 3.112.)
+	if (terrain) terrain->Generation_Cancel();
 
 	// Phase 2: apply removals + (re)creations and update tracking.
 	for (auto& pc : pending)
@@ -2642,6 +2698,286 @@ static void ForceGrassRebuild()
 // Runtime grass tuning, driven by the SET_GRASS automation command. Now that each grass type has
 // its own appearance template and material, the tuning knobs apply uniformly across all types
 // (multiplicative for sizes, replacement for material props). A deferred rebuild applies them.
+// GGMAX 3.112: drop the bake's grass emitters (and everything that grew on them) and the bare-chunk
+// copies. Called on the way back to a live terrain (GGTerrainWicked_Init), where the real chunks
+// regrow the grass. Entity ids are never reused, so removing an id a level load already swept away
+// is a harmless no-op. The grass maps are cleared only if emitters existed - Adopt calls this too,
+// at a moment when the maps still hold the LIVE terrain's records it is about to re-home.
+static void ReleaseBakeGrassEmitters()
+{
+	auto& scene = wi::scene::GetScene();
+	const bool hadEmitters = !s_bakeGrassEmitters.empty();
+	for (wi::ecs::Entity e : s_bakeGrassEmitters)
+		scene.Entity_Remove(e);   // recursive: the grass re-parented onto it goes with it
+	s_bakeGrassEmitters.clear();
+	s_bakeGrassEmitterByKey.clear();
+	s_bakeGrassBare.clear();
+	wi::vector<uint32_t>().swap(s_bakeGrassLod0Indices);
+	s_bakeGrassPromotePending = false;
+	s_bakeGrassRehomed = 0;
+	s_bakeGrassPromoted = 0;
+	if (hadEmitters)
+	{
+		grassChunkKeyToGrassEntities.clear();
+		grassChunkKeyToTier.clear();
+		grassChunkKeyToChunkEntity.clear();
+	}
+}
+
+// GGMAX 3.112 (review 2): the bake's own Clear releases the grass too. Init is not enough on its
+// own: a level saved as Completely Empty never runs GGTerrainWicked_Update (master_part1 gates the
+// whole terrain block), so a baked outdoor level followed by an indoor one kept every emitter, hair
+// and CPU copy alive for as long as the player stayed indoors. Clear is where the bake ends on every
+// path - untick, level load, Reset Visuals, the near-detail slider - and Init's call is then a no-op.
+void GGTerrainWicked_ReleaseBakeGrass()
+{
+	ReleaseBakeGrassEmitters();
+}
+
+// A new emitter entity at a chunk's world transform, registered as a grass chunk source. The caller
+// gives it its MeshComponent.
+static wi::ecs::Entity NewBakeGrassEmitter(uint64_t key, const XMFLOAT4X4& world)
+{
+	auto& scene = wi::scene::GetScene();
+	const wi::ecs::Entity e = wi::ecs::CreateEntity();
+	scene.names.Create(e) = "GGGrassEmitter";   // ⚠ WickedCall_BuildStaticMeshBVHs skips by this name
+	wi::scene::TransformComponent& t = scene.transforms.Create(e);
+	t.MatrixTransform(world);
+	t.UpdateTransform();
+	s_bakeGrassEmitters.push_back(e);
+	s_bakeGrassEmitterByKey[key] = e;
+	return e;
+}
+
+// Bare chunk -> emitter, if grass has landed on it. A lean mesh: the chunk's own positions and normals
+// and the shared LOD0 triangles - everything a hair reads (GPU: vb_pos_wind, vb_nor, aabb; CPU on a
+// rebuild: positions.size() and the LOD0 indices). About 1 ms (CreateRenderData). Returns true if
+// promoted.
+static bool PromoteBareGrassChunk(uint64_t key)
+{
+	auto it = s_bakeGrassBare.find(key);
+	if (it == s_bakeGrassBare.end() || s_bakeGrassLod0Indices.empty()) return false;
+	const XMFLOAT4X4 world = it->second.world;
+	const float half = s_bakeGrassChunkStride * 0.5f;
+	if (!GGGrass::GGGrass_RegionHasGrass(world._41 - half, world._43 - half, world._41 + half, world._43 + half))
+		return false;
+	auto& scene = wi::scene::GetScene();
+	const wi::ecs::Entity e = NewBakeGrassEmitter(key, world);
+	wi::scene::MeshComponent& m = scene.meshes.Create(e);
+	m.SetQuantizedPositionsDisabled(true);   // as wiTerrain builds every chunk mesh
+	m.vertex_positions = std::move(it->second.positions);
+	m.vertex_normals = std::move(it->second.normals);
+	m.indices = s_bakeGrassLod0Indices;
+	wi::scene::MeshComponent::MeshSubset& ss = m.subsets.emplace_back();
+	ss.indexOffset = 0;
+	ss.indexCount = (uint32_t)m.indices.size();   // materialID stays INVALID: nothing draws this mesh
+	m.CreateRenderData();
+	s_bakeGrassBare.erase(it);
+	// Record it as this key's chunk entity NOW. Seen for the first time by ProcessGrassChunks, it
+	// would wait out the 30-frame settle gate that exists for chunks Wicked is still regenerating.
+	grassChunkKeyToChunkEntity[key] = e;
+	s_bakeGrassPromoted++;
+	return true;
+}
+
+// Every bare chunk that now holds grass, nearest the camera first, at most `budget` a call (each is a
+// CreateRenderData). Leaves s_bakeGrassPromotePending set until a call finishes the list.
+static void PromoteBareGrassChunks(const XMFLOAT3& eye, uint32_t budget)
+{
+	wi::vector<std::pair<float, uint64_t>> order;
+	order.reserve(s_bakeGrassBare.size());
+	for (auto& kv : s_bakeGrassBare)
+	{
+		const float dx = kv.second.world._41 - eye.x, dz = kv.second.world._43 - eye.z;
+		order.push_back({ dx * dx + dz * dz, kv.first });
+	}
+	std::sort(order.begin(), order.end());
+	uint32_t done = 0;
+	for (auto& o : order)
+	{
+		if (done >= budget) return;   // more next frame
+		if (PromoteBareGrassChunk(o.second)) done++;
+	}
+	s_bakeGrassPromotePending = false;
+}
+
+// Grass Off while baked: an emitter's video memory is for the grass alone, so every emitter goes back
+// to a CPU-only copy (GPU buffers freed with the entity). ForceGrassRebuild has already removed the
+// hairs and cleared the grass maps.
+static void DemoteBakeGrassEmitters()
+{
+	auto& scene = wi::scene::GetScene();
+	for (auto& kv : s_bakeGrassEmitterByKey)
+	{
+		wi::scene::MeshComponent* m = scene.meshes.GetComponent(kv.second);
+		const wi::scene::TransformComponent* t = scene.transforms.GetComponent(kv.second);
+		if (m != nullptr && t != nullptr && m->vertex_positions.size() == wi::terrain::vertexCount)
+		{
+			BakeGrassBareChunk& b = s_bakeGrassBare[kv.first];
+			b.world = t->world;
+			b.positions = std::move(m->vertex_positions);
+			b.normals = std::move(m->vertex_normals);
+		}
+		scene.Entity_Remove(kv.second);
+	}
+	s_bakeGrassEmitters.clear();
+	s_bakeGrassEmitterByKey.clear();
+}
+
+// GGMAX 3.112: called by GGTerrainWicked_Shutdown for a TERRAIN BAKE only - after the generator and
+// the async VT job are joined (nothing else is touching the chunk meshes) and BEFORE the chunk
+// entities are removed. See the note at s_bakeGrassEmitters.
+static void AdoptGrassEmittersForBake(wi::terrain::Terrain* terrain)
+{
+	ReleaseBakeGrassEmitters();   // belt and braces - a bake always starts from a live terrain
+	wi::Timer adoptTimer;
+	auto& scene = wi::scene::GetScene();
+	const float chunkStride = (wi::terrain::chunk_width - 1) * terrain->chunk_scale;
+	const float editableSize = GGTerrain::GGTerrain_GetEditableSize();
+	s_bakeGrassChunkStride = chunkStride;
+	if (chunkStride <= 0.0f) return;
+
+	std::unordered_set<uint64_t> adopted;   // keys whose grass records survive (they got an emitter)
+	for (auto& [chunk, chunk_data] : terrain->chunks)
+	{
+		const wi::ecs::Entity chunkEntity = chunk_data.entity;
+		if (chunkEntity == wi::ecs::INVALID_ENTITY) continue;
+		const wi::scene::ObjectComponent* obj = scene.objects.GetComponent(chunkEntity);
+		const wi::scene::TransformComponent* tr = scene.transforms.GetComponent(chunkEntity);
+		if (obj == nullptr || tr == nullptr) continue;
+		const wi::ecs::Entity meshEntity = obj->meshID;
+		const wi::scene::MeshComponent* srcMesh = scene.meshes.GetComponent(meshEntity);
+		if (srcMesh == nullptr || srcMesh->vertex_positions.size() != wi::terrain::vertexCount ||
+			srcMesh->vertex_normals.size() != wi::terrain::vertexCount) continue;
+		// BY VALUE: the Create calls below can grow the component arrays and move what tr points at.
+		const XMFLOAT4X4 world = tr->world;
+
+		// The same key and editable-area test ProcessGrassChunks uses - grass never grows outside it.
+		const int32_t cx = (int32_t)std::round(world._41 / chunkStride);
+		const int32_t cz = (int32_t)std::round(world._43 / chunkStride);
+		const uint64_t key = MakeChunkKey(cx, cz);
+		const float ccx = cx * chunkStride, ccz = cz * chunkStride;
+		if (ccx < -editableSize || ccx > editableSize || ccz < -editableSize || ccz > editableSize) continue;
+
+		// The LOD0 triangle list, once - every chunk shares wiTerrain's one ChunkIndices topology.
+		if (s_bakeGrassLod0Indices.empty())
+		{
+			uint32_t firstSubset = 0, lastSubset = 0;
+			srcMesh->GetLODSubsetRange(0, firstSubset, lastSubset);
+			for (uint32_t si = firstSubset; si < lastSubset; si++)
+			{
+				const wi::scene::MeshComponent::MeshSubset& ss = srcMesh->subsets[si];
+				s_bakeGrassLod0Indices.insert(s_bakeGrassLod0Indices.end(),
+					srcMesh->indices.begin() + ss.indexOffset, srcMesh->indices.begin() + ss.indexOffset + ss.indexCount);
+			}
+		}
+
+		// Painted grass (and grass not switched off) = an emitter now; otherwise a CPU copy that can
+		// become one later. ⚠ NOT GGGrass_ScanRegion for the test: its Match Terrain Color auto-resolve
+		// costs a height + material lookup per unresolved cell, and asked of every chunk at once it
+		// froze the first bake for 4.4 s. A raw yes/no is all this needs; the resolve still happens,
+		// lazily, when ProcessGrassChunks actually grows the chunk.
+		const float half = chunkStride * 0.5f;
+		const bool grassy = !gg_no_grass &&
+			GGGrass::GGGrass_RegionHasGrass(world._41 - half, world._43 - half, world._41 + half, world._43 + half);
+		if (!grassy)
+		{
+			// MOVE the arrays out - the chunk mesh is removed a few lines from now.
+			wi::scene::MeshComponent* src = scene.meshes.GetComponent(meshEntity);
+			BakeGrassBareChunk& b = s_bakeGrassBare[key];
+			b.world = world;
+			b.positions = std::move(src->vertex_positions);
+			b.normals = std::move(src->vertex_normals);
+			continue;
+		}
+
+		const wi::ecs::Entity emitter = NewBakeGrassEmitter(key, world);
+		// MOVE the chunk's mesh, do not copy or rebuild it. The chunk is removed a few lines from now,
+		// and a move hands the CPU arrays and the GPU buffers (with their descriptors) over as they
+		// are: nothing is allocated, nothing uploaded, and a strand still lands on exactly the
+		// triangle it was on. (Rebuilding a lean mesh for all of them - 67 MB instead of 107 MB on
+		// DX12TESTLEVEL - was tried: 361 CreateRenderData calls are a ~300 ms hitch on the frame the
+		// bake lands.) Re-fetch the source AFTER Create - Create can reallocate the meshes array.
+		wi::scene::MeshComponent& em = scene.meshes.Create(emitter);
+		wi::scene::MeshComponent* src = scene.meshes.GetComponent(meshEntity);
+		em = std::move(*src);
+		// Drop what only a DRAWN, PICKED or RE-CREATED mesh needs - a hair reads positions.size(),
+		// the LOD0 indices and the GPU positions/normals. The CPU triangle BVH that wiTerrain gives
+		// every chunk is ~1.15 MB alone (Scene::Intersects only reaches meshes through objects, and an
+		// emitter has none); UVs + tangents are ~108 KB. Kept, they cost ~415 MB of system memory on
+		// DX12TESTLEVEL (review 3.112). SetBVHEnabled(false) only clear()s the leaf AABBs - swap.
+		em.SetBVHEnabled(false);
+		wi::vector<wi::primitive::AABB>().swap(em.bvh_leaf_aabbs);
+		wi::vector<XMFLOAT2>().swap(em.vertex_uvset_0);
+		wi::vector<XMFLOAT4>().swap(em.vertex_tangents);
+
+		// Re-parent the chunk's live grass onto the emitter - exactly the state ProcessGrassChunks
+		// creates it in (identity local transform, attached in local space, meshID = its parent).
+		auto git = grassChunkKeyToGrassEntities.find(key);
+		if (git != grassChunkKeyToGrassEntities.end())
+		{
+			auto rehome = [&](wi::ecs::Entity h)
+			{
+				if (h == wi::ecs::INVALID_ENTITY) return;
+				wi::HairParticleSystem* hair = scene.hairs.GetComponent(h);
+				if (hair == nullptr) return;
+				hair->meshID = emitter;
+				scene.Component_Detach(h);
+				wi::scene::TransformComponent* ht = scene.transforms.GetComponent(h);
+				if (ht != nullptr) ht->ClearTransform();
+				scene.Component_Attach(h, emitter, true);
+				s_bakeGrassRehomed++;
+			};
+			for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++) rehome(git->second.perType[t]);
+			rehome(git->second.merged);
+		}
+		grassChunkKeyToChunkEntity[key] = emitter;   // so the pass does not read it as a recycle
+		adopted.insert(key);
+	}
+	// Grass Off at bake time: everything is a CPU copy; grass coming back promotes them (see the
+	// Grass Off edges in UpdateWickedGrassManager).
+	if (gg_no_grass) s_bakeGrassPromotePending = true;
+
+	// A record for a chunk that got no emitter names entities that die with that chunk below. Drop
+	// it now, so no map is left holding an id that is about to be removed.
+	for (auto it = grassChunkKeyToGrassEntities.begin(); it != grassChunkKeyToGrassEntities.end(); )
+		it = adopted.count(it->first) ? std::next(it) : grassChunkKeyToGrassEntities.erase(it);
+	for (auto it = grassChunkKeyToTier.begin(); it != grassChunkKeyToTier.end(); )
+		it = adopted.count(it->first) ? std::next(it) : grassChunkKeyToTier.erase(it);
+	for (auto it = grassChunkKeyToChunkEntity.begin(); it != grassChunkKeyToChunkEntity.end(); )
+		it = adopted.count(it->first) ? std::next(it) : grassChunkKeyToChunkEntity.erase(it);
+	s_bakeGrassAdoptMs = (float)adoptTimer.elapsed_milliseconds();
+}
+
+// GGMAX 3.112: DUMP_BAKE reporting.
+void GGTerrainWicked_GetBakeGrassStats(int* pEmitters, int* pBare, int* pRehomed, int* pPromoted,
+	int* pLiveSystems, unsigned long long* pMeshBytes, float* pAdoptMs)
+{
+	auto& scene = wi::scene::GetScene();
+	int live = 0;
+	unsigned long long bytes = 0;
+	for (wi::ecs::Entity e : s_bakeGrassEmitters)
+	{
+		const wi::scene::MeshComponent* m = scene.meshes.GetComponent(e);
+		if (m != nullptr && m->generalBuffer.IsValid()) bytes += m->generalBuffer.desc.size;
+	}
+	for (auto& kv : grassChunkKeyToGrassEntities)
+	{
+		for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES + 1; t++)
+		{
+			wi::ecs::Entity h = (t < GGGRASS_TOTAL_REAL_TYPES) ? kv.second.perType[t] : kv.second.merged;
+			if (h != wi::ecs::INVALID_ENTITY && scene.hairs.GetComponent(h) != nullptr) live++;
+		}
+	}
+	*pEmitters = (int)s_bakeGrassEmitters.size();
+	*pBare = (int)s_bakeGrassBare.size();
+	*pRehomed = (int)s_bakeGrassRehomed;
+	*pPromoted = (int)s_bakeGrassPromoted;
+	*pLiveSystems = live;
+	*pMeshBytes = bytes;
+	*pAdoptMs = s_bakeGrassAdoptMs;
+}
+
 void GGTerrainWicked_SetGrassParam(const char* param, float value)
 {
 	std::string p = param ? param : "";
@@ -2900,6 +3236,10 @@ void GGTerrainWicked_Init()
 
 	auto& scene = wi::scene::GetScene();
 
+	// GGMAX 3.112: leaving a Terrain Bake - the grass emitters it left go, with their grass; the
+	// real chunks this Init brings back regrow it (no-op on the startup Init and after Terrain Off).
+	ReleaseBakeGrassEmitters();
+
 	// Create entity and register terrain in scene (so renderer calls UpdateVirtualTexturesGPU)
 	wickedTerrainEntity = wi::ecs::CreateEntity();
 	wi::terrain::Terrain& terrain = scene.terrains.Create(wickedTerrainEntity);
@@ -3073,6 +3413,210 @@ void GGTerrainWicked_NotifyMaterialsChanged()
 	gg_dbg_material_notifies++;
 }
 
+// GGMAX 3.112: the grass manager, lifted VERBATIM out of GGTerrainWicked_Update (the only edits:
+// terrain may be NULL and the chunk stride falls back to the bake's). It used to sit below that
+// function's gg_no_terrain early return, so a Terrain Bake stopped it dead - the 3.73 tree pool's
+// exact shape. Live terrain calls it from the same place in the frame as before; a bake calls it
+// from the gg_no_terrain branch, against the grass emitters (s_bakeGrassEmitters).
+static void UpdateWickedGrassManager(wi::terrain::Terrain* terrain, const wi::scene::CameraComponent& camera, uint64_t chunkSig)
+{
+	// Grass: set up the material/template once, then grow grass on chunks from the painted grass
+	// map. Runs after blendmap processing (generation already cancelled = safe to add entities).
+	// GGMAX 2.94: "Grass Off" brutal off-switch. Edge-triggered teardown then a hard skip of
+	// the whole grass manager. ForceGrassRebuild is the right primitive - it Entity_Remove's
+	// every per-type and merged hair and clears the three tracking maps, which returns the
+	// HairParticleSystem GPU buffers as well as stopping the per-strand simulate dispatch.
+	// NOT GGGrass_RemoveAll(): that zeroes all 16 MB of pGrassMap in place, so the level's
+	// PAINTED grass would be destroyed and the next save would write an empty .gra.
+	// Skipping SetupWickedGrass as well means the grass DDS blades are never even loaded.
+	{
+		// Edge-TRIGGERED both ways. The latch must be declared outside the `if` and cleared on
+		// the OFF->ON edge, or the switch is one-way: measured 2026-08-22, grass stayed gone
+		// after SET_GRASSOFF 0 and every later reading in that ladder was silently taken on a
+		// grass-free scene.
+		static bool s_ggNoGrassApplied = false;
+		if (gg_no_grass && !s_ggNoGrassApplied)
+		{
+			ForceGrassRebuild();          // remove what exists; never rebuilt while the flag holds
+			// GGMAX 3.112: a bake's grass emitters exist only for the grass - back to CPU copies
+			// (their video memory freed) until grass comes back (see s_bakeGrassEmitters).
+			if (terrain == nullptr && !s_bakeGrassEmitters.empty())
+			{
+				DemoteBakeGrassEmitters();
+				s_bakeGrassPromotePending = true;
+			}
+			s_ggNoGrassApplied = true;
+		}
+		else if (!gg_no_grass && s_ggNoGrassApplied)
+		{
+			// Coming back on: clear the tier records so ProcessGrassChunks re-visits every chunk
+			// and regrows. ForceGrassRebuild already cleared the maps on the way out, but a chunk
+			// created WHILE grass was off has a stale tier entry and would be skipped.
+			grassChunkKeyToTier.clear();
+			// ...and NUDGE the pass. ProcessGrassChunks is gated on (grassDirty || chunkSig
+			// changed || settle retry || nudge || camera moved > 8 units). With a parked camera
+			// on a settled level NONE of those fire, so without this the switch is one-way:
+			// measured twice on 2026-08-22 before the nudge was added - grass never came back
+			// and every later reading in the ladder was silently taken on a grass-free scene.
+			g_grassPassNudge = true;
+			s_ggNoGrassApplied = false;
+		}
+	}
+	// GGMAX 3.112: while baked, bare chunks that now hold grass become emitters - after Grass Off
+	// (every emitter was demoted), after a bake that landed under Grass Off, after Populate. STATE-
+	// driven (pending flag + grass on), not on the edge, so no frame ordering can strand it. 24 a
+	// frame, nearest first, so a whole grassed map comes back in a dozen frames, not one long one.
+	if (terrain == nullptr && s_bakeGrassPromotePending && !gg_no_grass)
+	{
+		PromoteBareGrassChunks(camera.Eye, 24);
+	}
+	if (!wickedGrassSetup && !gg_no_grass)
+	{
+		SetupWickedGrass();
+	}
+	// Stage B.9: custom palette slot registered/cleared by the editor UI ("Add New Grass" /
+	// "Delete Grass"). Rebuild the appearance templates + clear cached materials for custom
+	// real_types so BuildGrassMaterial re-loads DDS on next lookup.
+	//
+	// Also blast grassChunkKeyToTier so ProcessGrassChunks re-visits every chunk on the next pass.
+	// This fixes two related bugs:
+	//   1. Delete + re-add with a DIFFERENT DDS on the same slot — existing hair entities cache a
+	//      snapshot of the OLD MaterialComponent, which persists even after we clear the material-
+	//      ready flag. Forcing a chunk-tier re-eval triggers the tier-change branch (fullReset =
+	//      true) so entities get destroyed and recreated with the fresh material.
+	//   2. Level reload where ProcessGrassChunks runs on frame N BEFORE the palette-sync (which is
+	//      in the ImGui render at end-of-frame). Frame N tries to build the custom material with a
+	//      null filename (sync not yet run), fails silently, but still records the chunk's tier —
+	//      frame N+1's dirty poll rebuilds appearances but the chunks stay skipped because their
+	//      tier hasn't changed. Clearing tier tracking forces the re-visit.
+	bool grassDirty = false;
+	if (GGGrass::GGGrass_TakeCustomSlotsDirty())
+	{
+		grassDirty = true;
+		g_grassAppearanceReady = false;
+		for (uint32_t t = GGGRASS_CUSTOM_REAL_TYPE_BASE; t < GGGRASS_TOTAL_REAL_TYPES; t++)
+			g_grassMaterialReady[t] = false;
+		BuildGrassAppearance();
+		ApplyGrassDrawDistance(); // sync viewDistance onto the newly-built custom appearances
+
+		// Invalidate all chunk tier tracking + delete any existing hair entities for CUSTOM
+		// real_types across every tracked chunk. Two-step because Phase 2's existing-entity branch
+		// short-circuits on "type still painted, entity exists" — so if we only cleared the tier
+		// map, existing entities would survive and keep their OLD material snapshot even after the
+		// slot's DDS changed. Removing the custom entities here forces Phase 2 to hit the CREATE
+		// branch, which calls BuildGrassMaterial with the freshly-registered filename.
+		//
+		// Stock entities (real_type 0..45) are left alone — their DDS never changed.
+		grassChunkKeyToTier.clear();
+		{
+			auto& scene = wi::scene::GetScene();
+			for (auto& kv : grassChunkKeyToGrassEntities)
+			{
+				for (uint32_t t = GGGRASS_CUSTOM_REAL_TYPE_BASE; t < GGGRASS_TOTAL_REAL_TYPES; t++)
+				{
+					wi::ecs::Entity e = kv.second.perType[t];
+					if (e != wi::ecs::INVALID_ENTITY)
+					{
+						if (scene.hairs.GetComponent(e))
+							scene.Entity_Remove(e);
+						kv.second.perType[t] = wi::ecs::INVALID_ENTITY;
+					}
+				}
+			}
+		}
+	}
+
+	// Grass Draw Distance slider → per-entity viewDistance. Detect slider movement and sync every
+	// live grass entity in one pass so dragging the slider in the editor pulls every cull radius
+	// along with it (rather than waiting for chunks to be rebuilt on camera move).
+	// Compare the EFFECTIVE distance, not the raw slider: under the low-VRAM cap the slider can
+	// move without the effective value changing, and re-applying then would be pure churn.
+	if (GGGrass_LodDistEffective() != g_grassPrevSliderInches)
+	{
+		ApplyGrassDrawDistance();
+	}
+
+	auto rangeGM = wi::profiler::BeginRangeCPU("TerrainW - Grass Maint");
+	// Grass Start/End Altitude sliders (+ underwater pair + water plane) → per-entity CB values
+	// consumed by the hair simulate CS altitude filter. Unconditional every frame — 4 float
+	// compares per entity is well under the noise floor next to the CB upload the shader path
+	// already does, and skipping the sync when values look unchanged would miss water-plane
+	// drift and edge cases where the entities were re-created since the last sync.
+	ApplyGrassAltitude();
+
+	// Grass Scale slider → per-entity `length`. Same rationale as the altitude sync: cheaper to
+	// always push than to track a "did the slider move?" flag and get it wrong on re-creation.
+	ApplyGrassScale();
+	// GGMAX 2.94: && !gg_no_grass - ProcessGrassChunks is the ONLY caller of scene.hairs.Create
+	// for grass, so this one condition is the difference between "grass exists" and "it never
+	// did". ApplyGrassAltitude/ApplyGrassScale above are left unguarded on purpose: they walk
+	// scene.hairs, which is EMPTY once the teardown above has run, so they cost nothing.
+	if (wickedGrassEnabled && !gg_no_grass)
+	{
+		// Editor paint mutates pGrassMap via GGGrass_Update_Painting. The Wicked grass renderer
+		// caches per-chunk hair entities and only rebuilds them on tier/entity changes — so it
+		// can't notice a paint stroke on its own. GGGrass tracks the *set* of chunk keys the
+		// brush footprint touched (not the bounding box of the whole stroke), so we only erase
+		// tier records for chunks the user actually painted into. Chunks the cursor merely passed
+		// over without writing keep their grass intact and don't reshuffle.
+		float gridChunkStride = terrain ? (wi::terrain::chunk_width - 1) * terrain->chunk_scale : s_bakeGrassChunkStride;
+		GGGrass::GGGrass_SetChunkStride(gridChunkStride);
+		static wi::vector<uint64_t> dirtyChunks; // reused across frames; cleared per drain
+		dirtyChunks.clear();
+		if (GGGrass::GGGrass_TakeDirtyChunks(dirtyChunks))
+		{
+			grassDirty = true;
+			for (uint64_t key : dirtyChunks)
+			{
+				// Erase the tier record so ProcessGrassChunks sees a tier change and rebuilds it.
+				grassChunkKeyToTier.erase(key);
+				// GGMAX 3.112: baked, and painted onto a chunk that had no grass at bake time -
+				// give it an emitter now (one CreateRenderData) so the stroke shows straight away.
+				if (terrain == nullptr) PromoteBareGrassChunk(key);
+			}
+		}
+		// SET_GRASS knob changes still flow through the full-rebuild path. Populate/Clear
+		// Vegetation buttons (GGGrass_AddAll / GGGrass_RemoveAll) also raise this signal —
+		// they rewrite pGrassMap in bulk, which the per-chunk paint-invalidation pipeline
+		// never sees. Note TakeFullRebuildPending is take-and-clear, so we consume it every
+		// frame regardless of g_grassRebuildRequested's state.
+		bool bulkMapRewrite = GGGrass::GGGrass_TakeFullRebuildPending();
+		// GGMAX 3.112: Populate Vegetation while baked can put grass on any bare chunk.
+		if (bulkMapRewrite && terrain == nullptr) s_bakeGrassPromotePending = true;
+		if (g_grassRebuildRequested || bulkMapRewrite)
+		{
+			ForceGrassRebuild();
+			g_grassRebuildRequested = false;
+			grassDirty = true;
+		}
+		// Gate the chunk pass: tiers are a pure function of camera distance + chunk set +
+		// paint state. Skip unless one of those moved. Cache updates only when the pass
+		// runs, so chunk churn or camera drift during a grass-disabled stretch still
+		// triggers a pass on re-enable. SETTLE-GATE re-arm: while any chunk deferred its
+		// grass regrowth (entity still churning), retry every 10th frame so deferred growth
+		// can never be stranded by an unchanged signature.
+		static uint64_t s_grassSig = ~0ull;
+		static float s_grassCamX = 1e30f, s_grassCamZ = 1e30f;
+		static uint32_t s_grassSettleTick = 0;
+		const bool settleRetry = g_grassSettlePending && ((++s_grassSettleTick % 3) == 0);
+		const float gdx = camera.Eye.x - s_grassCamX;
+		const float gdz = camera.Eye.z - s_grassCamZ;
+		if (grassDirty || s_grassSig != chunkSig || settleRetry || g_grassPassNudge || (gdx * gdx + gdz * gdz) > (8.0f * 8.0f))
+		{
+			if (g_grassPassNudge)
+			{
+				g_grassPassNudge = false; // consumed (SET_GRASSLOD toggles re-evaluate AUTO tiers now)
+				g_grassTierShrinkPending = true; // boundaries may have pulled in — let downgrades through
+			}
+			ProcessGrassChunks(terrain, camera.Eye);
+			s_grassSig = chunkSig;
+			s_grassCamX = camera.Eye.x;
+			s_grassCamZ = camera.Eye.z;
+		}
+	}
+	wi::profiler::EndRange(rangeGM);
+}
+
 void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 {
 	// GGMAX 2.94: "Terrain Off" brutal off-switch, edge-triggered, placed before every other
@@ -3110,7 +3654,17 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 			s_noTerrainApplied = false;
 			GGTerrainWicked_Init();
 		}
-		if (gg_no_terrain) return;
+		if (gg_no_terrain)
+		{
+			// GGMAX 3.112: a Terrain Bake left grass emitters standing in for the chunks - keep the
+			// grass manager running on them (LOD rings follow the camera, Grass Off, paint, sliders).
+			// Plain Terrain Off (no bake) does not call it, as before.
+			// (Called with no emitters too: bare chunks are promoted from inside it when grass is
+			// painted, Populated or switched back on.)
+			if (::gg_terrain_bake)
+				UpdateWickedGrassManager(nullptr, camera, (uint64_t)s_bakeGrassEmitters.size());
+			return;
+		}
 	}
 	if (!wickedTerrainInitialised) return;
 	wi::terrain::Terrain* terrain = GetWickedTerrain();
@@ -3770,181 +4324,9 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		}
 	}
 
-	// Grass: set up the material/template once, then grow grass on chunks from the painted grass
-	// map. Runs after blendmap processing (generation already cancelled = safe to add entities).
-	// GGMAX 2.94: "Grass Off" brutal off-switch. Edge-triggered teardown then a hard skip of
-	// the whole grass manager. ForceGrassRebuild is the right primitive - it Entity_Remove's
-	// every per-type and merged hair and clears the three tracking maps, which returns the
-	// HairParticleSystem GPU buffers as well as stopping the per-strand simulate dispatch.
-	// NOT GGGrass_RemoveAll(): that zeroes all 16 MB of pGrassMap in place, so the level's
-	// PAINTED grass would be destroyed and the next save would write an empty .gra.
-	// Skipping SetupWickedGrass as well means the grass DDS blades are never even loaded.
-	{
-		// Edge-TRIGGERED both ways. The latch must be declared outside the `if` and cleared on
-		// the OFF->ON edge, or the switch is one-way: measured 2026-08-22, grass stayed gone
-		// after SET_GRASSOFF 0 and every later reading in that ladder was silently taken on a
-		// grass-free scene.
-		static bool s_ggNoGrassApplied = false;
-		if (gg_no_grass && !s_ggNoGrassApplied)
-		{
-			ForceGrassRebuild();          // remove what exists; never rebuilt while the flag holds
-			s_ggNoGrassApplied = true;
-		}
-		else if (!gg_no_grass && s_ggNoGrassApplied)
-		{
-			// Coming back on: clear the tier records so ProcessGrassChunks re-visits every chunk
-			// and regrows. ForceGrassRebuild already cleared the maps on the way out, but a chunk
-			// created WHILE grass was off has a stale tier entry and would be skipped.
-			grassChunkKeyToTier.clear();
-			// ...and NUDGE the pass. ProcessGrassChunks is gated on (grassDirty || chunkSig
-			// changed || settle retry || nudge || camera moved > 8 units). With a parked camera
-			// on a settled level NONE of those fire, so without this the switch is one-way:
-			// measured twice on 2026-08-22 before the nudge was added - grass never came back
-			// and every later reading in the ladder was silently taken on a grass-free scene.
-			g_grassPassNudge = true;
-			s_ggNoGrassApplied = false;
-		}
-	}
-	if (!wickedGrassSetup && !gg_no_grass)
-	{
-		SetupWickedGrass();
-	}
-	// Stage B.9: custom palette slot registered/cleared by the editor UI ("Add New Grass" /
-	// "Delete Grass"). Rebuild the appearance templates + clear cached materials for custom
-	// real_types so BuildGrassMaterial re-loads DDS on next lookup.
-	//
-	// Also blast grassChunkKeyToTier so ProcessGrassChunks re-visits every chunk on the next pass.
-	// This fixes two related bugs:
-	//   1. Delete + re-add with a DIFFERENT DDS on the same slot — existing hair entities cache a
-	//      snapshot of the OLD MaterialComponent, which persists even after we clear the material-
-	//      ready flag. Forcing a chunk-tier re-eval triggers the tier-change branch (fullReset =
-	//      true) so entities get destroyed and recreated with the fresh material.
-	//   2. Level reload where ProcessGrassChunks runs on frame N BEFORE the palette-sync (which is
-	//      in the ImGui render at end-of-frame). Frame N tries to build the custom material with a
-	//      null filename (sync not yet run), fails silently, but still records the chunk's tier —
-	//      frame N+1's dirty poll rebuilds appearances but the chunks stay skipped because their
-	//      tier hasn't changed. Clearing tier tracking forces the re-visit.
-	bool grassDirty = false;
-	if (GGGrass::GGGrass_TakeCustomSlotsDirty())
-	{
-		grassDirty = true;
-		g_grassAppearanceReady = false;
-		for (uint32_t t = GGGRASS_CUSTOM_REAL_TYPE_BASE; t < GGGRASS_TOTAL_REAL_TYPES; t++)
-			g_grassMaterialReady[t] = false;
-		BuildGrassAppearance();
-		ApplyGrassDrawDistance(); // sync viewDistance onto the newly-built custom appearances
-
-		// Invalidate all chunk tier tracking + delete any existing hair entities for CUSTOM
-		// real_types across every tracked chunk. Two-step because Phase 2's existing-entity branch
-		// short-circuits on "type still painted, entity exists" — so if we only cleared the tier
-		// map, existing entities would survive and keep their OLD material snapshot even after the
-		// slot's DDS changed. Removing the custom entities here forces Phase 2 to hit the CREATE
-		// branch, which calls BuildGrassMaterial with the freshly-registered filename.
-		//
-		// Stock entities (real_type 0..45) are left alone — their DDS never changed.
-		grassChunkKeyToTier.clear();
-		{
-			auto& scene = wi::scene::GetScene();
-			for (auto& kv : grassChunkKeyToGrassEntities)
-			{
-				for (uint32_t t = GGGRASS_CUSTOM_REAL_TYPE_BASE; t < GGGRASS_TOTAL_REAL_TYPES; t++)
-				{
-					wi::ecs::Entity e = kv.second.perType[t];
-					if (e != wi::ecs::INVALID_ENTITY)
-					{
-						if (scene.hairs.GetComponent(e))
-							scene.Entity_Remove(e);
-						kv.second.perType[t] = wi::ecs::INVALID_ENTITY;
-					}
-				}
-			}
-		}
-	}
-
-	// Grass Draw Distance slider → per-entity viewDistance. Detect slider movement and sync every
-	// live grass entity in one pass so dragging the slider in the editor pulls every cull radius
-	// along with it (rather than waiting for chunks to be rebuilt on camera move).
-	// Compare the EFFECTIVE distance, not the raw slider: under the low-VRAM cap the slider can
-	// move without the effective value changing, and re-applying then would be pure churn.
-	if (GGGrass_LodDistEffective() != g_grassPrevSliderInches)
-	{
-		ApplyGrassDrawDistance();
-	}
-
-	auto rangeGM = wi::profiler::BeginRangeCPU("TerrainW - Grass Maint");
-	// Grass Start/End Altitude sliders (+ underwater pair + water plane) → per-entity CB values
-	// consumed by the hair simulate CS altitude filter. Unconditional every frame — 4 float
-	// compares per entity is well under the noise floor next to the CB upload the shader path
-	// already does, and skipping the sync when values look unchanged would miss water-plane
-	// drift and edge cases where the entities were re-created since the last sync.
-	ApplyGrassAltitude();
-
-	// Grass Scale slider → per-entity `length`. Same rationale as the altitude sync: cheaper to
-	// always push than to track a "did the slider move?" flag and get it wrong on re-creation.
-	ApplyGrassScale();
-	// GGMAX 2.94: && !gg_no_grass - ProcessGrassChunks is the ONLY caller of scene.hairs.Create
-	// for grass, so this one condition is the difference between "grass exists" and "it never
-	// did". ApplyGrassAltitude/ApplyGrassScale above are left unguarded on purpose: they walk
-	// scene.hairs, which is EMPTY once the teardown above has run, so they cost nothing.
-	if (wickedGrassEnabled && !gg_no_grass)
-	{
-		// Editor paint mutates pGrassMap via GGGrass_Update_Painting. The Wicked grass renderer
-		// caches per-chunk hair entities and only rebuilds them on tier/entity changes — so it
-		// can't notice a paint stroke on its own. GGGrass tracks the *set* of chunk keys the
-		// brush footprint touched (not the bounding box of the whole stroke), so we only erase
-		// tier records for chunks the user actually painted into. Chunks the cursor merely passed
-		// over without writing keep their grass intact and don't reshuffle.
-		float gridChunkStride = (wi::terrain::chunk_width - 1) * terrain->chunk_scale;
-		GGGrass::GGGrass_SetChunkStride(gridChunkStride);
-		static wi::vector<uint64_t> dirtyChunks; // reused across frames; cleared per drain
-		dirtyChunks.clear();
-		if (GGGrass::GGGrass_TakeDirtyChunks(dirtyChunks))
-		{
-			grassDirty = true;
-			for (uint64_t key : dirtyChunks)
-			{
-				// Erase the tier record so ProcessGrassChunks sees a tier change and rebuilds it.
-				grassChunkKeyToTier.erase(key);
-			}
-		}
-		// SET_GRASS knob changes still flow through the full-rebuild path. Populate/Clear
-		// Vegetation buttons (GGGrass_AddAll / GGGrass_RemoveAll) also raise this signal —
-		// they rewrite pGrassMap in bulk, which the per-chunk paint-invalidation pipeline
-		// never sees. Note TakeFullRebuildPending is take-and-clear, so we consume it every
-		// frame regardless of g_grassRebuildRequested's state.
-		bool bulkMapRewrite = GGGrass::GGGrass_TakeFullRebuildPending();
-		if (g_grassRebuildRequested || bulkMapRewrite)
-		{
-			ForceGrassRebuild();
-			g_grassRebuildRequested = false;
-			grassDirty = true;
-		}
-		// Gate the chunk pass: tiers are a pure function of camera distance + chunk set +
-		// paint state. Skip unless one of those moved. Cache updates only when the pass
-		// runs, so chunk churn or camera drift during a grass-disabled stretch still
-		// triggers a pass on re-enable. SETTLE-GATE re-arm: while any chunk deferred its
-		// grass regrowth (entity still churning), retry every 10th frame so deferred growth
-		// can never be stranded by an unchanged signature.
-		static uint64_t s_grassSig = ~0ull;
-		static float s_grassCamX = 1e30f, s_grassCamZ = 1e30f;
-		static uint32_t s_grassSettleTick = 0;
-		const bool settleRetry = g_grassSettlePending && ((++s_grassSettleTick % 3) == 0);
-		const float gdx = camera.Eye.x - s_grassCamX;
-		const float gdz = camera.Eye.z - s_grassCamZ;
-		if (grassDirty || s_grassSig != chunkSig || settleRetry || g_grassPassNudge || (gdx * gdx + gdz * gdz) > (8.0f * 8.0f))
-		{
-			if (g_grassPassNudge)
-			{
-				g_grassPassNudge = false; // consumed (SET_GRASSLOD toggles re-evaluate AUTO tiers now)
-				g_grassTierShrinkPending = true; // boundaries may have pulled in — let downgrades through
-			}
-			ProcessGrassChunks(terrain, camera.Eye);
-			s_grassSig = chunkSig;
-			s_grassCamX = camera.Eye.x;
-			s_grassCamZ = camera.Eye.z;
-		}
-	}
-	wi::profiler::EndRange(rangeGM);
+	// GGMAX 3.112: the grass manager is its own function now, so a Terrain Bake can keep calling it
+	// after the terrain is gone (see the gg_no_terrain branch at the top of this function).
+	UpdateWickedGrassManager(terrain, camera, chunkSig);
 
 	// GGMAX 3.73: the tree pool update MOVED OUT to the caller (master_part1.cpp, same
 	// position in the frame and same profiler range). It was nested in here behind a
@@ -3966,6 +4348,10 @@ void GGTerrainWicked_Shutdown()
 		// (travel-churn / level-switch corruption, AMD DEVICE_HUNG). Generation_Restart joins it;
 		// this teardown never did - until 2.94 it had ZERO callers and had never been executed.
 		wi::terrain::gg_WaitVirtualTextureJob();
+		// ★ GGMAX 3.112: a Terrain Bake hands the grassy chunks' meshes to grass emitters and moves
+		// the grass onto them FIRST - the removal below is recursive and used to take every grass
+		// hair with it. Plain Terrain Off (no baked ground to stand on) still drops the grass.
+		if (::gg_terrain_bake) AdoptGrassEmittersForBake(terrain);
 		// Remove all chunk entities from the scene
 		for (auto& [chunk, chunk_data] : terrain->chunks)
 		{
@@ -3991,9 +4377,14 @@ void GGTerrainWicked_Shutdown()
 	// GGMAX 2.94: the GRASS tracking maps point at hair entities Component_Attach'ed to the chunks
 	// just removed. Entity_Remove is recursive so the hairs are already gone, but the maps would
 	// still hand dangling entity ids to ProcessGrassChunks on a later re-init.
-	grassChunkKeyToGrassEntities.clear();
-	grassChunkKeyToTier.clear();
-	grassChunkKeyToChunkEntity.clear();
+	// GGMAX 3.112: ...unless a bake just moved the grass onto its emitters - then the maps point at
+	// LIVE hairs on live emitters and are exactly what the grass manager needs to carry on.
+	if (s_bakeGrassEmitters.empty())
+	{
+		grassChunkKeyToGrassEntities.clear();
+		grassChunkKeyToTier.clear();
+		grassChunkKeyToChunkEntity.clear();
+	}
 
 	// ★ GGMAX 3.73: ONLY when the world really is going away.
 	//

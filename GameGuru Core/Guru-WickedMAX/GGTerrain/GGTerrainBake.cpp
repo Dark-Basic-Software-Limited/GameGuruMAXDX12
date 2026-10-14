@@ -80,6 +80,7 @@ float gg_terrain_bake_radius = 0.0f;
 // the 2.94 Terrain Off teardown, which this switch reuses verbatim once the bake is ready
 extern bool gg_no_terrain;
 extern void GGSetNoTerrainLevel( int );
+void GGTerrainWicked_ReleaseBakeGrass();   // GGTerrainWicked.cpp, GGMAX 3.112
 namespace GGTerrain { void GGCustomFrame_Bind( wi::graphics::CommandList cmd ); }
 
 namespace
@@ -324,6 +325,9 @@ void GGTerrainBake_Clear()
 	if ( g_toreDownTerrain )
 	{
 		g_toreDownTerrain = false;
+		// GGMAX 3.112: and the grass emitters the teardown left standing in for the chunks - a
+		// Completely Empty next level never reaches the Init that would otherwise release them.
+		GGTerrainWicked_ReleaseBakeGrass();
 		GGSetNoTerrainLevel( 0 );
 	}
 	g_chunks.clear();
@@ -834,10 +838,19 @@ void GGTerrainBake_Draw( const Frustum* frustum, CommandList cmd )
 // ---------------------------------------------------------------------------------------------
 // diagnostics
 // ---------------------------------------------------------------------------------------------
+void GGTerrainWicked_GetBakeGrassStats( int* pEmitters, int* pBare, int* pRehomed, int* pPromoted,
+	int* pLiveSystems, unsigned long long* pMeshBytes, float* pAdoptMs );
+
 const char* GGTerrainBake_Report()
 {
 	int withTex = 0;
 	for ( const BakedChunk& c : g_chunks ) if ( c.tex_ready ) withTex++;
+	// GGMAX 3.112: the grass the bake keeps alive on its grass emitters (GGTerrainWicked.cpp)
+	int grassEmitters = 0, grassBare = 0, grassRehomed = 0, grassPromoted = 0, grassLive = 0;
+	unsigned long long grassMeshBytes = 0;
+	float grassAdoptMs = 0.0f;
+	GGTerrainWicked_GetBakeGrassStats( &grassEmitters, &grassBare, &grassRehomed, &grassPromoted,
+		&grassLive, &grassMeshBytes, &grassAdoptMs );
 	_snprintf( g_report, sizeof( g_report ),
 		"TERRAIN BAKE\n"
 		"  switch            : %d   (shaders %s after %d attempts, ready %d)\n"
@@ -850,7 +863,9 @@ const char* GGTerrainBake_Report()
 		"  chunks textured   : %d   %s\n"
 		"  video memory      : %d KB  (%.1f MB)\n"
 		"  last frame        : %d draw calls, %d frustum-culled\n"
-		"  wicked terrain    : %s\n",
+		"  wicked terrain    : %s\n"
+		"  grass             : %d emitter chunks (%.1f MB of mesh) + %d bare (CPU copy), adopted in %.0f ms\n"
+		"                      %d systems moved at bake, %d bare chunks promoted since, %d systems live now\n",
 		gg_terrain_bake ? 1 : 0, g_shadersReady ? "ok" : "FAILED", g_shaderAttempts, g_ready ? 1 : 0,
 		(uint32_t)std::max( 32, std::min( 8192, gg_terrain_bake_res ) ),
 		(uint32_t)std::max( 32, std::min( 8192, gg_terrain_bake_res_near ) ),
@@ -865,7 +880,9 @@ const char* GGTerrainBake_Report()
 		withTex, ( withTex == (int)g_chunks.size() ) ? "" : "<-- MISMATCH, some chunks have no texture",
 		gg_terrain_bake_vram_kb, gg_terrain_bake_vram_kb / 1024.0f,
 		gg_terrain_bake_drawcalls, gg_terrain_bake_culled,
-		gg_no_terrain ? "TORN DOWN (bake is what you are seeing)" : "still live" );
+		gg_no_terrain ? "TORN DOWN (bake is what you are seeing)" : "still live",
+		grassEmitters, grassMeshBytes / ( 1024.0 * 1024.0 ), grassBare, grassAdoptMs,
+		grassRehomed, grassPromoted, grassLive );
 	g_report[sizeof( g_report ) - 1] = 0;
 	return g_report;
 }

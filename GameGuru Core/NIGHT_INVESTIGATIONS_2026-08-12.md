@@ -15654,3 +15654,77 @@ the DX11 stock thumbnails (Lee's 3.98 decision). Abalone shell (user content) fr
 maths on that item's bounds.
 
 ### LEE-CONFIRMED 3.111, 2026-10-12: "Works now" - DX12 thumbnail generation
+
+
+### 3.112 TERRAIN BAKE deleted every blade of grass - grass now survives the bake - 2026-10-14
+
+Lee (TESTPRO2 > DX12TESTLEVEL, a grass field): "When you use test level and tick the Bake Terrain option all the
+grass disappears." Reproduced in the editor and in Test Game: HAIR_SYSTEMS 22 -> 0 the moment the bake landed
+(FPS 137 -> 283 - so part of what looked like the bake's speed-up was the grass vanishing). Unticking brought it back.
+
+**Cause - the 3.73 tree pool's exact shape, twice over.** DX12 grass is one `wi::HairParticleSystem` per terrain
+chunk: it grows from the chunk's MeshComponent (`hair.meshID` = the chunk entity) and is `Component_Attach`'ed to
+the chunk. The bake reuses the 2.94 teardown, which `Entity_Remove`s every chunk - recursively, so every grass
+hair died with its chunk. And the grass manager lived inside `GGTerrainWicked_Update` below its `gg_no_terrain`
+early return, so nothing could grow it back while baked (it could not have found anything to grow on anyway: it
+finds chunks by walking `scene.objects`, and the bake leaves only raw GPU buffers).
+
+**Fix** (`GGTerrainWicked.cpp`, plus `GGGrass`, `GGTerrainBake.cpp`, `wickedcalls_part0.cpp`; game only, no engine change).
+Just before the teardown removes the chunks (generator and async VT job already joined), every chunk inside the
+editable area keeps what grass needs of it:
+- **A chunk with painted grass hands its MeshComponent to a GRASS EMITTER** - a MOVE, nothing allocated or
+  uploaded: a mesh-only "GGGrassEmitter" entity with a TransformComponent and NO ObjectComponent, so nothing draws,
+  culls or shadows it; it is only what the hair simulate reads its triangles from. The chunk's live grass is
+  re-parented onto it untouched - no regrow, no pop, 22 of 22 systems carried across. What only a drawn, picked or
+  re-created mesh needs is dropped: the CPU triangle BVH wiTerrain gives every chunk (~1.15 MB each - review round
+  1: kept, it was ~415 MB of system memory on this level) and the CPU UVs/tangents.
+- **A bare chunk keeps a CPU-only copy of its shape** (positions + normals, ~108 KB; the LOD0 topology is shared and
+  kept once), holding no video memory. Paint grass on it, or Populate, and it is PROMOTED to an emitter on the spot
+  (a lean mesh, one CreateRenderData, ~1 ms) - so painting while baked works everywhere, not just where grass was.
+- **The grass manager is its own function** (`UpdateWickedGrassManager`, lifted verbatim), called from the same
+  place as before on a live terrain and from the `gg_no_terrain` branch while a bake holds; `ProcessGrassChunks`
+  takes a null terrain then (emitters instead of chunk objects, the bake's chunk stride, no `Generation_Cancel`).
+  So while baked the LOD rings still follow the camera / player, and paint, Populate/Clear, the grass sliders and
+  Grass Off all keep working.
+- **Grass Off while baked** (the low-spec combination): an emitter's video memory is for the grass alone, so
+  Grass Off DEMOTES every emitter back to a CPU copy; grass back on promotes them again (24 a frame, nearest the
+  camera first). A bake that lands under Grass Off keeps only CPU copies. No re-bake, no terrain flash (round 1's
+  first answer re-baked here; review round 1 found that heavy and order-dependent).
+- **Released** wherever the bake ends: `GGTerrainBake_Clear` (untick, level load, Reset Visuals, the near-detail
+  slider) and `GGTerrainWicked_Init`. Review round 2: Init alone missed a baked level followed by a Completely Empty
+  one - empty levels never run the terrain update - which kept every emitter and hair alive indoors.
+- Picking grassy chunks uses a raw "any painted cell?" test (`GGGrass_RegionHasGrass`). The first version used
+  `GGGrass_ScanRegion`, whose Match Terrain Color auto-resolve does a height + material lookup per unresolved cell:
+  asked of all 361 chunks in one frame it froze the first bake for **4.4 s**. Now the whole adoption is ~40 ms.
+- The level-load BVH pass skips grass emitters (a level loaded while baked still has the old ones for a frame).
+- `DUMP_BAKE` has a grass block: emitters + MB of mesh, bare copies, adoption ms, systems moved at bake, chunks
+  promoted since, systems live now.
+
+**Review:** two rounds, four + three lenses, adversarial verify. Round 1: 5 survivors (the BVH; paint/Populate on
+bare chunks x3; the Grass Off re-bake firing for a grass-free level) - all fixed by the design above. Round 2: 1
+survivor (the Completely Empty release) - fixed. Refuted and recorded: the 24-a-frame promotion is ~20 ms a frame
+for ~15 frames after Grass Off / Populate (bounded, user-initiated); emitters whose chunk is cleared of grass hold
+their mesh until Grass Off or un-bake; moved emitters keep LOD1-6 CPU indices (~35 KB each).
+
+**Measured** (DESKTOP, exe `ec810e06465d704ff200479628d15045`, TESTPRO2 > DX12TESTLEVEL,
+`tools/harness/bake_grass_probe.sh`; ⚠ the harness's SYSTEM_MEM_MB is really KB - shown here in GB):
+
+| step | HAIR_SYSTEMS | VRAM MB | process GB | note |
+|---|---|---|---|---|
+| live terrain | 22 | 2723 | 5.99 | |
+| baked | 22 | 2564 | 4.87 | 361 emitters, 107.3 MB, 22 moved, adopted in 43 ms |
+| baked, camera moved 30000,30000 | 26 | 2477 | 4.88 | grass grew at the new spot (seaweed + shore grass) |
+| baked + Grass Off | 0 | 2477 | 4.25 | 0 emitters + 361 CPU copies |
+| Grass back on | 26 | 2477 | 4.75 | 361 promoted (66.7 MB), terrain stayed baked |
+| bake off / on / off | 22 / 22 / 22 | 2671 / 2512 / 2672 | 5.95 / 4.80 / 5.93 | released on untick; 361 adopted again |
+
+Test Game (Lee's repro): live 22 -> baked 22, grass on screen; ESC back to the editor still baked, 22. Level
+reload while baked: the bake clears, everything released, grass regrows on the live terrain. SCENE_MESHES
+1156 -> 892 baked (= -625 chunks +361 emitters).
+
+**Not tested by the harness:** painting grass onto a bare chunk while baked (the harness has no grass brush) -
+the promotion it calls is the same one Grass Off -> on exercises above.
+
+**Known, unchanged:** the bake is still a VRAM and memory win with the grass kept, but on this level the grass
+itself is most of the frame (~1M strands; Grass Off = 151 -> 272 FPS) - Grass Off is the lever for that.
+Unticking the bake drops the baked ground before the live terrain has regenerated (pre-existing).

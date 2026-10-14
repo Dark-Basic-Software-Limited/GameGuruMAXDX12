@@ -726,6 +726,32 @@ void GGGrass_ScanRegion( float minX, float minZ, float maxX, float maxZ, bool* t
 	}
 }
 
+bool GGGrass_RegionHasGrass( float minX, float minZ, float maxX, float maxZ )
+{
+	if ( !gggrass_initialised || !pGrassMap ) return false;
+	const float editableSize = ggterrain_global_render_params2.editable_size;
+	if ( editableSize <= 0.0f ) return false;
+	// the same cell mapping and clamping as GGGrass_ScanRegion, so the two can never disagree
+	const float invWorld = 0.5f / editableSize;
+	auto worldToCell = [&]( float w ) -> int { return (int)floorf( ( w * invWorld + 0.5f ) * GGGRASS_MAP_SIZE ); };
+	int x0 = worldToCell( minX ), x1 = worldToCell( maxX );
+	int z0 = worldToCell( minZ ), z1 = worldToCell( maxZ );
+	if ( x0 < 0 ) x0 = 0;
+	if ( z0 < 0 ) z0 = 0;
+	if ( x1 >= GGGRASS_MAP_SIZE ) x1 = GGGRASS_MAP_SIZE - 1;
+	if ( z1 >= GGGRASS_MAP_SIZE ) z1 = GGGRASS_MAP_SIZE - 1;
+	for ( int z = z0; z <= z1; z++ )
+	{
+		const uint8_t* row = &pGrassMap[ z * GGGRASS_MAP_SIZE ];
+		for ( int x = x0; x <= x1; x++ )
+		{
+			const uint8_t v = row[ x ];
+			if ( v != 0 && !( v & 0x80 ) ) return true;   // ScanRegion's own "empty or flattened" skip
+		}
+	}
+	return false;
+}
+
 bool GGGrass_TakePendingMapUpload()
 {
 	if ( !s_gggrass_map_upload_pending ) return false;

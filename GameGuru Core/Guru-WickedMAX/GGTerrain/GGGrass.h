@@ -108,6 +108,12 @@ namespace GGGrass
 	// can schedule a texGrassMap re-upload once per frame.
 	void GGGrass_ScanRegion( float minX, float minZ, float maxX, float maxZ, bool* typesSeen );
 
+	// GGMAX 3.112: does any cell in this world rectangle hold painted grass? A pure read - no
+	// auto-resolve, no rewrite, returns at the first hit. For callers that only need yes/no over a
+	// lot of area at once (the Terrain Bake grass emitters ask it of every chunk in one frame,
+	// where ScanRegion's per-cell Match Terrain Color resolve cost 4.4 s on the first bake).
+	bool GGGrass_RegionHasGrass( float minX, float minZ, float maxX, float maxZ );
+
 	// Take-and-clear: true if ScanRegion rewrote at least one pGrassMap cell since the last call.
 	// The Wicked hair simulate CS samples texGrassMap for per-strand visibility, so any in-place
 	// rewrite must be followed by a GGGrass_UploadGrassMap() or the shader keeps sampling stale
