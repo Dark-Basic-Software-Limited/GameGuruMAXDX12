@@ -15728,3 +15728,5 @@ the promotion it calls is the same one Grass Off -> on exercises above.
 **Known, unchanged:** the bake is still a VRAM and memory win with the grass kept, but on this level the grass
 itself is most of the frame (~1M strands; Grass Off = 151 -> 272 FPS) - Grass Off is the lever for that.
 Unticking the bake drops the baked ground before the live terrain has regenerated (pre-existing).
+
+### LEE-CONFIRMED 3.112, 2026-10-14: "Grass confirmed working" - Terrain Bake keeps the grass
