@@ -86,6 +86,16 @@ Test scripts: `tools/baketest.sh`, `bakestress.sh`, `bakeres.sh`, `baketier.sh`,
   one frame it froze 4.4 s; use the raw GGGrass_RegionHasGrass. ⚠ Completely Empty levels never run
   GGTerrainWicked_Update, so per-bake state must be released from GGTerrainBake_Clear, not only Init.
 
+- ★★★ **Baked vs live COLOUR (3.113, 2026-10-14).** Bake normal is packed n*0.5+0.5 in R8G8B8A8_UNORM and
+  was never unpacked (flat ground lit as if tilted 35 deg) - plus SSAO / probe ambient / full sun / live material
+  (GG_OPT_BAKE_* bits in ggCustomFrame.ggOptions). ★ The LIVE terrain was wrong too: GG's DX11-style auto-blend
+  writes SPLAT weights (sum 1) but Wicked's compositor is a DECAL/opacity stack (stock keeps base = 1) - blended
+  ground up to 25% dark and BC5 normals collapsed toward (-1,-1). Fixed with an engine splat-average mode
+  (wi::terrain::gg_splat_blend, gg_tile_share bit 0); a per-vertex opacity CONVERSION is not enough (bilinear
+  sampling of the per-vertex blendmap interpolates opacities non-linearly). ★ The engine's SET_TANGENTVIS lighting
+  views encode c/(1+c) and SATURATE on a bright sun - use views 25/26/27 (final-colour summands). ⚠ Invalidating
+  every chunk VT at once crashed WritebackTileRequestsGPU - use GGResetTerrainChunks.
+
 ## Measured (fast card — the target is Lee's AMD)
 
 | | |
