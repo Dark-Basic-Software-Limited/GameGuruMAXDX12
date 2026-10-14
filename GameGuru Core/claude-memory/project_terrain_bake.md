@@ -75,6 +75,17 @@ Test scripts: `tools/baketest.sh`, `bakestress.sh`, `bakeres.sh`, `baketier.sh`,
   Now saved as `visuals.Wateralpha`; default stays 0 because it feeds the real ocean.
 - Resolution is a **memory** dial, not a frame-time one: 193/197/190 FPS at 256/512/1024.
 
+- ★★★ **… and what HANGS OFF the components it removes.** (3.112, 2026-10-14) Every DX12 grass hair grows
+  from a terrain chunk's MeshComponent and is Component_Attach'ed to it, so the bake's recursive chunk removal
+  deleted ALL grass (HAIR_SYSTEMS 22 -> 0; part of the bake's "speed-up" was the grass vanishing), and the grass
+  manager sat below GGTerrainWicked_Update's early return - the 3.73 shape again. Fix: grassy editable chunks MOVE
+  their mesh to mesh-only "GGGrassEmitter" entities (no ObjectComponent; hairs re-parented, untouched), bare chunks
+  keep CPU copies promoted on paint/Populate/grass-on, Grass Off demotes. ⚠ A moved chunk mesh carries a CPU
+  triangle BVH of ~1.15 MB (wiTerrain builds one per chunk) - drop it, or 361 emitters = ~415 MB RAM.
+  ⚠ GGGrass_ScanRegion's Match-Terrain-Color auto-resolve is a height+material lookup PER CELL - over a whole map in
+  one frame it froze 4.4 s; use the raw GGGrass_RegionHasGrass. ⚠ Completely Empty levels never run
+  GGTerrainWicked_Update, so per-bake state must be released from GGTerrainBake_Clear, not only Init.
+
 ## Measured (fast card — the target is Lee's AMD)
 
 | | |
