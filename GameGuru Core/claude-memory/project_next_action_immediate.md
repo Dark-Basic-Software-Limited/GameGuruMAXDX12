@@ -5,10 +5,13 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 9a28c586-4c13-4447-916e-7fb51301bfa8
-  modified: 2026-10-15T13:30:00.000Z
+  modified: 2026-10-15T17:00:00.000Z
 ---
 
-# ▶▶ RESUME HERE — 2026-10-15: TERRAIN BAKE FIXES WITH LEE (3.112 + 3.113 confirmed; next: Lee's next bake issue)
+# ▶▶ RESUME HERE — 2026-10-15 evening: 3.114 DX11 HORIZON awaiting Lee; then the BAKED-TERRAIN BLUR up close
+2026-10-15: Lee: "Colour confirmed working" (3.113). EXE vanished overnight (cause unknown; rebuilt). Lee then asked "fix the baked terrain blurriness up close" - investigated + designed (`~/ggmax_harness_out/bakeblur/design_detail.txt`; cheap win: bake PS samples via unbound s1 trilinear -> use sampler_aniso_clamp s106) - NOT implemented, because Lee then sent DX11 vs DX12 shots: the distant mountain is missing in DX12. **3.114** (game commit after `7d8a52ae`, engine `3ec15721`): far-terrain field from the legacy clipmap past the live ring ([[project-far-terrain]]) + the engine fog curve fixed to DX11's ([[project-fog-two-paths]] - changes distant haze on EVERY default level, fog start 40000; `fogdx11curve=0` reverts). Cost +0.63 ms (0.24 without reflection). Review workflow: 10 confirmed findings, all fixed. Checklist 244, notes §3.114. **Next:** Lee tests 3.114; then implement the blur fix (aniso sampler first, then the near-field detail layer design).
+
+## Earlier 2026-10-15: TERRAIN BAKE FIXES WITH LEE (3.112 + 3.113 confirmed)
 2026-10-14: Lee opened a TERRAIN BAKE round ("let us fix that first" = more bake issues to follow). New level TESTPRO2 > DX12TESTLEVEL (a grass field; node name DX12TESTLEVEL - open_project_level.sh TESTPRO2 DX12TESTLEVEL). 3.112 (`5d974f91`, game only): ticking Terrain Bake deleted all grass - grass emitters (moved chunk meshes) + bare-chunk CPU copies, promote/demote with Grass Off, released from GGTerrainBake_Clear + Init; probe tools/harness/bake_grass_probe.sh. Lee-confirmed 10-14 ("Grass confirmed working"). 3.113 (game `6ec90a55`, engine `c81d3fed`) LEE-CONFIRMED 10-15 ("Colour confirmed working"; splat blend stays ON): baked colour fixed (bake normal never unpacked + SSAO/probe ambient/full sun/live material, GG_OPT_BAKE_* SET_BAKESHADING) AND the LIVE terrain blend (GG splat weights were stacked as opacities: blended ground up to 25% dark, normals tilted) -> engine splat mode, setup.ini terrainsplatblend=0 reverts. Lee accepted the brighter blended live terrain. Tools: bake_colour_probe.sh, bake_component_probe.sh (SET_TANGENTVIS 25-27 = final-colour summands). Untick still drops the baked ground before the live terrain regenerates (pre-existing).
 
 2026-10-12 evening: 3.111 (`3cfc32b4`, game only) DX12 thumbnail GENERATION restored - readback of the live preview (GGThumbGen in M-GridEditB_part7.cpp); also the group-snapshot latch and the thumb-light/bloom leak. Lee-confirmed 2026-10-12 ("Works now"). Next: Lee's next issue. Test files in Documents thumbbank listed in notes 3.111 (Lee cleans up).

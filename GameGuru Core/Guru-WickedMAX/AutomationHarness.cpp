@@ -6476,6 +6476,44 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "TERRAIN_FAR") == 0)
+	{
+		extern const char* GGTerrainFar_Report();
+		_snprintf(result, resultSize, "%s", GGTerrainFar_Report());
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_TERRAINFAR") == 0 || _stricmp(cmd, "SET_TERRAINFAR_TREES") == 0 ||
+		_stricmp(cmd, "SET_TERRAINFAR_DEBUG") == 0 || _stricmp(cmd, "SET_TERRAINFAR_SINK") == 0 ||
+		_stricmp(cmd, "SET_TERRAINFAR_REFLECT") == 0)
+	{
+		// GGMAX 3.114 far terrain knobs - all read at draw time, so they apply next frame.
+		extern bool gg_terrain_far, gg_terrain_far_trees, gg_terrain_far_reflect;
+		extern int gg_terrain_far_debug;
+		extern float gg_terrain_far_sink;
+		if (arg && arg[0])
+		{
+			if (_stricmp(cmd, "SET_TERRAINFAR") == 0) gg_terrain_far = atoi(arg) != 0;
+			else if (_stricmp(cmd, "SET_TERRAINFAR_TREES") == 0) gg_terrain_far_trees = atoi(arg) != 0;
+			else if (_stricmp(cmd, "SET_TERRAINFAR_DEBUG") == 0) gg_terrain_far_debug = atoi(arg);
+			else if (_stricmp(cmd, "SET_TERRAINFAR_REFLECT") == 0) gg_terrain_far_reflect = atoi(arg) != 0;
+			else gg_terrain_far_sink = (float)atof(arg);
+		}
+		_snprintf(result, resultSize, "OK: %s - far %d, trees %d, reflect %d, debug %d (1 tint, 2 coverage, 3 levels), sink x%.2f",
+			cmd, gg_terrain_far ? 1 : 0, gg_terrain_far_trees ? 1 : 0, gg_terrain_far_reflect ? 1 : 0, gg_terrain_far_debug, gg_terrain_far_sink);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_FOGCURVE") == 0)
+	{
+		// GGMAX 3.114: 1 = DX11 fog curve (optical depth past the fog start only; default), 0 = the stock
+		// engine curve. Frame-wide bit read by the engine fog AND GG's ApplyFogCustom - live next frame.
+		if (arg && arg[0]) wi::renderer::gg_dx11_fog_curve = atoi(arg) != 0;
+		_snprintf(result, resultSize, "OK: SET_FOGCURVE - now %d (1 = DX11 curve past fog start, 0 = stock engine curve)",
+			wi::renderer::gg_dx11_fog_curve ? 1 : 0);
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_TERRAINSPLATBLEND") == 0)
 	{
 		// GGMAX 3.113: 1 = the terrain compositor AVERAGES GG's splat blend weights (default); 0 = the

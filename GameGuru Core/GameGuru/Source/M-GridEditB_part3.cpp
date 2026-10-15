@@ -1428,6 +1428,8 @@ void Wicked_Update_Shadows(void *voidvisual)
 // Map GG's fog settings onto the new engine's exponential fog. The old API's
 // fogEnd was REMOVED in favour of fogDensity — Wicked's exponential fog
 // (fogHF.hlsli) matches the DX11 curve with density = 4 / (far - near).
+// ★ GGMAX 3.114: it only did when near was 0 - the stock engine integrated from the camera once
+// past 2 x near; fogHF.hlsli now integrates past fogStart only, as DX11 did, for every near.
 //
 // SKY FIX 2026-07-31 (engine delta 1.65): the fog COLOUR model is now DX11-parity
 // inside fogHF.hlsli — realistic sky fogs toward the per-direction horizon sky

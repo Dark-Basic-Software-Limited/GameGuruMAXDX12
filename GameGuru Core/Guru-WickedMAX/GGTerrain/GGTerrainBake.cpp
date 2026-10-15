@@ -355,6 +355,24 @@ bool GGTerrainBake_Ready()
 	return g_ready;
 }
 
+// GGMAX 3.114: the baked chunk set, for the far terrain's coverage mask (GGTerrainFar.cpp) - the
+// far field must stop exactly where the baked ground does, and the baked set does not follow the
+// camera the way the live ring does.
+int GGTerrainBake_GetChunkCoords( int* outXZ, int maxPairs )
+{
+	if ( !g_ready || outXZ == nullptr ) return 0;
+	int n = 0;
+	for ( const BakedChunk& c : g_chunks )
+	{
+		if ( !c.vb.IsValid() || !c.tex_ready ) continue;
+		if ( n >= maxPairs ) break;
+		outXZ[ 2 * n ] = c.cx;
+		outXZ[ 2 * n + 1 ] = c.cz;
+		n++;
+	}
+	return n;
+}
+
 // ---------------------------------------------------------------------------------------------
 // main thread: build the meshes and create the textures
 // ---------------------------------------------------------------------------------------------

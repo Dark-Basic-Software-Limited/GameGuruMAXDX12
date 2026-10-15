@@ -14,6 +14,7 @@
 #include "GGTerrain/GGTrees.h"
 #include "GGTerrain/GGTerrainBake.h" // GGMAX 3.25
 #include "GGTerrain/GGWaterBake.h"   // GGMAX 3.25
+#include "GGTerrain/GGTerrainFar.h"   // GGMAX 3.114
 #include "GGTerrain/GGGrass.h"
 #include "tracers/TracerManager.h"
 #include "AutomationHarness.h"
@@ -192,6 +193,8 @@ bool GuruLoopLogic ( void )
 					GGTerrainBake_Init();
 					timestampactivity(0, "GGWaterBake_Init();");
 					GGWaterBake_Init();
+					timestampactivity(0, "GGTerrainFar_Init();");
+					GGTerrainFar_Init();   // GGMAX 3.114: same reason - a lazy load after the CWD move never finds the .cso
 				}
 				#endif
 

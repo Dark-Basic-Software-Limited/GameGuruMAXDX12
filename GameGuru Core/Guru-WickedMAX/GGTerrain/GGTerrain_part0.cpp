@@ -25,6 +25,7 @@
 #ifdef OPTICK_ENABLE
 #include "optick.h"
 #endif
+#include "GGTerrainFar.h"   // GGMAX 3.114: the far field draws this clipmap's outer levels
 
 // Externl for debugging
 extern void timestampactivity (int i, char* desc_s);
@@ -11191,6 +11192,54 @@ extern "C" void GGTerrain_Draw_Prepass( const Frustum* frustum, CommandList cmd 
 #endif
 }
 
+// GGMAX 3.114: FAR TERRAIN (GGTerrainFar.cpp) draws this clipmap - DX11's own terrain, still
+// generated every frame in DX12 - beyond the live Wicked chunk ring. ★ This hands out the CURRENT
+// LOD set only, with the exact visibility rule GGTerrain_Draw_Prepass above used: a chunk still
+// generating is skipped (its buffers are being filled on a worker into the OTHER set's swap), and
+// an outer level's hidden centre stays hidden unless the finer level under it is still generating.
+// ⚠ NEW LIVE DEPENDENCY: the VRAM follow-ups that treat these 576 legacy chunk buffers as dead
+//   weight (VRAM_FLOOR.md) would now delete the DX11 horizon - the far field needs levels whose
+//   footprint can leave the live ring.
+int GGTerrain_GetFarDrawChunks( GGFarChunkRef* out, int maxOut, float* pReach, float* pSegBase, uint32_t* pLevels )
+{
+	if ( pReach ) *pReach = 0;
+	if ( pSegBase ) *pSegBase = 0;
+	if ( pLevels ) *pLevels = 0;
+	if ( !ggterrain_initialised || !ggterrain.IsValid() ) return 0;
+	GGTerrainLODSet* pCurrLODs = ggterrain.GetCurrentLODs();
+	if ( !pCurrLODs || !pCurrLODs->IsValid() || !pCurrLODs->pLevels ) return 0;
+	const uint32_t numLevels = pCurrLODs->GetNumLevels();
+	if ( numLevels == 0 ) return 0;
+	const uint32_t numSegments = ggterrain_local_params.segments_per_chunk;
+	if ( pLevels ) *pLevels = numLevels;
+	if ( pSegBase ) *pSegBase = pCurrLODs->pLevels[ 0 ].segSize;
+	if ( pReach ) *pReach = pCurrLODs->pLevels[ numLevels - 1 ].segSize * numSegments * 4.0f;   // 8x8 chunks: half = 4
+	if ( out == nullptr || maxOut <= 0 ) return 0;
+	const uint32_t numIndices = ( numSegments * 2 + 3 ) * numSegments - 1;
+	int n = 0;
+	for ( uint32_t lod = 0; lod < numLevels; lod++ )
+	{
+		for ( uint32_t i = 0; i < 64; i++ )
+		{
+			GGTerrainChunk* pChunk = pCurrLODs->pLevels[ lod ].chunkGrid[ i ];
+			if ( !pChunk || pChunk->IsGenerating() ) continue;
+			if ( !pChunk->IsVisible() )
+			{
+				if ( lod == 0 || !pCurrLODs->pLevels[ lod - 1 ].IsGenerating() ) continue;
+			}
+			if ( !pChunk->vertexBuffer.IsValid() || !pChunk->indexBuffer.IsValid() ) continue;
+			if ( n >= maxOut ) return n;
+			out[ n ].vb = &pChunk->vertexBuffer;
+			out[ n ].ib = &pChunk->indexBuffer;
+			out[ n ].aabb = *pChunk->GetBounds();
+			out[ n ].lod = lod;
+			out[ n ].numIndices = numIndices;
+			n++;
+		}
+	}
+	return n;
+}
+
 #define GGTERRAIN_REFLECTION_LOWEST_LOD 2
 
 // must be extern "C" to allow /alternatename linker flag to be set correctly
@@ -12164,11 +12213,25 @@ float GG_GetTerrainViewRadius()
 		// scattered trees across empty sky beyond the ground's edge. Report the radius the real
 		// terrain had when it was baked, so the trees behave identically either way.
 		extern float gg_terrain_bake_radius;
+		// GGMAX 3.114: and the far terrain continues past a baked ring too
+		if ( gg_terrain_bake_radius > 0 && gg_terrain_far_trees )
+		{
+			const float farReach = GGTerrainFar_GetReach();
+			if ( farReach > gg_terrain_bake_radius ) return farReach;
+		}
 		return gg_terrain_bake_radius;
 	}
 	const wi::terrain::Terrain& tr = sc.terrains[ 0 ];
 	const float chunkU = (float)( wi::terrain::chunk_width - 1 ) * tr.chunk_scale;
-	return (float)tr.generation * chunkU;
+	const float ring = (float)tr.generation * chunkU;
+	// GGMAX 3.114: with the far terrain drawing the DX11 horizon there IS ground past the ring, so
+	// the billboards may fill the tree area as DX11's did (setup.ini terrainfartrees=0 keeps the ring).
+	if ( gg_terrain_far_trees )
+	{
+		const float farReach = GGTerrainFar_GetReach();
+		if ( farReach > ring ) return farReach;
+	}
+	return ring;
 }
 
 // GGMAX 2.96: GLOBAL-SCOPE shim so GGTrees can reuse this DDS-into-array-slice loader.

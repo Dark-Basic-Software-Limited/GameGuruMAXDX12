@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 9a28c586-4c13-4447-916e-7fb51301bfa8
-  modified: 2026-09-20T13:15:54.018Z
+  modified: 2026-10-15T17:00:00.000Z
 ---
 
 # Two fog implementations, one scene
@@ -58,3 +58,16 @@ The COLOUR path was already correct: GG's realistic-sky branch reaches the same 
 - Repro level: **TESTPRO2 / `testpro2desertlevel2`** (storyboard node of the same name — `CLICK_NODE
   testpro2desertlevel2`, NOT `CLICK_ONLY_LEVEL`, which picks `testpro2level`). Script
   `tools/fogsync_check.sh`.
+
+## 3.114 (2026-10-15): the ENGINE curve was the wrong one - DX11 curve now, behind a frame bit
+
+3.72 chose to mirror the engine's curve and noted it diverges from DX11's for fogStart > 0. That
+divergence mattered more than it looked: **40000 is the DEFAULT GameGuru fog start**
+(`visuals_resetvalues`), and the engine integrates from the camera once past 2 x start
+(`density * saturate((d-start)/start) * d`) where DX11 (objectHF ApplyFog AND ApplyFogCustom) used
+`density * (d - start)`. So every default level was hazier far away than DX11; the restored horizon
+mountain on DX12TESTLEVEL read as a pale silhouette (42% fog vs DX11 26%). Engine `3ec15721`:
+`OPTION_BIT_GG_DX11_FOG_CURVE` (1<<27, `wi::renderer::gg_dx11_fog_curve`, default ON) switches
+`GetFogAmount`'s plain branch to DX11's curve; `GGEngineFogAmount` mirrors the SAME bit, so the two
+paths still agree either way. setup.ini `fogdx11curve=0` / harness `SET_FOGCURVE 0` = old look
+(pixel-identical, checked). Height-fog branch untouched (GG never enables it). [[project-far-terrain]]

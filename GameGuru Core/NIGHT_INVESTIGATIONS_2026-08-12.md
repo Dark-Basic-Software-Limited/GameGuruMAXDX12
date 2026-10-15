@@ -15821,3 +15821,98 @@ flat-only GetAmbient and never got the probe ambient either - a separate pass.
 ### LEE-CONFIRMED 3.113, 2026-10-15: "Colour confirmed working" - baked terrain colour matches the live terrain; live terrain splat blend kept ON (terrainsplatblend default 1)
 
 The EXE had vanished from the build area overnight (`.pdb`/`.map` of the 20:49 build intact, no Defender detection); rebuilt from `6ec90a55` + engine `c81d3fed`, exe `9317b461da2c7453d2d130b94f47c759`, reached the hub. Cause unknown - if it recurs, check antivirus history first.
+
+### 3.114 The DX11 horizon: a far-terrain field past the live ring - and the fog curve that hid it - 2026-10-15
+
+Lee, with a DX12 and a DX11 shot of DX12TESTLEVEL from the same editor view: "the distant mountain that
+renders in DX11 does not render in DX12 ... Increase the terrain chunk distance so we render that distant
+mountain, we need as close to 100% parity with the DX11 experience if we are to win over existing users."
+
+**Why not the chunk distance.** The live terrain is Wicked's camera-centred ring - 25 x 25 chunks of 5280
+units, radius ~63,360 (1.6 km). DX11 drew terrain to its 500,000-unit far plane (12.7 km); the mountain is
+~85-95k out. The ring is quadratic: the setup.ini maximum reaches only 3.2 km for ~3 ms/frame and the whole
+4 GB VRAM headroom, and parity would need ~36,000 chunk entities.
+
+**What instead.** DX12 still generates DX11's own terrain every frame: the legacy GGTerrain clipmap (9 LOD
+levels x 64 chunks, vertex spacing doubling per level, camera-following, the same height function) - only
+its draw was gated off. New module `GGTerrain/GGTerrainFar.cpp/.h` + `Shaders/GGTerrainFar{Common.hlsli,VS,PS,
+PrepassPS}.hlsl` draws that clipmap's chunks wherever the live (or baked) chunks are not:
+- **Coverage mask** (64 x 64 bits, cbuffer b5): which chunk cells hold live ground this frame - from the MAIN
+  scene's `FILTER_TERRAIN` objects (renderable, with a mesh, inside their draw distance), or from the bake's
+  chunk list under a Terrain Bake (`GGTerrainBake_GetChunkCoords`).
+- **VS sink:** a far vertex standing on a covered cell drops by segBase x 2^lod, so the live chunk wins the
+  depth test and the far triangles leaving the ring edge form a skirt. **Both PS discard** when the cell and
+  its 8 neighbours are covered (identical test, shared hlsli). CPU twin `ChunkHidden` skips whole chunks
+  (282 of 448 here). No cracks found at the ring edge (`SET_TERRAINFAR_DEBUG 1/2/3` = tint / coverage /
+  clipmap levels).
+- **Albedo:** GG's height/slope layer rule per pixel (base -> layer 0 low -> layer 1 -> layers 2-4 high ->
+  slopes), sampling the live terrain's OWN five Color.dds files (resource-manager cache hits, held so they
+  survive a bake) at the live tiling. **Lighting + fog:** as the 3.113 bake PS (decoded normal, SSAO, probe
+  ambient, full sun, f0 0.005) + ApplyFogCustom.
+- Tree billboards follow the far reach (`GG_GetTerrainViewRadius`); planar reflection drawn too (DX11 did).
+- Startup init beside GGTerrainBake_Init (the relative shader path dies with the CWD move - the first run
+  said "shaders NOT LOADED after 601 attempts"). The legacy `texColorArray` was the first colour source and
+  cannot be: it only exists once `GGTerrain_EnsurePageAtlas` has allocated the 1.3 GB legacy page atlas.
+
+**The fog curve was the other half.** With the field drawing, the mountain was a pale blue-grey silhouette
+where DX11's is green with relief: mean colour (102,128,137) against DX11 (95,117,120), half DX11's contrast.
+`SET_FOGDENS 0` showed olive ground under trees - the surface was right, the haze was not. This level's fog:
+near 40000, far 700000 (density 4/660000). DX11 (engine objectHF ApplyFog AND GG ApplyFogCustom) fogged
+`exp(-(d - near) * 4/(far - near))`; the DX12 engine's GetFogAmount integrates from the CAMERA once past
+2 x start (`density * saturate((d - start)/start) * d`) - so at the mountain 42% fog against DX11's 26%.
+Identical only when start is 0, and **40000 is the DEFAULT fog start of a GameGuru level**
+(visuals_resetvalues) - so every default level has been hazier in the distance than DX11 since the port.
+Engine `fogHF.hlsli` now uses DX11's curve behind a new frame bit `OPTION_BIT_GG_DX11_FOG_CURVE` (bit 27,
+`wi::renderer::gg_dx11_fog_curve`, default ON); GG's mirror `GGEngineFogAmount` follows the same bit (the 3.72
+rule: one curve for engine and custom draws). Result: mountain (90,112,112), contrast up; the near hill
+moved toward DX11 too. `SET_FOGCURVE 0` reproduces the old pixels exactly (checked to the decimal).
+
+**Measured** (DESKTOP RX 9060 XT, 1536x801 viewport, DX12TESTLEVEL default view, interleaved FPS A/B):
+
+| configuration | FPS | ms/frame |
+|---|---|---|
+| far terrain off | 134.1 | 7.459 |
+| far terrain on, not in the reflection | 129.9 | 7.699 (+0.24, of which far tree billboards ~0.13) |
+| far terrain on (default) | 123.7 | 8.085 (+0.63) |
+
+Profiler: main prepass 0.07 + colour 0.05 ms; reflection prepass 0.20 + colour 0.21 ms; CPU update 0.12 ms.
+**The reflection share is not shading** - `SET_TERRAINFAR_DEBUG 9` (flat colour straight after the discard)
+gives the same FPS. This level's planar reflection is 1024 x 534 at **4x MSAA** (2.2M samples, more than
+the main view); the engine's own Planar Reflections pass already costs more than its Opaque Scene. Two
+attempts to cut it failed (a single depth-writing reflection pass: -0.03 ms; back-face culling of the far
+field's underside: nothing). `terrainfarreflect=0` / `SET_TERRAINFAR_REFLECT 0` drops it. Back-face culling
+stayed (correct either way); the reflection camera FLIPS the winding - with the main winding the far field
+vanished from the water - so the reflection has its own PSO pair, as the legacy code kept rastState2.
+
+**Adversarial review (8 agents, 13 findings, 10 confirmed, all fixed):**
+1. The mask walked `terrain->chunks` while Wicked's generator job inserts into that map on a worker, no
+   lock (robin-hood moves, rehash frees) -> mask from main-scene `FILTER_TERRAIN` objects instead.
+2. It ran before `Scene::Update`, whose own `Generation_Update` merges/removes chunks -> the mask is now
+   built after `__super::Update` (`GGTerrainFar_RequestUpdate` at the bridge site flags the frame, so an
+   empty level / the standalone saver stay inactive).
+3. One shared chunk scratch filled by four parallel render jobs -> a main-thread snapshot the jobs only read.
+4. Object Detail Distance caps terrain chunks too (they dither out past draw_distance) but they still counted
+   as ground -> a chunk past its draw distance now leaves its cell to the far field. Before 3.114 those
+   cells were SKY; now the far field fills them (flatter texture, small shoreline steps at clipmap level
+   boundaries - an opt-in perf knob, default off).
+5. The Color.dds keys kept the exe dir's trailing separator where GGTerrainWicked pops it -> every "cache
+   hit" was a second copy in VRAM (~28 MB). Fixed byte-identical.
+6. The colour maps outlived the field (per-level value in a global) -> released after 3 idle frames.
+7. In the reflection the far field drew AFTER billboards and the bake, which have no reflection prepass and
+   write no depth -> it painted over them. Far terrain now goes first in the reflection.
+Plus: the fogHF comment's "start 0 is the usual setting" was false (see above) - the reason the fog switch exists.
+
+**Seen, not this change:** under a Terrain Bake the baked ground is not drawn into the water reflection
+(with the far field off the lake mirrors only sky; with it on, the distant terrain behind) and a black band
+runs along the far shore of the DX12TESTLEVEL lake - both present with the far field off. Test Game's
+terrain preset gives the clipmap half the reach (262k) - still far past the mountain.
+
+**Known, not done:** the far field lights from vertex normals (DX11's virtual texture carried per-pixel
+relief, so DX11's distant ridges read a little crisper); painted materials beyond the ring; no shadows or
+env-probe pass for the far field; the legacy clipmap's inner levels are generated and resident but never
+drawn (~58 MB of buffers, as before).
+
+Switches: setup.ini `terrainfar`, `terrainfartrees`, `terrainfarreflect`, `fogdx11curve` (all default 1).
+Harness: `TERRAIN_FAR`, `SET_TERRAINFAR`, `SET_TERRAINFAR_TREES`, `SET_TERRAINFAR_REFLECT`,
+`SET_TERRAINFAR_DEBUG` (1 tint, 2 coverage, 3 levels, 9 flat cost instrument), `SET_TERRAINFAR_SINK`,
+`SET_FOGCURVE`.

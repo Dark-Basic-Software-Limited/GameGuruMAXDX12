@@ -5,6 +5,7 @@
 #include "wiGraphicsDevice_DX12.h" // Phase 5: For DX12 ImGui rendering in Compose
 #include "GGTerrain/GGTerrainWicked.h"
 #include "GGTerrain/GGTerrainBake.h" // GGMAX 3.25: Terrain Bake
+#include "GGTerrain/GGTerrainFar.h"  // GGMAX 3.114: far terrain (the DX11 horizon)
 #include "GGTerrain/GGWaterBake.h"   // GGMAX 3.25: Water Bake
 #include "wiProfiler.h"
 #include "wiTerrain.h" // GGMAX 1.71: gg_svt_atlas_height (setup.ini svtatlasheight)
@@ -581,6 +582,8 @@ void MasterRenderer::Load()
 		// it here removed the device with DXGI_ERROR_INVALID_CALL on the first tick of the
 		// switch. The bake takes its own command list on the main thread instead.
 		GGTerrainBake_DrawPrepass(frustum, cmd);
+		// GGMAX 3.114: far terrain prepass - its colour pass writes no depth either.
+		GGTerrainFar_DrawPrepass(frustum, cmd, false);
 		// GGMAX 2.96: the far-tree billboard PREPASS. Required, not optional - the main pass
 		// runs depth_write_mask = ZERO and relies on this to lay the depth down.
 		GGTrees_Draw_Prepass(frustum, 0, cmd);
@@ -588,6 +591,8 @@ void MasterRenderer::Load()
 		GGTerrain_Draw_Prepass(frustum, cmd);
 	};
 	customDraw_Prepass_Reflections = [](const Frustum* frustum, CommandList cmd) {
+		// GGMAX 3.114: the far terrain in the planar reflection (its mode-1 colour draw needs this depth)
+		GGTerrainFar_DrawPrepass(frustum, cmd, true);
 		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw_Prepass_Reflections(frustum, cmd);
 	};
@@ -596,10 +601,17 @@ void MasterRenderer::Load()
 		// so it must NOT sit behind ggterrain_use_wicked_terrain like the dead GGTerrain draw
 		// below. Zero scene entities, one DrawIndexedInstanced per visible tree chunk, static
 		// instance buffers the build already maintains. Self-gated on gg_far_tree_pass.
+		// GGMAX 3.114: in the PLANAR REFLECTION the far terrain goes FIRST. The billboards and the
+		// bake have no reflection prepass and their colour PSOs write no depth, so drawn after it the
+		// far field (whose reflection prepass did lay depth) painted straight over them (review 3.114).
+		// In the main view each has its own prepass, so the order there does not matter.
+		if (mode != 0) GGTerrainFar_Draw(frustum, mode, cmd);
 		GGTrees_Draw(frustum, mode, cmd);
 		// GGMAX 3.25: the baked terrain, on the shipping Wicked-terrain path, so it must sit
 		// ABOVE the early-out for the same reason the billboards do.
 		GGTerrainBake_Draw(frustum, cmd);
+		// GGMAX 3.114: far terrain - the DX11 horizon beyond the live (or baked) ring.
+		if (mode == 0) GGTerrainFar_Draw(frustum, mode, cmd);
 		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw(frustum, mode, cmd);
 	};
@@ -787,6 +799,11 @@ void MasterRenderer::Update(float dt)
 							GGTrees::GGTrees_WickedUpdate();
 							wiProfiler::EndRange(rangeTP);
 						}
+						// GGMAX 3.114: far terrain - only FLAGGED here (this block ran: not an empty level,
+						// not the standalone saver). Beside the tree pool and NOT inside GGTerrainWicked_Update,
+						// which returns early forever under a Terrain Bake (the 3.73 lesson). The mask itself
+						// is built after __super::Update below, from the chunk set Scene::Update leaves.
+						GGTerrainFar_RequestUpdate();
 						wiProfiler::EndRange(rangeT2);
 						GGPerf_TraceMark("ggbridge"); // GGMAX 2.61
 					}
@@ -1139,6 +1156,15 @@ void MasterRenderer::Update(float dt)
 	__super::Update(dt);
 	wiProfiler::EndRange(range2);
 	GGPerf_TraceMark("wicked-upd"); // GGMAX 2.61
+
+	// GGMAX 3.114: far terrain coverage + constants + chunk list, AFTER Scene::Update: its own
+	// Generation_Update merges and removes terrain chunks, and the mask must describe the chunks that
+	// are actually rendered this frame. Inactive unless the terrain block flagged it above.
+	{
+		auto rangeFar = wiProfiler::BeginRangeCPU("Terrain - Far Field");
+		GGTerrainFar_Update();
+		wiProfiler::EndRange(rangeFar);
+	}
 }
 
 void MasterRenderer::PostUpdate()

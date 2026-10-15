@@ -48,6 +48,11 @@ float GGEngineFogAmount( float distance, float3 O, float3 V )
 		return 1.0 - exp( -opticalDepth );
 	}
 
+	// GGMAX 3.114: the engine's plain branch integrates only PAST fogStart when the frame carries
+	// OPTION_BIT_GG_DX11_FOG_CURVE - DX11's own curve (fogHF.hlsli has the story). Mirrored here, bit
+	// and all, so custom draws keep hazing with the terrain either way.
+	[branch] if ( g_xFrame_Options & OPTION_BIT_GG_DX11_FOG_CURVE )
+		return 1.0 - exp( -fogDensity * max( 0, distance - fogStart ) );
 	return 1.0 - exp( -fogDensity * startDistanceFalloff * distance );
 }
 
