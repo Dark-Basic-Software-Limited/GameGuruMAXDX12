@@ -15916,3 +15916,5 @@ Switches: setup.ini `terrainfar`, `terrainfartrees`, `terrainfarreflect`, `fogdx
 Harness: `TERRAIN_FAR`, `SET_TERRAINFAR`, `SET_TERRAINFAR_TREES`, `SET_TERRAINFAR_REFLECT`,
 `SET_TERRAINFAR_DEBUG` (1 tint, 2 coverage, 3 levels, 9 flat cost instrument), `SET_TERRAINFAR_SINK`,
 `SET_FOGCURVE`.
+
+### LEE-CONFIRMED 3.114, 2026-10-15: "Horizon confirmed working" - far terrain + DX11 fog curve kept ON (terrainfar / fogdx11curve default 1). Game `7e186a5d`, engine `3ec15721`.

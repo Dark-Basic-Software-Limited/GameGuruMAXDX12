@@ -8,7 +8,7 @@ metadata:
   modified: 2026-10-15T17:00:00.000Z
 ---
 
-# ▶▶ RESUME HERE — 2026-10-15 evening: 3.114 DX11 HORIZON awaiting Lee; then the BAKED-TERRAIN BLUR up close
+# ▶▶ RESUME HERE — 2026-10-15 evening: 3.114 DX11 HORIZON Lee-CONFIRMED ("Horizon confirmed working"); NOW 3.115 BAKED-TERRAIN BLUR up close (design: ~/ggmax_harness_out/bakeblur/design_detail.txt)
 2026-10-15: Lee: "Colour confirmed working" (3.113). EXE vanished overnight (cause unknown; rebuilt). Lee then asked "fix the baked terrain blurriness up close" - investigated + designed (`~/ggmax_harness_out/bakeblur/design_detail.txt`; cheap win: bake PS samples via unbound s1 trilinear -> use sampler_aniso_clamp s106) - NOT implemented, because Lee then sent DX11 vs DX12 shots: the distant mountain is missing in DX12. **3.114** (game commit after `7d8a52ae`, engine `3ec15721`): far-terrain field from the legacy clipmap past the live ring ([[project-far-terrain]]) + the engine fog curve fixed to DX11's ([[project-fog-two-paths]] - changes distant haze on EVERY default level, fog start 40000; `fogdx11curve=0` reverts). Cost +0.63 ms (0.24 without reflection). Review workflow: 10 confirmed findings, all fixed. Checklist 244, notes §3.114. **Next:** Lee tests 3.114; then implement the blur fix (aniso sampler first, then the near-field detail layer design).
 
 ## Earlier 2026-10-15: TERRAIN BAKE FIXES WITH LEE (3.112 + 3.113 confirmed)
