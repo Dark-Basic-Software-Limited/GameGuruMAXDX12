@@ -15817,3 +15817,7 @@ stripes, and sun-lit slopes no longer lose light to the normal tilt. This is the
 a few % darker, and keeps the near-field tiling at every mip, so mid/far baked ground is flatter than live);
 rendering each mip through the compositor like the VT does would fix both. Grass and tree billboards share GG's
 flat-only GetAmbient and never got the probe ambient either - a separate pass.
+
+### LEE-CONFIRMED 3.113, 2026-10-15: "Colour confirmed working" - baked terrain colour matches the live terrain; live terrain splat blend kept ON (terrainsplatblend default 1)
+
+The EXE had vanished from the build area overnight (`.pdb`/`.map` of the 20:49 build intact, no Defender detection); rebuilt from `6ec90a55` + engine `c81d3fed`, exe `9317b461da2c7453d2d130b94f47c759`, reached the hub. Cause unknown - if it recurs, check antivirus history first.
