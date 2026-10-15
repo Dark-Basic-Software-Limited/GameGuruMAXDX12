@@ -16000,3 +16000,5 @@ the memory figure counts each texture once at its current size; the probes set t
 Switches: ggOptions bits 0x20 / 0x40 / 0x80 (`SET_BAKESHADING`, default 0xFF), `SET_BAKEDETAILFADE <end>
 <width>` (default 1 1), `SET_BAKEDETAILDEBUG <1 force full | 2 force off>`, `SET_TANGENTVIS 40/41/42`
 (detail weight / layers sampled / bake-only albedo). DUMP_BAKE "sharpness" lines.
+
+### LEE-CONFIRMED 3.115, 2026-10-15: "terrain bake looks great and I can see the distant mountain in both with good grass" - baked ground sharp up close (aniso + near detail, shading 0xFF), the 3.114 horizon in live AND baked, grass intact. Game `51ffdc1a`. Near-tier default left at 8192 (4096 + detail measures the same; Lee has not chosen yet).
