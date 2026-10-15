@@ -115,3 +115,9 @@ bake replacing it.
 - Editor overlay lines (waypoints/zones) looked absent over baked terrain in one screenshot —
   unverified, worth a glance.
 - Reduction Scale is implemented but **unmeasured** on hardware where skinning costs anything.
+
+## 3.115 (2026-10-15): sharp up close
+- The bake PS sampled through s1, which the bake NEVER binds (inherited GGTrees' isotropic trilinear, or the null sampler = mip 0 only with trees off). Now bindless via push constants (b999, GGTerrainBakePush.hlsli) + static aniso s106. ★ Any GG custom draw sampling a bindable sampler slot it does not bind itself has this hidden dependency.
+- An 8192 near tier is material mip 3; the live near ring samples mip 0 - magnified 8x inside ~15 m. Fix = near detail: re-run terrainBakeChunkCS's blend per pixel from RETAINED layer materials + blendmaps, faded in the bake's own LOD (lod 0 = bake mip 0 = material mip 3, same information).
+- ★ Zero-frame capture window: GGTerrainWicked_Shutdown frees blendmaps and layer MaterialComponents LATER IN THE SAME FRAME as BuildFromTerrain - capture there or never. Layer table per frame via AllocateGPU (Texture Detail swaps textures inside Resources). Freeze bake-time settings (splat rule, repeats) - nothing re-bakes on a change.
+- 4096 near tier + detail = 8192 + detail in every band (288 MB saved on DX12TESTLEVEL) - default change pending Lee. Probe: tools/harness/bake_sharpness_probe.sh. [[project-far-terrain]]

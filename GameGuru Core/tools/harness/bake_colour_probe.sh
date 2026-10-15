@@ -3,7 +3,7 @@
 #
 # usage: bake_colour_probe.sh [tag] ["x y z angx angy"] [masks...]
 #   masks: SET_BAKESHADING values for the BAKED shots (1 normal, 2 ssao, 4 probe ambient, 8 full sun,
-#          16 live material; 31 = all = shipped). Default "0 1 31".
+#          16 live material; 31 = the 3.113 set; 3.115 adds 32 aniso, 64 near detail, 128 detail normals, 255 = shipped). Default "0 1 31".
 # Takes LIVE shots once (AO on and AO off), then BAKED shots per mask (AO on and off), all from the
 # same camera, and bake_colour_measure.py prints each baked mask against live.
 # ★ Ratio ~1 on every channel = match. A uniform ratio = brightness (lighting); a per-channel
@@ -20,12 +20,13 @@ send "SET_BAKETERRAIN 0" 10 >/dev/null; waitbake "still live" || { echo "FAIL li
 shot "${TAG}_live" >/dev/null
 send "SET_AOOFF 1" 10 >/dev/null; sleep 4; shot "${TAG}_live_aooff" >/dev/null; send "SET_AOOFF 0" 10 >/dev/null
 # baked, per mask
+send "SET_BAKESHADING 255" 10 >/dev/null   # what a bake keeps is decided by the mask at bake time
 send "SET_BAKETERRAIN 1" 10 >/dev/null; waitbake "TORN" || { echo "FAIL bake"; exit 1; }; sleep 3
 for M in $MASKS; do
   send "SET_BAKESHADING $M" 10 >/dev/null; sleep 3; shot "${TAG}_baked_m$M" >/dev/null
   send "SET_AOOFF 1" 10 >/dev/null; sleep 4; shot "${TAG}_baked_m${M}_aooff" >/dev/null; send "SET_AOOFF 0" 10 >/dev/null; sleep 2
 done
-send "SET_BAKESHADING 31" 10 >/dev/null
+send "SET_BAKESHADING 255" 10 >/dev/null   # 3.115: 255 = all on = shipped (31 was the 3.113 set)
 send "SET_GRASSOFF 0" 10 >/dev/null
 PY="$(cygpath -w "$(dirname "$0")/bake_colour_measure.py")"
 python "$PY" "$(cygpath -w "$OUT")" "$TAG" $MASKS

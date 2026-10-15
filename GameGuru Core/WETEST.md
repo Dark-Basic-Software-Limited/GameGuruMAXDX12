@@ -1393,3 +1393,28 @@ authored >=90 deg had zero/negative cone cos => the Forward+ tile-culling boundi
 with camera pose = "shadow flicker on mouselook". Fixed by halving + clamping 1..85 deg.
 NOTE: all spot lights everywhere are now their DX11-authored width (narrower than the
 buggy DX12 look) — expect level lighting to look more directed.
+
+## Terrain Bake / Far Terrain / Fog Commands — added 2026-10-15 (GGMAX 3.112-3.115)
+
+All take effect next frame unless noted. Notes sections in `NIGHT_INVESTIGATIONS_2026-08-12.md`.
+
+| Command | What it does |
+|---|---|
+| `SET_BAKETERRAIN 0\|1` | Terrain Bake off/on (on = bake, then the live Wicked terrain is torn down; wait for `DUMP_BAKE` "wicked terrain : TORN DOWN") |
+| `DUMP_BAKE` | Bake state: tiers, chunks, VRAM, draws, shading mask, grass (3.112), sharpness/near detail (3.115) |
+| `SET_BAKERES <n>` / `SET_BAKERESNEAR <n>` / `SET_BAKENEARBUDGET <MB>` | Far tier / near tier resolution, near-tier budget - apply on the NEXT bake (untick + re-tick) |
+| `SET_BAKESHADING <mask>` | Bake pixel-shader bits: 1 decode normal, 2 SSAO, 4 probe ambient, 8 full sun, 16 live material (3.113); 32 aniso fetch, 64 near detail colour, 128 near detail normals (3.115; normals kept only if 128 was on at bake time). Default 0xFF |
+| `SET_BAKEDETAILFADE <end> <width>` | 3.115 near detail fade in the bake texture's own LOD: full at lod <= end-width, gone at >= end. Default `1 1` |
+| `SET_BAKEDETAILDEBUG <0\|1\|2>` | 3.115: 1 = detail weight forced 1 (sharpness ceiling), 2 = forced 0 |
+| `SET_TANGENTVIS 40\|41\|42` | 3.115 bake debug views: near detail weight / layers sampled (/4) / bake-only albedo (9 = final albedo, 2/3 normals, 17-27 lighting terms as the engine) |
+| `SET_TERRAINSPLATBLEND 0\|1` | 3.113 terrain compositor: 1 splat average (default), 0 old opacity stack; re-bake after. Near detail only runs in splat mode |
+| `TERRAIN_FAR` | 3.114 far terrain report: mask source/cells, clipmap, draws, reflection |
+| `SET_TERRAINFAR 0\|1` / `SET_TERRAINFAR_TREES 0\|1` / `SET_TERRAINFAR_REFLECT 0\|1` | Far terrain on/off, tree billboards follow it, draw it into the water reflection |
+| `SET_TERRAINFAR_DEBUG <n>` | 1 tint, 2 coverage cells, 3 clipmap levels, 9 flat colour (cost instrument) |
+| `SET_TERRAINFAR_SINK <x>` | Border sink multiplier (x segment size), default 1 |
+| `SET_FOGCURVE 0\|1` | 3.114: 1 = DX11 fog curve (optical depth past fog start only, default), 0 = stock engine curve |
+
+Probes (in `tools/harness/`, MAX open on a level, grass switched off for the run):
+- `bake_colour_probe.sh [tag] ["x y z ax ay"] [masks]` - baked vs live COLOUR per band (3.113)
+- `bake_sharpness_probe.sh [tag] [masks]` - baked vs live SHARPNESS (HF energy) per band, three cameras (3.115)
+- `bake_grass_probe.sh` - grass survives the bake (3.112)

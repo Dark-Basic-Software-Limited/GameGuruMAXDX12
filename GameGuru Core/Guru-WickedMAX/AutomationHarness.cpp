@@ -6529,12 +6529,40 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 	if (_stricmp(cmd, "SET_BAKESHADING") == 0)
 	{
 		// GGMAX 3.113: GG_OPT_BAKE_* bits for the Terrain Bake pixel shader - 1 decode normal, 2 SSAO,
-		// 4 probe ambient, 8 full sun, 16 live material; 31 (0x1F) = all on = the shipped setting.
+		// 4 probe ambient, 8 full sun, 16 live material; 3.115: 32 aniso, 64 near detail colour, 128 near
+		// detail normals (kept only if 128 was on at bake time). 255 (0xFF) = all on = the shipped setting.
 		// Live, next frame - no re-bake. For A/B'ing the baked ground against the live terrain.
 		extern uint32_t gg_terrain_bake_shading;
 		if (arg && arg[0]) gg_terrain_bake_shading = (uint32_t)strtoul(arg, nullptr, 0) & 0xFFu;
-		_snprintf(result, resultSize, "OK: SET_BAKESHADING - mask now 0x%02X (1 normal, 2 ssao, 4 probe ambient, 8 full sun, 16 live material)",
+		_snprintf(result, resultSize, "OK: SET_BAKESHADING - mask now 0x%02X (1 normal, 2 ssao, 4 probe ambient, 8 full sun, 16 live material, 32 aniso, 64 near detail, 128 detail normals)",
 			gg_terrain_bake_shading);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_BAKEDETAILFADE") == 0)
+	{
+		// GGMAX 3.115: the near detail's fade, in the BAKE TEXTURE'S OWN LOD (16x aniso): detail is gone at
+		// lod >= <end> and full at lod <= <end> - <width>. Default 0 1: hands over where the bake's mip 0 is
+		// exactly material mip log2(dim*32/res). Live, next frame.
+		extern float gg_terrain_bake_detail_lod_end, gg_terrain_bake_detail_width;
+		float e = gg_terrain_bake_detail_lod_end, w = gg_terrain_bake_detail_width;
+		if (arg && arg[0] && sscanf_s(arg, "%f %f", &e, &w) >= 1)
+		{
+			gg_terrain_bake_detail_lod_end = e;
+			gg_terrain_bake_detail_width = (w > 0.01f) ? w : 0.01f;
+		}
+		_snprintf(result, resultSize, "OK: SET_BAKEDETAILFADE - detail full at bake lod <= %.2f, gone at >= %.2f",
+			gg_terrain_bake_detail_lod_end - gg_terrain_bake_detail_width, gg_terrain_bake_detail_lod_end);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_BAKEDETAILDEBUG") == 0)
+	{
+		// GGMAX 3.115: 0 normal, 1 = detail weight forced to 1 wherever it can run (the sharpness ceiling),
+		// 2 = forced to 0 (the bake alone through the same code path).
+		extern int gg_terrain_bake_detail_debug;
+		if (arg && arg[0]) gg_terrain_bake_detail_debug = atoi(arg);
+		_snprintf(result, resultSize, "OK: SET_BAKEDETAILDEBUG %d (0 normal, 1 force full, 2 force off)", gg_terrain_bake_detail_debug);
 		result[resultSize - 1] = 0;
 		return true;
 	}
@@ -10482,7 +10510,7 @@ void AutoHarness_CheckForCommand(void)
 			g_tvCycleActive = true;
 			_snprintf(result, sizeof(result), "OK: SET_TANGENTVIS CYCLE (3s per mode, 0->20, normal shading = loop marker; any SET_TANGENTVIS <n> stops)");
 		}
-		else if (sscanf_s(arg, "%d", &mode) >= 1 && mode >= 0 && mode <= 27) // GGMAX 3.35e: +albedo, +F; 3.113: +25-27 final-colour summands
+		else if (sscanf_s(arg, "%d", &mode) >= 1 && ((mode >= 0 && mode <= 27) || (mode >= 40 && mode <= 42))) // GGMAX 3.35e: +albedo, +F; 3.113: +25-27 final-colour summands; 3.115: 40-42 Terrain Bake near detail
 		{
 			g_tvCycleActive = false;
 			wi::renderer::gg_debugvis = mode;
@@ -10493,7 +10521,8 @@ void AutoHarness_CheckForCommand(void)
 				"RAW normal-map texels", "RAW normal-map mip0",
 				"albedo (post-create)", "F (diffuse scaled by 1-F)",
 				"SUN share of final (linear)", "AMBIENT share of final (linear)", "SPECULAR share of final (linear)" };
-			_snprintf(result, sizeof(result), "OK: SET_TANGENTVIS %d (%s)", mode, tvNames[mode]);
+			static const char* tvBake[3] = { "bake near-detail weight", "bake detail layers sampled (/4)", "bake-only albedo" };   // 3.115, bake PS only
+			_snprintf(result, sizeof(result), "OK: SET_TANGENTVIS %d (%s)", mode, (mode >= 40) ? tvBake[mode - 40] : tvNames[mode]);
 		}
 		else
 		{

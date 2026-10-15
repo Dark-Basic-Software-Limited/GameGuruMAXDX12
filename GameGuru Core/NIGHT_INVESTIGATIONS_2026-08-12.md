@@ -15918,3 +15918,85 @@ Harness: `TERRAIN_FAR`, `SET_TERRAINFAR`, `SET_TERRAINFAR_TREES`, `SET_TERRAINFA
 `SET_FOGCURVE`.
 
 ### LEE-CONFIRMED 3.114, 2026-10-15: "Horizon confirmed working" - far terrain + DX11 fog curve kept ON (terrainfar / fogdx11curve default 1). Game `7e186a5d`, engine `3ec15721`.
+
+### 3.115 The baked ground is sharp up close: anisotropic fetch + the live materials blended back in - 2026-10-15
+
+Lee: "fix the baked terrain blurriness up close". Measured first (new `tools/harness/bake_sharpness_probe.sh`
++ `bake_sharpness_measure.py`: mean |3x3 Laplacian| of luma = high-frequency energy, per screen band, baked
+vs live, three cameras, grass off): the baked ground had **0.40-0.49 of the live terrain's fine detail** from
+the editor views, 0.55-0.79 looking down. Colour was already right (3.113).
+
+**Two causes.**
+1. **The sampler.** GGTerrainBakePS sampled through `s1`, which the bake NEVER binds - it inherited whatever
+   drew before it: GGTrees' isotropic trilinear sampler, or with trees off the DX12 null sampler (MaxLOD 0,
+   mip 0 only - shimmer). Isotropic filtering on ground seen at 5-15 degrees drops about two mips from
+   ~10 m out. Now the static 16x anisotropic sampler (s106), no binding, no hidden dependency (bit 0x20).
+2. **Magnification.** A chunk is 5280 units; the live near ring samples material mip 0 at 32 repeats per
+   chunk (0.08 units/texel). The 8192 near tier holds material mip 3 (0.64 units/texel), so inside ~15 m it
+   is magnified up to 8x. No resolution fixes that affordably (16384 = 171 MB a chunk, still mip 2).
+   **Near detail** (bit 0x40): where the bake's own LOD is below 1, the pixel shader re-runs the bake's
+   blend per pixel from the live materials - the same blendmap (retained), the same layer textures
+   (retained), 32 repeats per chunk (world-continuous), the same splat rule and the same fast-sRGB round
+   trip as `terrainBakeChunkCS.hlsl` - and fades into the bake in LOD space (at bake lod 0 the bake's mip 0
+   IS material mip 3 with aligned texel centres, so the images carry the same information; no FOV, render
+   scale or eye height in the fade). Bit 0x80 adds the materials' BC5 normal maps in the live terrain's own
+   diagonal tangent frame (wiTerrain.cpp T = P(x+1,z) - P(x,z+1)), rebuilt per pixel from the vertex normal.
+
+**Plumbing** (no engine change): the bake draw now pushes 48 bytes of root constants per chunk (b999, the GG
+root signature's 12 - first use of PushConstants in game code; `Shaders/GGTerrainBakePush.hlsli`) and reads
+its texture bindlessly (the per-chunk `BindResource(t50)` is gone). The layer materials and the eligible
+chunks' blendmaps are captured INSIDE BuildFromTerrain - the teardown later that same frame removes every
+layer MaterialComponent with the terrain entity and clears `terrain->chunks`, so there is no later frame in
+which they exist. The per-layer table (colour SRV via the sRGB subresource, normal SRV, repeats, baseColor) is
+a TRANSIENT `AllocateGPU` block rebuilt each frame, because a live Texture Detail apply swaps textures inside
+their Resources (the 08-05 stale-descriptor rule). Eligible = every layer the chunk uses tiles identically
+at the bake resolution and at the live near ring's: res >= 4096 with 2048 textures; the 256 far tier never.
+The reflection pass gets no detail (`GGTerrainBake_Draw` now takes the mode).
+
+**Measured** (DESKTOP RX 9060 XT, DX12TESTLEVEL, HF baked/live per band, near / mid / far):
+
+| | editor view | 3.113 view | looking down |
+|---|---|---|---|
+| before (0x1F) | 0.48 / 0.40 / 0.49 | 0.42 / 0.49 / 0.39 | 0.79 / 0.71 / 0.55 |
+| + aniso (0x3F) | 0.51 / 0.68 / 0.76 | 0.42 / 0.56 / 0.70 | 0.95 / 0.87 / 0.81 |
+| + near detail + normals (0xFF, shipped) | **0.79 / 0.73 / 0.75** | **0.88 / 0.78 / 0.73** | 0.91 / 0.85 / 0.81 |
+
+Luminance baked/live 0.99-1.01 in every cell. Mask 0x1F reproduces the old build to the decimal (plumbing
+proven). No seam: per-row luminance detail/bake within +-1.3% through the fade, a camera on a chunk border
+(x = 2640) shows the tile pattern straight across. Visually the near ground is now hard to tell from live
+(zoomed crops). What remains below 1.0 is mostly not blur: live's VT takes one aniso-4 tap (aliasing reads
+as HF), carries BC1 block noise and normal-map relief at every distance; and the far band includes 256
+far-tier chunks (the VRAM dial - unchanged). Fade end 1 (default) vs 0: mid band 0.69 -> 0.74; past ~2 no
+change (nothing eligible beyond the near tier).
+
+Cost (interleaved FPS A/B, 15 samples each): editor view 7.309 ms -> 7.380 (aniso) -> 7.402 (detail) ->
+7.424 (normals) = **+0.115 ms**; looking down +0.05 ms (in the noise). Low-spec reading still to get.
+Memory: the layer materials the eligible chunks actually use (colour + normal) stay alive while baked:
+**32.6 MB** on DX12TESTLEVEL (3 layers + 0.6 MB of blendmaps); nothing at all for a decal-mode bake or with
+the detail bit off at bake time; released on untick / level load / Reset Visuals (Clear).
+
+**The 4096 near tier is now enough:** 4096 + detail measures identical to 8192 + detail in every band
+(e.g. 0.79 / 0.74 / 0.76 editor view), and the near tier drops from 384 MB to 96 MB here - **288 MB saved**
+for the same picture. Not changed: TerrainBakeResNear is saved PER LEVEL (default 8192) - Lee's call.
+
+**Decal mode** (terrainsplatblend=0, the pre-3.113 revert): the detail measured 2-5% brighter/bluer than the
+bake beside it (splat mode agrees to 1%), so near detail is enabled in SPLAT mode only; decal mode keeps the
+aniso fetch. Separately, and older than 3.115: in decal mode the bake itself is 1.24x brighter than the live
+terrain - most likely the live VT's decal-tilted normal maps (3.113) darkening the live ground's lighting.
+
+**Robustness:** Texture Detail applied live four times while baked (2,1,2,1; 64 textures rebuilt each) - no
+device loss, correct terrain colour. ★ That test exposed an OLDER bug, with or without the bake: after a
+few live Texture Detail applies the GRASS draws with the wrong texture (dark green live, lavender baked =
+a normal map as albedo) until Grass Off/On - stale grass material descriptors. Spawned as its own task.
+
+**Adversarial review (8 agents, 12 findings, 6 confirmed, all fixed):** the bake kept layer textures and
+blendmaps even when the detail could never draw (decal mode) and kept every layer rather than the ones an
+eligible chunk uses (53.9 -> 32.6 MB here); the splat rule and the per-layer tiling are now FROZEN at bake time
+(a harness tiling/blend change after the bake no longer makes the detail disagree with the texture it fades
+into); the fade LOD follows the sampler (isotropic when the aniso bit is off, else a ring at grazing angles);
+the memory figure counts each texture once at its current size; the probes set the shading mask themselves
+(what a bake keeps depends on the mask at bake time).
+
+Switches: ggOptions bits 0x20 / 0x40 / 0x80 (`SET_BAKESHADING`, default 0xFF), `SET_BAKEDETAILFADE <end>
+<width>` (default 1 1), `SET_BAKEDETAILDEBUG <1 force full | 2 force off>`, `SET_TANGENTVIS 40/41/42`
+(detail weight / layers sampled / bake-only albedo). DUMP_BAKE "sharpness" lines.

@@ -609,7 +609,7 @@ void MasterRenderer::Load()
 		GGTrees_Draw(frustum, mode, cmd);
 		// GGMAX 3.25: the baked terrain, on the shipping Wicked-terrain path, so it must sit
 		// ABOVE the early-out for the same reason the billboards do.
-		GGTerrainBake_Draw(frustum, cmd);
+		GGTerrainBake_Draw(frustum, mode, cmd);   // GGMAX 3.115: mode, so the reflection skips the near detail
 		// GGMAX 3.114: far terrain - the DX11 horizon beyond the live (or baked) ring.
 		if (mode == 0) GGTerrainFar_Draw(frustum, mode, cmd);
 		if (ggterrain_use_wicked_terrain) return;

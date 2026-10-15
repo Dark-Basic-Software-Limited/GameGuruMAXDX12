@@ -34,6 +34,8 @@ extern bool gg_terrain_bake;
 // each is chunk vertex buffers, which do not scale). Drop it on a card short of memory.
 extern int  gg_terrain_bake_res;
 extern uint32_t gg_terrain_bake_shading;   // GGMAX 3.113: GG_OPT_BAKE_* bits for the bake pixel shader
+extern float gg_terrain_bake_detail_lod_end, gg_terrain_bake_detail_width;   // GGMAX 3.115 near detail fade (bake LOD)
+extern int   gg_terrain_bake_detail_debug;   // GGMAX 3.115: 1 force detail full, 2 force off
 
 // Diagnostics, all read by the harness DUMP_TERRAINBAKE.
 extern int  gg_terrain_bake_chunks;      // chunks with a built mesh
@@ -53,6 +55,6 @@ void GGTerrainBake_Update();                                                 // 
 void GGTerrainBake_Clear();                                                  // main thread: release everything
 bool GGTerrainBake_Ready();                                                  // true once the terrain may be torn down
 void GGTerrainBake_RecordPendingBakes( wi::graphics::CommandList cmd );        // render thread: record the compute dispatches
-void GGTerrainBake_Draw( const wi::primitive::Frustum* frustum, wi::graphics::CommandList cmd );
+void GGTerrainBake_Draw( const wi::primitive::Frustum* frustum, int mode, wi::graphics::CommandList cmd );   // mode 0 main, 1 reflection
 void GGTerrainBake_DrawPrepass( const wi::primitive::Frustum* frustum, wi::graphics::CommandList cmd );
 const char* GGTerrainBake_Report();

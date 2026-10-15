@@ -1,17 +1,14 @@
 #include "GGRootSignature.hlsli"
 
-Texture2D texBakedChunk : register( t50 );
-
-SamplerState samplerBilinearWrap   : register( s0 );
-SamplerState samplerTrilinearClamp : register( s1 );
-SamplerState samplerTrilinearWrap  : register( s2 );
-
 #include "PBR/brdf.hlsli"
 #include "PBR/lightingHF.hlsli"
 #include "GGCommonFunctions.hlsli"
 
 #define GGLIGHTING_SIMPLE_SHADOWS
 #include "GGLighting.hlsli"
+
+#include "GGTerrainBakePush.hlsli"
+PUSHCONSTANT(bakePush, GGTerrainBakePush);
 
 // =============================================================================================
 // GGMAX 3.25 - TERRAIN BAKE colour pixel shader.
@@ -26,7 +23,7 @@ SamplerState samplerTrilinearWrap  : register( s2 );
 //
 // sRGB: the bake shader (terrainBakeChunkCS.hlsl) applies the sRGB curve on write and the chunk
 // texture is BC1_UNORM_SRGB, so the HARDWARE decodes this fetch. ⚠ Do NOT add a manual
-// RemoveSRGBCurve here (an older version of this note said to): it would decode twice.
+// RemoveSRGBCurve on the baked fetch (an older version of this note said to): it would decode twice.
 //
 // GGMAX 3.113 - SHADED LIKE THE LIVE TERRAIN. Lee: the baked ground was a different colour from
 // the live terrain - measured 1.30-1.35x brighter and flatter, same camera, grass off. Five terms
@@ -42,7 +39,25 @@ SamplerState samplerTrilinearWrap  : register( s2 );
 //    sky), which dims and reddens the sun on everything else.
 //  - LIVE_MATERIAL: the live chunk ends up f0 0.005 with SSAO as its only occlusion; the bake used
 //    f0 0.04 (8x the sky reflection) and a constant 0.9 occlusion.
-// Still different by design: no normal map (it would be a second baked texture per chunk).
+//
+// GGMAX 3.115 - SHARP UP CLOSE. Lee: "fix the baked terrain blurriness up close". Two causes:
+//  - ANISO: the baked texture was sampled through s1, which the bake never binds - it inherited
+//    GGTrees' ISOTROPIC trilinear sampler (or the null sampler, mip 0 only, when trees were off), so
+//    ground seen at a grazing angle lost about two mips from ~10 m out. Now the static 16x
+//    anisotropic sampler (s106), no binding and no hidden dependency on what drew before.
+//  - DETAIL: inside ~15 m an 8192 bake is MAGNIFIED - its texel is material mip 3 (0.64 units) where
+//    the live terrain samples mip 0 (0.08 units). No resolution fixes that affordably, so where the
+//    bake's own LOD goes below 0 the live terrain's material textures are blended back in: the same
+//    blendmap (retained from the bake), the same layer materials, the same tiling (32 repeats per
+//    chunk, world-continuous), the same splat/decal rule and the same fast-sRGB round trip as
+//    terrainBakeChunkCS.hlsl - so at bake LOD 0, where bake mip 0 IS material mip 3 with aligned
+//    texel centres, the two images carry the same information and the handover is invisible.
+//    Faded in LOD space, not by distance: no FOV, render scale or eye height in it.
+//    The C++ enables it in SPLAT mode only (decal mode measured a 2-5% tint against the bake); the
+//    decal branch below is kept so the two rules stay side by side with the compute shader.
+//  - DETAIL_NORMAL: the materials' BC5 normal maps there too, splat-averaged exactly as the live VT
+//    does, in the live terrain's own diagonal tangent frame (wiTerrain.cpp: T = P(x+1,z) - P(x,z+1)),
+//    rebuilt per pixel from the vertex normal - so the relief matches the live ground's.
 // =============================================================================================
 
 struct PixelIn
@@ -63,15 +78,126 @@ struct GBuffer
 GBuffer main( PixelIn IN )
 {
 	GBuffer output;
-
-	// ★ No manual sRGB decode any more. The baked chunk is now a BC1_UNORM_SRGB texture, so the
-	// hardware decodes the curve the bake stored - and, unlike the old manual decode, it does so
-	// BEFORE filtering, which is the correct order.
-	float3 baked = texBakedChunk.Sample( samplerTrilinearClamp, IN.uv ).rgb;
-
 	const uint bakeOpt = ggCustomFrame.ggOptions;
+
+	// ★ Derivatives FIRST, outside every branch: the detail loop below runs per pixel under a weight
+	// test and a LOD test, where an implicit-derivative Sample is undefined. Everything samples
+	// with SampleGrad (or SampleLevel) from these.
+	const float2 duvdx = ddx( IN.uv );
+	const float2 duvdy = ddy( IN.uv );
+
+	// The baked chunk, fetched bindlessly from the push constants (it used to be t50). BC1_UNORM_SRGB:
+	// the hardware decodes the curve before filtering.
+	Texture2D bakedTex = bindless_textures[ descriptor_index( bakePush.bakedTex ) ];
+	float3 baked;
+	[branch]
+	if ( bakeOpt & GG_OPT_BAKE_ANISO )
+		baked = bakedTex.SampleGrad( sampler_aniso_clamp, IN.uv, duvdx, duvdy ).rgb;
+	else
+		baked = bakedTex.SampleGrad( sampler_linear_clamp, IN.uv, duvdx, duvdy ).rgb;
+
 	// GGMAX 3.113: R8G8B8A8_UNORM delivers n*0.5+0.5 - unpack it (see the header).
 	const float3 normal = ( bakeOpt & GG_OPT_BAKE_DECODE_NORMAL ) ? normalize( IN.normal * 2 - 1 ) : normalize( IN.normal );
+
+	// ---- GGMAX 3.115: near detail ----------------------------------------------------------------
+	float3 albedo = baked;
+	float3 shadeN = normal;
+	float  detailW = 0;
+	uint   layersSampled = 0;
+	[branch]
+	if ( ( bakeOpt & GG_OPT_BAKE_DETAIL ) && bakePush.blendmap >= 0 && bakePush.layerTable >= 0 )
+	{
+		// The bake's own LOD: < 0 = magnified.
+		// the LOD the bake fetch above actually uses: 16x aniso, or isotropic (major axis) without the bit
+		const float lodBake = get_lod( uint2( bakePush.bakeRes, bakePush.bakeRes ), duvdx, duvdy, ( bakeOpt & GG_OPT_BAKE_ANISO ) ? 16 : 0 );
+		detailW = saturate( ( bakePush.fadeLodEnd - lodBake ) * bakePush.fadeRcpWidth );
+		if ( bakePush.flags & GG_BAKEPUSH_FORCEFULL ) detailW = 1;
+		if ( bakePush.flags & GG_BAKEPUSH_FORCENONE ) detailW = 0;
+
+		[branch]
+		if ( detailW > 0 )
+		{
+			Texture2DArray blendmap = bindless_textures2DArray[ descriptor_index( bakePush.blendmap ) ];
+			ByteAddressBuffer layers = bindless_buffers[ descriptor_index( bakePush.layerTable ) ];
+			// terrainBakeChunkCS: the blendmap at the UNFLIPPED chunk uv (its 66-spacing / 67-texel
+			// stretch included, as the compute shader has it), the materials at (u, 1-v) * repeats.
+			const float2 tuv = float2( IN.uv.x, 1 - IN.uv.y );
+			const float2 tdx = float2( duvdx.x, -duvdx.y );
+			const float2 tdy = float2( duvdy.x, -duvdy.y );
+			const bool splat = ( bakePush.flags & GG_BAKEPUSH_SPLAT ) != 0;
+			const bool wantNormals = splat && ( bakeOpt & GG_OPT_BAKE_DETAIL_NORMAL );
+
+			float4 total = 0;
+			float  accumulation = 0;
+			float  splatWeight = 0;
+			float2 normalSum = 0;
+			// front-to-back with early exit, exactly as the bake (and the live VT) visit the layers
+			for ( int i = (int)bakePush.layerCount - 1; i >= 0; i-- )
+			{
+				const float w = blendmap.SampleLevel( sampler_linear_clamp, float3( IN.uv, i ), 0 ).r;
+				if ( w == 0 )
+					continue;
+				const uint  addr = bakePush.layerTableOffset + (uint)i * GG_BAKE_LAYER_STRIDE;
+				const uint4 e = layers.Load4( addr );
+				float4 c = asfloat( layers.Load4( addr + 16 ) );   // baseColor
+				const float R = asfloat( e.z );
+				[branch]
+				if ( (int)e.x >= 0 )
+				{
+					Texture2D tex = bindless_textures[ descriptor_index( (int)e.x ) ];
+					c *= tex.SampleGrad( sampler_aniso_wrap, tuv * R, tdx * R, tdy * R );
+				}
+				[branch]
+				if ( wantNormals )
+				{
+					// a layer with no normal map is FLAT, not absent (terrainVirtualTextureUpdateCS 3.113)
+					float2 nm = float2( 0.5, 0.5 );
+					[branch]
+					if ( (int)e.y >= 0 )
+					{
+						Texture2D ntex = bindless_textures[ descriptor_index( (int)e.y ) ];
+						nm = ntex.SampleGrad( sampler_aniso_wrap, tuv * R, tdx * R, tdy * R ).rg;
+					}
+					normalSum += w * nm;
+				}
+				layersSampled++;
+				[branch]
+				if ( splat )
+				{
+					total += w * c;
+					splatWeight += w;
+					continue;
+				}
+				total = mad( 1 - accumulation, w * c, total );
+				accumulation = mad( 1 - w, accumulation, w );
+				if ( accumulation >= 1 )
+					break;
+			}
+			if ( splat && splatWeight > 0 )
+			{
+				total /= splatWeight;
+				normalSum /= splatWeight;
+			}
+			// The bake stored ApplySRGBCurve_Fast(colour) and BC1_UNORM_SRGB decodes the EXACT curve, so
+			// the baked ground carries that small bias (-2% at 0.1 linear, +6% at 0.01). Put the detail
+			// through the same round trip or the fade band shows a brightness step.
+			const float3 detail = RemoveSRGBCurve( ApplySRGBCurve_Fast( max( 0, total.rgb ) ) );
+			albedo = lerp( baked, detail, detailW );
+
+			[branch]
+			if ( wantNormals && splatWeight > 0 )
+			{
+				// objectHF: bump = (rg*2-1, 1), N = normalize(mul(bump, TBN)) at strength 1. The live chunk's
+				// tangent is P(x+1,z) - P(x,z+1): in the surface plane, XZ direction (1,-1); B = cross(T, N).
+				const float3 bump = float3( normalSum * 2 - 1, 1 );
+				const float3 T = normalize( float3( 1, ( normal.z - normal.x ) / max( normal.y, 0.05 ), -1 ) );
+				const float3 B = cross( T, normal );
+				const float3 Nd = normalize( bump.x * T + bump.y * B + bump.z * normal );
+				shadeN = normalize( lerp( normal, Nd, detailW ) );
+			}
+		}
+	}
+
 	const float3 viewVec = g_xCamera_CamPos - IN.worldPos;
 	const float dist = length( viewVec );
 
@@ -79,13 +205,13 @@ GBuffer main( PixelIn IN )
 	surface.init();
 	surface.P = IN.worldPos;
 	surface.V = viewVec / max( dist, 0.0001 );
-	surface.N = normal;
+	surface.N = shadeN;
 	// Terrain is a dielectric. Arguments: metalness, roughness, occlusion, reflectance (f0).
 	// GGMAX 3.113: the live chunk ends up f0 = 0.005 (GG layer reflectance 0.005 x Surface.dds A x
 	// chunk reflectance 1) and its only occlusion is SSAO - Surface.dds AO is never applied because
 	// the chunk material has no OCCLUSION_PRIMARY. The old 0.04 / 0.9 gave 8x the sky reflection.
 	const bool liveMaterial = ( bakeOpt & GG_OPT_BAKE_LIVE_MATERIAL ) != 0;
-	surface.createMetalness( 0, 1, liveMaterial ? 1.0 : 0.9, liveMaterial ? 0.005 : 0.04, baked, true );
+	surface.createMetalness( 0, 1, liveMaterial ? 1.0 : 0.9, liveMaterial ? 0.005 : 0.04, albedo, true );
 
 	const float2 pixel = IN.position.xy;
 	surface.pixel = pixel;
@@ -123,13 +249,14 @@ GBuffer main( PixelIn IN )
 	// the SAME quantities and the SAME c/(1+c) encoding, so each lighting term of the baked ground
 	// can be compared with the live terrain's from the same camera - the instrument that showed
 	// which of the five differences mattered (tools/harness/bake_colour_probe.sh).
+	// GGMAX 3.115 adds 40 = near detail weight, 41 = layers sampled per pixel (/4), 42 = baked-only albedo.
 	{
 		float4 dbg = float4( -1, 0, 0, 0 );
 		switch ( GetFrame().gg_debugvis )
 		{
 		case 2:  dbg = float4( normal * 0.5 + 0.5, 1 ); break;                // vertex normal
-		case 3:  dbg = float4( surface.N * 0.5 + 0.5, 1 ); break;             // final normal (no normal map)
-		case 9:  dbg = float4( baked, 1 ); break;                             // albedo input
+		case 3:  dbg = float4( surface.N * 0.5 + 0.5, 1 ); break;             // final normal (detail normals when on)
+		case 9:  dbg = float4( albedo, 1 ); break;                            // albedo input (bake + detail)
 		case 12: dbg = float4( surface.f0, 1 ); break;                        // specular F0
 		case 13: dbg = float4( surface.occlusion.xxx, 1 ); break;             // occlusion
 		case 17: { float3 c = lighting.direct.diffuse;    dbg = float4( c / ( 1 + c ), 1 ); } break;
@@ -142,6 +269,9 @@ GBuffer main( PixelIn IN )
 		case 25: dbg = float4( surface.albedo * lighting.direct.diffuse, 1 ); break;
 		case 26: dbg = float4( surface.albedo * lighting.indirect.diffuse * surface.occlusion, 1 ); break;
 		case 27: dbg = float4( lighting.direct.specular + lighting.indirect.specular * surface.occlusion, 1 ); break;
+		case 40: dbg = float4( detailW.xxx, 1 ); break;                       // 3.115 near detail weight
+		case 41: dbg = float4( saturate( layersSampled / 4.0 ).xxx, 1 ); break;
+		case 42: dbg = float4( baked, 1 ); break;                             // the bake alone
 		}
 		[branch]
 		if ( dbg.x >= 0 )

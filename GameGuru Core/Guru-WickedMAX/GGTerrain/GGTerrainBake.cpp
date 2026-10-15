@@ -34,10 +34,15 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <cstdio>
+#include <cstring>
+#include <cmath>
 
 using namespace wi::graphics;
 using namespace wi::primitive;
 using namespace wi::scene;
+
+// engine 1.53b/c VT tiling cap + hold (wiTerrain.cpp) - the near detail must tile exactly as the bake did
+namespace wi::terrain { extern uint32_t gg_terrain_tile_share_mips, gg_terrain_tile_hold_mips; }
 
 // ---------------------------------------------------------------------------------------------
 // public state
@@ -57,7 +62,21 @@ int  gg_terrain_bake_res = 256;          // FAR tier - distant scenery
 // GGMAX 3.113: how the bake pixel shader shades - GG_OPT_BAKE_* bits (GGCustomFrameCB.hlsli), all on
 // = matches the live terrain. Rides to the GPU in ggCustomFrame.ggOptions (GGCustomFrame_Update).
 // Harness SET_BAKESHADING <mask> A/Bs one term at a time.
-uint32_t gg_terrain_bake_shading = 0x1Fu;
+// GGMAX 3.115: + 0x20 ANISO (16x anisotropic bake fetch) and 0x40 DETAIL (near detail colour) on by
+// default; 0x80 DETAIL_NORMAL (near detail normal maps) - see GGCustomFrameCB.hlsli.
+uint32_t gg_terrain_bake_shading = 0xFFu;
+// GGMAX 3.115: the near detail fades over the bake texture's OWN LOD - full at lod <= end - 1/width... see
+// GGTerrainBakePS.hlsl. At lod 0 the bake's mip 0 is material mip log2(dim*32/res), the handover point.
+// Harness SET_BAKEDETAILFADE <end> <width>, SET_BAKEDETAILDEBUG <1 force full | 2 force none>.
+// Default end 1 (measured 3.115): detail out to bake lod 1 lifted the mid band from 0.69 to 0.74 of live
+// for no visible cost; the gain stops at ~2 because past the near tier no chunk is eligible.
+float gg_terrain_bake_detail_lod_end = 1.0f;
+float gg_terrain_bake_detail_width = 1.0f;
+int   gg_terrain_bake_detail_debug = 0;
+int   gg_terrain_bake_detail_chunks = 0;   // chunks eligible for near detail (their bake tiles like live)
+int   gg_terrain_bake_detail_draws = 0;    // of them, drawn with detail last frame
+int   gg_terrain_bake_detail_kb = 0;       // video memory the detail keeps alive (layer textures + blendmaps)
+int   gg_terrain_bake_detail_layers = 0;   // layer materials retained
 int  gg_terrain_bake_res_near = 8192;    // NEAR tier - inside the play area
 // ⚠ HARD MEMORY BUDGET for the near tier, in MB. Without it this feature is unbounded: a level
 // whose objects are spread over the whole map promotes every chunk, and 625 chunks at 4096 is
@@ -109,9 +128,89 @@ namespace
 		uint32_t  res = 0;            // this chunk's baked texture resolution (near or far tier)
 		// the terrain chunk coordinate this came from, so a rebuild can be matched up
 		int cx = 0, cz = 0;
+		// GGMAX 3.115 near detail: the chunk's blendmap, RETAINED (a ref-counted handle copy) because the
+		// teardown later in the bake's own frame frees terrain->chunks; only for detail-eligible chunks.
+		Texture   blendmap;
+		uint32_t  layerCount = 0;
+		bool      detailOK = false;
+		const char* detailWhyNot = "";
 	};
 
+	// GGMAX 3.115: one terrain layer material, as the bake sampled it - blendmap layer i is
+	// terrain->materialEntities[i] (GameGuru has no spline materials). Copies of the wi::Resource
+	// handles keep the textures (and their sRGB views) alive after the teardown removes the
+	// MaterialComponents with the terrain entity. ★ Descriptor indices are NOT cached: a live Texture
+	// Detail apply swaps the texture inside the Resource, so the layer table is rebuilt every frame.
+	struct BakeLayer
+	{
+		wi::Resource color, normal;
+		XMFLOAT4     baseColor = XMFLOAT4( 1, 1, 1, 1 );
+		float        repeats = 1.0f;   // FROZEN at bake time - the baked texture holds this tiling (review 3.115)
+		bool         valid = false;
+		bool         used = false;     // some eligible chunk samples it; the others are not kept
+	};
+	std::vector<BakeLayer> g_layers;
+	bool g_bakeSplat = true;   // the blend rule the bake was made with; the detail must use the same one
+
+	// ★ Must match GGTerrainBakePush (Shaders/GGTerrainBakePush.hlsli) byte for byte - 48 bytes, the GG
+	// root signature's 12 root constants at b999.
+	struct BakePush
+	{
+		int32_t  bakedTex = -1;
+		int32_t  blendmap = -1;
+		int32_t  layerTable = -1;
+		uint32_t layerTableOffset = 0;
+		uint32_t layerCount = 0;
+		float    bakeRes = 0;
+		float    fadeLodEnd = 0;
+		float    fadeRcpWidth = 1;
+		uint32_t flags = 0;
+		uint32_t pad0 = 0, pad1 = 0, pad2 = 0;
+	};
+	static_assert( sizeof( BakePush ) == 48, "BakePush must match GGTerrainBakePush and fit 12 root constants" );
+	const uint32_t kPushSplat = 0x01u, kPushForceFull = 0x02u, kPushForceNone = 0x04u;   // GG_BAKEPUSH_*
+	const uint32_t kOptDetail = 0x40u, kOptDetailNormal = 0x80u;                           // GG_OPT_BAKE_*
+
+	// Repeats per chunk of a material texture of size `dim` on a surface of resolution `res` - the
+	// GGMAX 1.53b distance-tiling policy, terrainBakeChunkCS.hlsl / terrainVirtualTextureUpdateCS.hlsl
+	// gg_tile_uv_scale_lod (square textures). The live near ring renders at res 65536 (VT mip 0).
+	float TileRepeats( float res, float dim )
+	{
+		if ( dim <= 0 || res <= 0 ) return 1.0f;
+		const float cap  = (float)std::min( wi::terrain::gg_terrain_tile_share_mips, 255u );
+		const float hold = (float)std::min( wi::terrain::gg_terrain_tile_hold_mips, 255u );
+		const float diff = dim / res;
+		if ( cap > 0 )
+		{
+			const float repeats = res * std::exp2( hold ) / dim;
+			return std::max( 1.0f, repeats * std::min( 1.0f, cap / repeats ) );
+		}
+		return ( std::log2( diff ) < 0 ) ? 1.0f / diff : 1.0f;
+	}
+	const float kLiveRes = 65536.0f;
+
 	std::vector<BakedChunk> g_chunks;
+
+	// Video memory the near detail keeps alive: each DISTINCT texture once (two layers can share one
+	// Resource), at its CURRENT size (a live Texture Detail apply changes it after the bake).
+	size_t DetailBytes()
+	{
+		std::unordered_set<const void*> seen;
+		size_t bytes = 0;
+		auto add = [&]( const Texture& t, size_t floorBytes )
+		{
+			if ( !t.IsValid() || !seen.insert( t.internal_state.get() ).second ) return;
+			bytes += std::max( floorBytes, (size_t)ComputeTextureMemorySizeInBytes( t.desc ) );
+		};
+		for ( const BakedChunk& c : g_chunks ) add( c.blendmap, 65536 );   // committed: 64 KB granularity
+		for ( const BakeLayer& bl : g_layers )
+		{
+			if ( bl.color.IsValid() ) add( bl.color.GetTexture(), 0 );
+			if ( bl.normal.IsValid() ) add( bl.normal.GetTexture(), 0 );
+		}
+		return bytes;
+	}
+
 	GPUBuffer g_indexBuffer;          // shared: every chunk has identical grid topology
 	uint32_t  g_indexCount = 0;
 
@@ -136,7 +235,7 @@ namespace
 	int  g_stableCount = 0;       // consecutive passes with an unchanged chunk count
 	bool g_toreDownTerrain = false;   // WE called GGSetNoTerrainLevel(1) and owe a matching (0)
 	bool g_anyDispatchPending = false;
-	char g_report[2048] = "";
+	char g_report[3072] = "";
 
 	// GGTerrainWicked.cpp's GetWickedTerrain() is static to that translation unit, and the entity
 	// handle it uses is a file-scope global there. Taking the first (and only) TerrainComponent in
@@ -335,6 +434,12 @@ void GGTerrainBake_Clear()
 		GGSetNoTerrainLevel( 0 );
 	}
 	g_chunks.clear();
+	g_layers.clear();   // GGMAX 3.115: the retained layer textures go with the chunks (per-level value)
+	g_bakeSplat = true;
+	gg_terrain_bake_detail_chunks = 0;
+	gg_terrain_bake_detail_draws = 0;
+	gg_terrain_bake_detail_kb = 0;
+	gg_terrain_bake_detail_layers = 0;
 	g_ready = false;
 	g_buildRequested = false;
 	g_buildAttempts = 0;      // a re-tick gets a fresh budget, not the spent one
@@ -438,6 +543,30 @@ namespace
 				return false;
 			}
 		}
+
+		// ★ GGMAX 3.115: THE LAYER MATERIALS, captured NOW. GGTerrainWicked_Shutdown runs later in this same
+		// frame (once the bake is ready) and removes every layer MaterialComponent with the terrain entity;
+		// there is no later frame in which they still exist. Built into a local and committed only on
+		// success - a rolled-back attempt holds nothing.
+		std::vector<BakeLayer> layers( terrain->materialEntities.size() );
+		// Only when the detail can ever draw for THIS bake: splat mode (decal is excluded, see DrawInternal)
+		// and the detail bit on now. Otherwise keep nothing - the textures die with the terrain as before.
+		const bool bakeSplat = wi::terrain::gg_splat_blend;
+		const bool detailPossible = bakeSplat && ( gg_terrain_bake_shading & kOptDetail ) != 0;
+		const bool keepNormals = detailPossible && ( gg_terrain_bake_shading & kOptDetailNormal ) != 0;
+		for ( size_t i = 0; i < terrain->materialEntities.size(); i++ )
+		{
+			const MaterialComponent* m = scene.materials.GetComponent( terrain->materialEntities[i] );
+			if ( m == nullptr ) continue;   // an INVALID slot: the engine bake used scene material 0 there
+			layers[i].valid = true;
+			layers[i].baseColor = m->baseColor;
+			layers[i].color = m->textures[ MaterialComponent::BASECOLORMAP ].resource;
+			if ( layers[i].color.IsValid() && layers[i].color.GetTexture().IsValid() )
+				layers[i].repeats = TileRepeats( kLiveRes, (float)layers[i].color.GetTexture().desc.width );
+			if ( keepNormals ) layers[i].normal = m->textures[ MaterialComponent::NORMALMAP ].resource;
+		}
+		int detailChunks = 0;
+		size_t blendmapBytes = 0;
 
 		// ★ THE PLAY AREA: the XZ region the level's placed objects occupy. Lee's framing - the
 		// player spends their time among the objects, so that is where texel density is noticed.
@@ -657,6 +786,44 @@ namespace
 					device->SetName( &out.tex, "GGTerrainBake::chunkTex" );
 					out.dispatch_pending = true;
 					vram += ChunkTextureBytes( out.res );
+
+					// GGMAX 3.115: NEAR DETAIL ELIGIBILITY. The detail must carry the SAME pattern the bake
+					// does, at the same scale as the live terrain, or the fade cross-fades two different
+					// tilings: every layer this chunk uses must be a real material and tile identically at
+					// this bake resolution and at the live near ring's (32 repeats per chunk with 2048
+					// textures needs res >= 4096; the 256 far tier bakes 2 repeats and is never eligible).
+					const uint32_t L = chunk_data.blendmap.desc.array_size;
+					out.detailWhyNot = "";
+					if ( !detailPossible ) out.detailWhyNot = "near detail off or decal blend";
+					else if ( L == 0 || L > 64 ) out.detailWhyNot = "layer count";
+					uint64_t usedMask = 0;
+					for ( uint32_t li = 0; li < L && out.detailWhyNot[0] == 0; li++ )
+					{
+						// layers this chunk never uses cannot disagree (CPU copy of what the GPU blendmap holds)
+						bool used = true;
+						if ( li < chunk_data.blendmap_layers.size() && chunk_data.blendmap_layers.size() == L )
+						{
+							used = false;
+							for ( uint8_t px : chunk_data.blendmap_layers[li].pixels ) if ( px != 0 ) { used = true; break; }
+						}
+						if ( !used ) continue;
+						if ( li >= layers.size() || !layers[li].valid ) { out.detailWhyNot = "missing layer material"; break; }
+						usedMask |= 1ull << li;
+						if ( layers[li].color.IsValid() && layers[li].color.GetTexture().IsValid() )
+						{
+							const float dim = (float)layers[li].color.GetTexture().desc.width;
+							if ( TileRepeats( (float)out.res, dim ) != TileRepeats( kLiveRes, dim ) ) out.detailWhyNot = "bake tiles coarser than live (resolution)";
+						}
+					}
+					if ( out.detailWhyNot[0] == 0 )
+					{
+						out.blendmap = chunk_data.blendmap;   // handle copy: keeps the GPU texture + its SRV alive
+						for ( uint32_t li = 0; li < L && li < layers.size(); li++ ) if ( usedMask & ( 1ull << li ) ) layers[li].used = true;
+						out.layerCount = L;
+						out.detailOK = true;
+						detailChunks++;
+						blendmapBytes += std::max<size_t>( 65536, (size_t)W * W * L );   // committed: 64 KB granularity
+					}
 				}
 				else
 				{
@@ -691,6 +858,29 @@ namespace
 		g_anyDispatchPending = true;
 		gg_terrain_bake_chunks = (int)g_chunks.size();
 		gg_terrain_bake_vram_kb = (int)( vram / 1024 );
+
+		// GGMAX 3.115: commit the layer set only now, with the chunks; with no eligible chunk nothing needs
+		// keeping and the textures die with the terrain exactly as before 3.115.
+		size_t layerBytes = 0;
+		int keptLayers = 0;
+		g_bakeSplat = bakeSplat;   // recorded either way, so the report can say why nothing was kept
+		if ( detailChunks > 0 )
+		{
+			// a layer no eligible chunk samples is never drawn by the detail - do not keep its textures
+			for ( BakeLayer& bl : layers ) if ( !bl.used ) { bl.color = wi::Resource(); bl.normal = wi::Resource(); }
+			g_layers = std::move( layers );
+			for ( const BakeLayer& bl : g_layers ) if ( bl.valid && bl.used ) keptLayers++;
+			layerBytes = 0;   // counted once per distinct texture, in DetailBytes()
+		}
+		else
+		{
+			g_layers.clear();
+			blendmapBytes = 0;
+		}
+		gg_terrain_bake_detail_chunks = detailChunks;
+		gg_terrain_bake_detail_layers = keptLayers;
+		(void)layerBytes; (void)blendmapBytes;
+		gg_terrain_bake_detail_kb = (int)( DetailBytes() / 1024 );
 		return true;
 	}
 }
@@ -817,27 +1007,89 @@ void GGTerrainBake_RecordPendingBakes( CommandList cmd )
 // ---------------------------------------------------------------------------------------------
 namespace
 {
-	void DrawInternal( const Frustum* frustum, CommandList cmd, PipelineState* pso, bool countStats )
+	// colourPass: the colour PSO (else the depth prepass). mode: 0 = main view, 1 = planar reflection.
+	void DrawInternal( const Frustum* frustum, CommandList cmd, PipelineState* pso, bool colourPass, int mode )
 	{
 		if ( !g_ready || g_chunks.empty() ) return;
 		GraphicsDevice* device = GetDevice();
-		device->BindPipelineState( pso, cmd );
+		device->BindPipelineState( pso, cmd );   // ★ before PushConstants: without an active PSO it is a silent no-op
 		GGTerrain::GGCustomFrame_Bind( cmd );
 		device->BindIndexBuffer( &g_indexBuffer, IndexBufferFormat::UINT16, 0, cmd );
 
-		int calls = 0, culled = 0;
+		// GGMAX 3.115: this frame's layer table - main view colour pass only (the reflection and the
+		// prepass never run the detail). TRANSIENT on purpose: an AllocateGPU block lives one frame, so a
+		// descriptor in it can never outlive a Texture Detail swap (the 08-05 stale-descriptor rule).
+		int32_t tableSRV = -1;
+		uint32_t tableOffset = 0;
+		// ★ SPLAT mode only (the shipped default). In the decal stack (terrainsplatblend=0, the pre-3.113 look)
+		// the detail measured 2-5% brighter/bluer than the bake beside it, where splat mode agrees to 1% - a
+		// fade-band tint not worth shipping on a revert switch. Decal mode keeps the aniso fetch.
+		const bool wantDetail = colourPass && mode == 0 && ( gg_terrain_bake_shading & kOptDetail ) != 0
+			&& g_bakeSplat && gg_terrain_bake_detail_chunks > 0 && !g_layers.empty();
+		if ( wantDetail )
+		{
+			auto mem = device->AllocateGPU( 32 * g_layers.size(), cmd );
+			if ( mem.data != nullptr )
+			{
+				for ( size_t i = 0; i < g_layers.size(); i++ )
+				{
+					const BakeLayer& bl = g_layers[i];
+					int32_t colourSRV = -1, normalSRV = -1;
+					float repeats = 1.0f;
+					if ( bl.valid && bl.color.IsValid() && bl.color.GetTexture().IsValid() )
+					{
+						const Texture& t = bl.color.GetTexture();
+						// the sRGB view, as WriteShaderMaterial gives the bake (Color.dds is BC7_UNORM)
+						colourSRV = device->GetDescriptorIndex( &t, SubresourceType::SRV, bl.color.GetTextureSRGBSubresource() );
+						repeats = bl.repeats;   // frozen at bake time: the tiling the baked texture holds
+					}
+					if ( bl.valid && bl.normal.IsValid() && bl.normal.GetTexture().IsValid() )
+						normalSRV = device->GetDescriptorIndex( &bl.normal.GetTexture(), SubresourceType::SRV );
+					const uint32_t e[4] = { (uint32_t)colourSRV, (uint32_t)normalSRV, 0u, bl.valid ? 1u : 0u };
+					uint8_t* dst = (uint8_t*)mem.data + i * 32;
+					std::memcpy( dst, e, sizeof( e ) );                  // memcpy: write-combined memory, never read back
+					std::memcpy( dst + 8, &repeats, sizeof( float ) );
+					std::memcpy( dst + 16, &bl.baseColor, sizeof( XMFLOAT4 ) );
+				}
+				tableSRV = device->GetDescriptorIndex( &mem.buffer, SubresourceType::SRV );
+				tableOffset = (uint32_t)mem.offset;
+			}
+		}
+
+		BakePush push;
+		push.layerTable = tableSRV;
+		push.layerTableOffset = tableOffset;
+		push.fadeLodEnd = gg_terrain_bake_detail_lod_end;
+		push.fadeRcpWidth = 1.0f / std::max( 0.01f, gg_terrain_bake_detail_width );
+		push.flags = ( g_bakeSplat ? kPushSplat : 0u )
+			| ( ( gg_terrain_bake_detail_debug & 1 ) ? kPushForceFull : 0u )
+			| ( ( gg_terrain_bake_detail_debug & 2 ) ? kPushForceNone : 0u );
+
+		int calls = 0, culled = 0, detailDraws = 0;
 		const uint32_t strides[] = { sizeof( BakeVertex ) };
 		for ( BakedChunk& c : g_chunks )
 		{
 			if ( !c.vb.IsValid() || !c.tex_ready ) { continue; }
 			if ( frustum != nullptr && !frustum->CheckBoxFast( c.aabb ) ) { culled++; continue; }
-			device->BindResource( &c.tex, 50, cmd );
+			// GGMAX 3.115: the baked texture is read bindlessly through the push constants (it was a t50
+			// BindResource per chunk, which also re-copied the whole descriptor table every draw).
+			push.bakedTex = device->GetDescriptorIndex( &c.tex, SubresourceType::SRV );
+			push.bakeRes = (float)c.res;
+			const bool detail = tableSRV >= 0 && c.detailOK && c.blendmap.IsValid();
+			push.blendmap = detail ? device->GetDescriptorIndex( &c.blendmap, SubresourceType::SRV ) : -1;
+			push.layerCount = detail ? c.layerCount : 0u;
+			if ( detail ) detailDraws++;
+			device->PushConstants( &push, sizeof( push ), cmd );
 			const GPUBuffer* vbs[] = { &c.vb };
 			device->BindVertexBuffers( vbs, 0, 1, strides, 0, cmd );
 			device->DrawIndexed( g_indexCount, 0, 0, cmd );
 			calls++;
 		}
-		if ( countStats ) { gg_terrain_bake_drawcalls = calls; gg_terrain_bake_culled = culled; }
+		if ( colourPass && mode == 0 )
+		{
+			gg_terrain_bake_drawcalls = calls; gg_terrain_bake_culled = culled;
+			gg_terrain_bake_detail_draws = detailDraws;
+		}
 	}
 }
 
@@ -845,15 +1097,15 @@ void GGTerrainBake_DrawPrepass( const Frustum* frustum, CommandList cmd )
 {
 	if ( !gg_terrain_bake || !g_shadersReady ) return;
 	GetDevice()->EventBegin( "GGTerrainBake Prepass", cmd );
-	DrawInternal( frustum, cmd, &g_psoPrepass, false );
+	DrawInternal( frustum, cmd, &g_psoPrepass, false, 0 );
 	GetDevice()->EventEnd( cmd );
 }
 
-void GGTerrainBake_Draw( const Frustum* frustum, CommandList cmd )
+void GGTerrainBake_Draw( const Frustum* frustum, int mode, CommandList cmd )
 {
 	if ( !gg_terrain_bake || !g_shadersReady ) return;
 	GetDevice()->EventBegin( "GGTerrainBake Draw", cmd );
-	DrawInternal( frustum, cmd, &g_psoOpaque, true );
+	DrawInternal( frustum, cmd, &g_psoOpaque, true, mode );
 	GetDevice()->EventEnd( cmd );
 }
 
@@ -867,6 +1119,9 @@ const char* GGTerrainBake_Report()
 {
 	int withTex = 0;
 	for ( const BakedChunk& c : g_chunks ) if ( c.tex_ready ) withTex++;
+	bool detailNormalsKept = false;
+	for ( const BakeLayer& bl : g_layers ) if ( bl.normal.IsValid() ) detailNormalsKept = true;
+	gg_terrain_bake_detail_kb = (int)( DetailBytes() / 1024 );   // current sizes, each texture once
 	// GGMAX 3.112: the grass the bake keeps alive on its grass emitters (GGTerrainWicked.cpp)
 	int grassEmitters = 0, grassBare = 0, grassRehomed = 0, grassPromoted = 0, grassLive = 0;
 	unsigned long long grassMeshBytes = 0;
@@ -887,6 +1142,8 @@ const char* GGTerrainBake_Report()
 		"  last frame        : %d draw calls, %d frustum-culled\n"
 		"  wicked terrain    : %s\n"
 		"  shading           : 0x%02X  normal %s, ssao %s, probe ambient %s, full sun %s, live material %s   (SET_BAKESHADING)\n"
+		"  sharpness         : aniso %s, near detail %s, detail normals %s | %d of %d chunks eligible, %d drawn with detail\n"
+		"                      %d layer materials kept, %d KB (%.1f MB) | fade over bake lod %.2f..%.2f%s\n"
 		"  grass             : %d emitter chunks (%.1f MB of mesh) + %d bare (CPU copy), adopted in %.0f ms\n"
 		"                      %d systems moved at bake, %d bare chunks promoted since, %d systems live now\n",
 		gg_terrain_bake ? 1 : 0, g_shadersReady ? "ok" : "FAILED", g_shaderAttempts, g_ready ? 1 : 0,
@@ -910,6 +1167,13 @@ const char* GGTerrainBake_Report()
 		( gg_terrain_bake_shading & 0x04u ) ? "on" : "off",
 		( gg_terrain_bake_shading & 0x08u ) ? "on" : "off",
 		( gg_terrain_bake_shading & 0x10u ) ? "on" : "off (f0 0.04, occlusion 0.9)",
+		( gg_terrain_bake_shading & 0x20u ) ? "on" : "off",
+		( gg_terrain_bake_shading & 0x40u ) ? ( ( g_ready && !g_bakeSplat ) ? "on (INACTIVE: baked in decal blend)" : ( gg_terrain_bake_detail_layers > 0 || !g_ready ? "on" : "on (nothing kept - re-bake)" ) ) : "off",
+		( gg_terrain_bake_shading & 0x80u ) ? ( detailNormalsKept ? "on" : "on (NONE KEPT - re-bake)" ) : "off",
+		gg_terrain_bake_detail_chunks, (int)g_chunks.size(), gg_terrain_bake_detail_draws,
+		gg_terrain_bake_detail_layers, gg_terrain_bake_detail_kb, gg_terrain_bake_detail_kb / 1024.0f,
+		gg_terrain_bake_detail_lod_end - gg_terrain_bake_detail_width, gg_terrain_bake_detail_lod_end,
+		( gg_terrain_bake_detail_debug & 1 ) ? "  [DEBUG: forced full]" : ( ( gg_terrain_bake_detail_debug & 2 ) ? "  [DEBUG: forced off]" : "" ),
 		grassEmitters, grassMeshBytes / ( 1024.0 * 1024.0 ), grassBare, grassAdoptMs,
 		grassRehomed, grassPromoted, grassLive );
 	g_report[sizeof( g_report ) - 1] = 0;

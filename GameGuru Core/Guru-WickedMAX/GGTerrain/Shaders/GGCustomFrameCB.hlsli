@@ -54,7 +54,15 @@ struct GGCustomFrameData {
 #define GG_OPT_BAKE_PROBE_AMBIENT  0x04u   // global probe irradiance in the ambient, as the engine GetAmbient
 #define GG_OPT_BAKE_FULL_SUN       0x08u   // full directional light: atmosphere transmittance, all cascades
 #define GG_OPT_BAKE_LIVE_MATERIAL  0x10u   // f0 0.005 + no constant occlusion, as the live chunk material
-#define GG_OPT_BAKE_SHADING_ALL    0x1Fu
+// GGMAX 3.115: SHARPNESS. The bake used to sample its texture through s1, which it never binds - it
+// inherited GGTrees' isotropic trilinear sampler (or the null sampler, mip 0 only, with trees off) - and
+// up close it is magnified up to 8x. ANISO samples the bake with the static 16x anisotropic sampler;
+// DETAIL blends the live terrain's own material textures back in where the bake is magnified (GGTerrainBakePS);
+// DETAIL_NORMAL adds the materials' normal maps there too.
+#define GG_OPT_BAKE_ANISO          0x20u   // bake fetch through sampler_aniso_clamp (s106), else sampler_linear_clamp (s100)
+#define GG_OPT_BAKE_DETAIL         0x40u   // near detail: live material colour where the bake is magnified
+#define GG_OPT_BAKE_DETAIL_NORMAL  0x80u   // near detail: the live materials' normal maps too
+#define GG_OPT_BAKE_SHADING_ALL    0xFFu
 #define GG_OPT_BAKE_SHADING_MASK   0xFFu   // the low byte of ggOptions belongs to the bake
 
 #ifdef __cplusplus
