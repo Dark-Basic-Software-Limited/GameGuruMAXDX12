@@ -726,8 +726,11 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 					g.projectmodified = 1;
 				}
 				if (ImGui::IsItemHovered()) ImGui::SetTooltip("How thickly grass grows on painted ground, for the whole level. 100%% matches the classic (DX11) GameGuru MAX density for this level's Grass Draw Distance - as there, a longer draw distance spreads the grass thinner. Above 100%% is denser, below is sparser; grass video memory and drawing cost go up and down with it. The grass updates a moment after you let go. Your painted grass is not changed.");
-				ImGui::TextDisabled("Near you: %.1f per square metre (classic at this draw distance: %.1f)",
+				// wrapped: the panel is narrower than the sentence (it clipped at "(classi" unwrapped)
+				ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+				ImGui::TextWrapped("Near you: %.1f per square metre. Classic GameGuru MAX at this draw distance: %.1f.",
 					GGGrass_NearDensityPerM2(), GGGrass_DX11DensityPerM2());
+				ImGui::PopStyleColor();
 			}
 
 			bOff = gg_water_bake;
