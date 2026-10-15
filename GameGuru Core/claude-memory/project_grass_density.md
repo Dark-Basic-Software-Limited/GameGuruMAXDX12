@@ -1,0 +1,17 @@
+---
+name: project-grass-density
+description: "GGMAX 3.116 grass density - DX11's fixed-budget formula vs DX12's constant strands per chunk, the DX11-mode default, the whole-level Grass Density control, the density latch and the live rebuild path"
+metadata:
+  node_type: memory
+  type: project
+  originSessionId: 9a28c586-4c13-4447-916e-7fb51301bfa8
+  modified: 2026-10-15T19:19:45.828Z
+---
+
+**DX11 vs DX12 (the numbers that decide it):** DX11 (GGGrass.cpp instanced) drew a FIXED 400,000 one-quad instances over an 8x8 camera grid of cell side (lod_dist+2500)/3, so near density = 56250/(lod_dist+2500)^2 per sq inch (87.19M/(L+2500)^2 per m2) - the Grass Draw Distance WAS the density control. DX12 (Wicked hair, one system per 5280-unit chunk) laid a constant 100,000 strands per chunk = 5.56/m2. Equal only at lod ~1460; biome levels (lod 4208-7000) were 2.9-5.8x DX11. The terrain tool's "Grass Density" is paint_density = brush coverage (level data), NOT a render density - neither engine had one.
+
+**3.116 (Lee asked 2026-10-15, notes §3.116, checklist 246):** GrassStrandsForTier in GGTerrainWicked.cpp = DX11 formula x Grass Density % (setup.ini grassdensity x level visuals.GrassDensity, they MULTIPLY) x tier weight (1/0.18/0.05) x low-VRAM 0.75, clamped 1024..150000; low-VRAM ceiling 100k applied AFTER the percentage. Default DX11 mode ON (grassdensitydx11=0 = old constant). Measured: exact counts at 5 draw distances; DX12TESTLEVEL +38% FPS, -400 MB.
+
+**Live rebuild pattern (reuse it for any per-chunk grass parameter):** latch the inputs after 15 still frames (immediately when no grass exists - level load grows right first time), record builtStrands per chunk, and let the phase-1 pass re-queue stale chunks through the existing tier-change fullReset path (nearest first, 6/pass, old grass renders until replaced). Do NOT use ForceGrassRebuild for live changes - it clears the chunk map and every chunk re-waits the 30-frame settle gate (the field blanks). Staleness must be checked whenever the chunk has grass, not only at an unchanged tier (a paint stroke erases the tier record).
+
+**Not done (Lee's call):** far-field profile (DX12 strand LOD widens survivors, fades only over the last 20%; 1.3-3x DX11 coverage at 50-90 m), blade area (DX12 course strand ~1.10x a DX11 quad), Auto grass on sand/rock in fresh DX12 levels (GGGrass.cpp:714). Related: [[project-terrain-bake]] (bake grass emitters follow automatically), [[project-grass-benchmark]], [[project-lowspec-offswitches]].

@@ -23,3 +23,6 @@ metadata:
   `cd "$D" && ./GameGuruMAX.exe > /dev/null 2>&1 &` backgrounds a SUBSHELL that keeps the caller's stdout
   pipe open until MAX exits, so `script | tail` never returns — cost Lee two ~7-minute waits on 09-24.
   Also: `GET_STATE` replies end in CRLF — strip `` before comparing. Both fixed in `tools/harness/lib.sh`.
+
+- ★ 2026-10-15: `sed -i` in Git Bash STRIPS CRLF from the whole file (GGTerrainWicked.cpp went to 0 CRLF; restored by Python). And `grep -c $'$'` can report 0 on a file that IS all CRLF - check endings with Python (`open(p,"rb").read().count(b"
+")`), never grep, and never sed -i a source file.

@@ -16002,3 +16002,72 @@ Switches: ggOptions bits 0x20 / 0x40 / 0x80 (`SET_BAKESHADING`, default 0xFF), `
 (detail weight / layers sampled / bake-only albedo). DUMP_BAKE "sharpness" lines.
 
 ### LEE-CONFIRMED 3.115, 2026-10-15: "terrain bake looks great and I can see the distant mountain in both with good grass" - baked ground sharp up close (aniso + near detail, shading 0xFF), the 3.114 horizon in live AND baked, grass intact. Game `51ffdc1a`. Near-tier default left at 8192 (4096 + detail measures the same; Lee has not chosen yet).
+
+### 3.116 Grass density matches DX11 - and a whole-level Grass Density control - 2026-10-15
+
+Lee: "make some functionality tweaks to allow for control of grass density at a global level to match the
+density DX11 employed". Investigated first (workflow: DX11 reader, DX12 reader, settings reader, adversarial
+checker, designer), then built and measured.
+
+**How the two differed.** Neither had a render-time density control - the terrain tool's "Grass Density" is
+`paint_density`, a brush-coverage hash that writes the grass map.
+- **DX11** (GGGrass.cpp, instanced): a FIXED budget of 400,000 single-quad instances over an 8x8 camera-centred
+  grid of cell side (lod_dist + 2500)/3 = 6,250 per cell, so near density = **56250 / (lod_dist + 2500)^2 per
+  square inch** = 87.19M/(L+2500)^2 per m2. The Grass Draw Distance WAS the density control: 750 -> 8.25 per
+  m2, the 1500 default -> 5.45, the biome presets' 4208-7000 -> 1.94-0.97.
+- **DX12** (Wicked hair, one system per 5280-unit chunk): a constant 100,000 strands per chunk = **5.56 per m2**
+  whatever the draw distance. Equal to DX11 only at lod_dist ~1460; biome-made levels drew **2.9-5.8x** DX11's
+  grass near the camera, 750-unit levels 0.67x. DX12TESTLEVEL is a biome level at 7000: 5.75x DX11.
+
+**What changed** (game only, no engine edit):
+- `GrassStrandsForTier` (GGTerrainWicked.cpp) replaces the constant: in **DX11 mode** (default ON) strands per
+  chunk = 56250 x stride^2 / (raw lod_dist + 2500)^2, x the effective **Grass Density %**, x the tier weight
+  (1.00 / 0.18 / 0.05) and the low-VRAM multiplier, clamped 1024..150,000 (150k = DX11 at the 750 minimum).
+  Raw lod_dist so the low-VRAM distance cap never raises density; under low VRAM the base never exceeds the
+  old 100k. `grassdensitydx11=0` (setup.ini) / `SET_GRASSDENSITYMODE 0` restores the constant.
+- **Grass Density % = machine x level / 100**: setup.ini `grassdensity` (10-200) x the level's **"Grass Density
+  (whole level)"** slider in Graphics and Performance (10-200%, saved per level as `visuals.GrassDensity`,
+  reset to 100 for a level without the key). They MULTIPLY (particle percent takes the lower; this one can go
+  above 100). The slider shows the live value and a readout: "Near you: X per square metre (classic at this
+  draw distance: Y)". Saved from the live engine value, so a Test Game round trip cannot desync it.
+- **Live apply without a blank field:** the inputs are LATCHED after 15 still frames (immediately while no
+  grass exists, so a level load grows at the right density first time); each chunk records the strand count it
+  was built with and a stale one goes through the existing tier-change rebuild - nearest first, six a pass, old
+  grass rendering until its replacement exists. The Low VRAM grass density is live now too (its tooltip said
+  "next level load"; it also had an unescaped `%` in the ImGui format).
+- Tooltips: the paint tool's Grass Density says it is brush coverage; Grass Draw Distance says it sets the
+  density as in DX11.
+
+**Measured** (DESKTOP RX 9060 XT):
+- Exact: per-system strands at lod 750 / 1500 / 2247 / 4208 / 7000 = 148,465 / 98,010 / 69,591 / 34,850 /
+  17,376, near density 8.25 / 5.45 / 3.87 / 1.94 / 0.97 per m2 - the DX11 formula, ratio 1.000 each time.
+- DX12TESTLEVEL (lod 7000), interleaved A/B DX11 mode vs constant: **171.7 vs 124.5 FPS (5.82 vs 8.03 ms,
+  +38%)**, 180k vs 1.03M strands, VRAM census **1842 vs 2242 MB (-400 MB)**. Visually it now has DX11's
+  character - clumps with soil between, not a mat (compared with Lee's own DX11 shot).
+- Costs more only below lod ~1460: at 750, 1.34M strands vs 0.90M (+48%, about +210 MB) - DX11 was denser there too.
+- Live: 200% -> grass coverage 0.118 -> 0.168 within 0.4 s, never below the starting value mid-rebuild; 50% ->
+  0.081. Test Game round trip keeps 60% (scratch visuals.ini carries `visuals.GrassDensity=60`); reloading a
+  key-less level resets 60 -> 100 and grows at the right density at once; machine 50 x level 150 = 75%; works
+  under Terrain Bake (the emitters rebuild live).
+
+**Not done (differences a count cannot fix), for Lee's call:**
+- Far field: DX12's strand LOD widens survivors 2-4x and fades only over the last 20% of the view distance,
+  while DX11 dissolved from lod_dist - DX12 still covers ~1.3x DX11 at 51 m, ~2x at 70 m, ~3x at 91 m at the
+  default distance; above lod ~1687 the 18%/5% mid/far tiers come into view where DX11 stayed uniform.
+  Fixable without an engine edit (tier rings + strand LOD fractions) - "Phase 2" in the design.
+- Blade area: a DX12 course-grass strand (2 billboards) covers ~1.10x a DX11 quad; short/tall types 0.56x /
+  1.96x where DX11 used one size. DX11's blades also read darker/taller in Lee's shot.
+- Auto grass grows on sand, rock, mud, gravel on a fresh DX12 level (GGGrass.cpp:714 writes type 0 where DX11
+  cleared the cell) - changes level data, so not touched.
+- Found and spawned separately: the standalone game's vegetation-quality routine latches level 1's grass draw
+  distance (and shadow resolutions) for the whole process (M-Visuals_part1.cpp ~786).
+
+**Adversarial review (6 agents, 11 findings, 3 confirmed - two the same - all fixed):** the low-VRAM ceiling was
+applied before the percentage, so a level saved above 100% pushed a 4 GB machine past the pre-3.116 budget -
+now applied after it (verified: level 200% + Low VRAM = 75,000 per system, the old low-VRAM figure); and in
+per-type grass mode (grassmerge=0) a paint stroke between a density change and that chunk's rebuild could leave
+an old type system at the old density for the session - staleness is now checked whenever the chunk has grass,
+not only at an unchanged tier, so it takes the full rebuild.
+
+Harness: `SET_GRASSDENSITY <pct>`, `SET_GRASSDENSITY_MACHINE <pct>`, `SET_GRASSDENSITYMODE <0|1>`,
+`GET_GRASSDENSITY`; `GET_PERF_DATA` line `GRASS_DENSITY:`. setup.ini `grassdensity`, `grassdensitydx11`.

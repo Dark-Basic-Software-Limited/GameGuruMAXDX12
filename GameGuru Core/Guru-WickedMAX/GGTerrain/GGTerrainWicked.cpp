@@ -86,6 +86,9 @@ struct ChunkGrassEntities
 	// the teardown paths and the GRASS_CHUNKS histogram stay unambiguous about which mode built it.
 	wi::ecs::Entity merged = wi::ecs::INVALID_ENTITY;
 	uint64_t mergedTypeMask[2] = { 0, 0 };  // which types the merged entity was built for (88 bits)
+	// GGMAX 3.116: the strandCount its hair system(s) were created with - a Grass Density change
+	// (or a draw-distance change in DX11 density mode) re-queues the chunk when this goes stale.
+	uint32_t builtStrands = 0;
 	ChunkGrassEntities()
 	{
 		for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++) perType[t] = wi::ecs::INVALID_ENTITY;
@@ -517,6 +520,65 @@ float gg_lowvram_grass_dist = 750.0f;
 // 50% costs -1.47 pp of coverage, and 30% breaks the gate outright (clumpCV +0.25, the same
 // magnitude of failure as the reverted 2026-08-01 build, with visibly bare ground).
 float gg_lowvram_grass_density = 0.75f;
+
+// ★★ GGMAX 3.116: GRASS DENSITY - DX11 parity plus a whole-level control.
+//
+// DX11 (GGGrass.cpp, the instanced path) drew a FIXED budget of 400,000 single-quad instances
+// over an 8x8 camera-centred grid whose cell side is (lod_dist + 2500)/3, so its density near the
+// camera was 56250 / (lod_dist + 2500)^2 per square inch - the Grass Draw Distance WAS the density
+// control: longer reach, thinner grass (1500 -> 5.45 per m2, the biomes' 4208-7000 -> 1.94-0.97).
+// DX12 laid a constant 100,000 strands per 5280-unit chunk (5.56 per m2) whatever the distance, so
+// biome-made levels drew 2.9-5.8x DX11's grass near the camera and 750-unit levels 0.67x.
+// gg_grass_density_dx11 (default ON) lays the DX11 density for the level's draw distance; the
+// percentage (setup.ini grassdensity x the level's Grass Density, master_part1.cpp) scales it.
+bool gg_grass_density_dx11 = true;
+int  gg_grass_density_pct = 100;            // effective = machine x level / 100
+static const uint32_t GG_GRASS_MAX_STRANDS = 150000;   // per system: DX11 at the 750 slider minimum
+// LATCHED values the grass systems are built from. Moved only after the inputs have held still for
+// GG_GRASS_DENSITY_SETTLE frames (a draw-distance drag must not rebuild grass every frame).
+static float g_grassNearStrands = 100000.0f;   // strands per chunk at full (tier 3) density
+static float g_grassLowVramMul = 1.0f;
+static bool  g_grassDensityLatched = false;
+static const int GG_GRASS_DENSITY_SETTLE = 15;
+unsigned int g_dbgGrassDensityStale = 0;      // chunks queued for a density rebuild by the last pass
+unsigned int g_dbgGrassDensityLatches = 0;    // how many times the latch moved
+
+// What the live inputs ask for right now (unlatched). nearStrands = strands per chunk of stride
+// `chunkStride` at full density, BEFORE the low-VRAM multiplier.
+static void GrassDensityTarget( float chunkStride, float& nearStrands, float& lowVramMul )
+{
+	float base = 100000.0f;   // the pre-3.116 DX12 constant
+	if ( gg_grass_density_dx11 && chunkStride > 0.0f )
+	{
+		// the RAW slider, not GGGrass_LodDistEffective(): the low-VRAM distance cap must never RAISE density
+		const float R = (float)GGGrass::gggrass_global_params.lod_dist + 2500.0f;
+		base = 56250.0f * chunkStride * chunkStride / ( R * R );
+	}
+	nearStrands = base * (float)std::max( 1, gg_grass_density_pct ) / 100.0f;
+	// ★ AFTER the percentage (review 3.116): a 4 GB card never gets more grass than before 3.116, even on
+	// a level its author saved above 100% - the low-VRAM preset already overrides the author's draw
+	// distance, and this is the same promise for density. (x0.75 below still applies on top.)
+	if ( gg_lowvram ) nearStrands = std::min( nearStrands, 100000.0f );
+	lowVramMul = ( gg_lowvram && gg_lowvram_grass_density > 0.0f && gg_lowvram_grass_density < 1.0f ) ? gg_lowvram_grass_density : 1.0f;
+}
+
+// For the panel / harness: DX11's near density at the level's draw distance, per square metre.
+float GGGrass_DX11DensityPerM2()
+{
+	const float R = (float)GGGrass::gggrass_global_params.lod_dist + 2500.0f;
+	return 56250.0f / ( R * R ) * 1550.0031f;
+}
+// Harness GET_GRASSDENSITY: the latched near strands per chunk, the low-VRAM multiplier, the strands
+// per system for each tier, and the bookkeeping counters.
+void GGGrass_GetDensityState( float* nearStrands, float* lowMul, unsigned int* t3, unsigned int* t2, unsigned int* t1,
+	unsigned int* stale, unsigned int* latches );
+// ...and what this build lays near the camera now (latched), per square metre of painted ground.
+float GGGrass_NearDensityPerM2()
+{
+	const float stride = ( wi::terrain::chunk_width - 1 ) * 80.0f;   // GG terrain: chunk_scale 80
+	const float n = std::min( (float)GG_GRASS_MAX_STRANDS, std::max( 1024.0f, g_grassNearStrands * g_grassLowVramMul ) );
+	return n / ( stride * stride ) * 1550.0031f;
+}
 
 // The effective grass draw distance in inches. Every consumer of lod_dist must go through this,
 // otherwise the per-strand cull and the chunk-creation ring disagree and grass pops in as whole
@@ -2038,7 +2100,9 @@ static int GrassTierForRingDist(float ringDist, float nearC, float midC, float o
 	if (ringDist <= outerC) return 1;            // far: sparse
 	return 0;                                     // beyond: no grass
 }
-static float GrassTierDensityScale(int tier)
+// GGMAX 3.116: superseded by GrassStrandsForTier (the low-VRAM multiplier now rides the density latch);
+// kept for the reasoning in its comments and for any older caller.
+[[maybe_unused]] static float GrassTierDensityScale(int tier)
 {
 	float s;
 	switch (tier) { case 3: s = 1.00f; break; case 2: s = 0.18f; break; case 1: s = 0.05f; break; default: return 0.0f; }
@@ -2062,6 +2126,49 @@ static float GrassTierDensityScale(int tier)
 		s *= gg_lowvram_grass_density;
 	}
 	return s;
+}
+
+// GGMAX 3.116: strands for one grass system at a tier, from the LATCHED density. Tier weights are
+// relative to the near tier (1.00 / 0.18 / 0.05); the low-VRAM multiplier is applied here too.
+static float GrassTierRel( int tier )
+{
+	switch ( tier ) { case 3: return 1.00f; case 2: return 0.18f; case 1: return 0.05f; default: return 0.0f; }
+}
+static uint32_t GrassStrandsForTier( int tier )
+{
+	const float rel = GrassTierRel( tier );
+	if ( rel <= 0.0f ) return 0;
+	uint32_t n = (uint32_t)( g_grassNearStrands * rel * g_grassLowVramMul + 0.5f );
+	if ( n < 1024 ) n = 1024;                         // the floor every system always had
+	if ( n > GG_GRASS_MAX_STRANDS ) n = GG_GRASS_MAX_STRANDS;
+	return n;
+}
+
+void GGGrass_GetDensityState( float* nearStrands, float* lowMul, unsigned int* t3, unsigned int* t2, unsigned int* t1,
+	unsigned int* stale, unsigned int* latches )
+{
+	if ( nearStrands ) *nearStrands = g_grassNearStrands;
+	if ( lowMul ) *lowMul = g_grassLowVramMul;
+	if ( t3 ) *t3 = GrassStrandsForTier( 3 );
+	if ( t2 ) *t2 = GrassStrandsForTier( 2 );
+	if ( t1 ) *t1 = GrassStrandsForTier( 1 );
+	if ( stale )
+	{
+		// LIVE: chunks whose systems were built at a count the latch no longer asks for (same 2% / 256
+		// dead band as the pass) - 0 means every chunk carries the current density
+		unsigned int n = 0;
+		for ( const auto& kv : grassChunkKeyToGrassEntities )
+		{
+			if ( kv.second.builtStrands == 0 ) continue;
+			auto tr = grassChunkKeyToTier.find( kv.first );
+			if ( tr == grassChunkKeyToTier.end() || tr->second <= 0 ) continue;
+			const uint32_t want = GrassStrandsForTier( tr->second ), have = kv.second.builtStrands;
+			const uint32_t diff = ( want > have ) ? want - have : have - want;
+			if ( diff >= 256 && diff * 50u > have ) n++;
+		}
+		*stale = n;
+	}
+	if ( latches ) *latches = g_dbgGrassDensityLatches;
 }
 
 // GGMAX 1.74: build (or keep) the single merged hair entity for one chunk. Everything that
@@ -2211,11 +2318,10 @@ static void ProcessGrassChunkMerged(
 	hair.length = maxLength;
 
 	// Same strand count as ONE per-type system had. That is the entire saving: the chunk used to
-	// pay this per painted type.
-	constexpr uint32_t STAGE1_STRANDS_PER_TIER = 100000;
-	uint32_t strands = (uint32_t)(STAGE1_STRANDS_PER_TIER * GrassTierDensityScale(pc.tier) + 0.5f);
-	if (strands < 1024) strands = 1024;
+	// pay this per painted type. GGMAX 3.116: from the latched Grass Density (DX11 parity).
+	const uint32_t strands = GrassStrandsForTier(pc.tier);
 	hair.strandCount = strands;
+	existingEntities.builtStrands = strands;
 
 	hair.CreateFromMesh(*pc.mesh);
 	hair.position_format = wi::graphics::Format::R32G32B32A32_FLOAT;
@@ -2297,6 +2403,7 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 	// tier (or chunk entity) changed. No scene/map mutation here — the generator thread may be running.
 	const uint32_t nowFrame = (uint32_t)wi::graphics::GetDevice()->GetFrameCount(); // settle gate
 	g_grassSettlePending = false; // re-set below while any chunk is still deferring
+	g_dbgGrassDensityStale = 0;
 	// Creation budget: when a whole streaming wave settles at once (~300+ chunks at level load),
 	// growing everything in one pass would hang a frame for hundreds of ms. Cap grass GROWTH to a
 	// few chunks per pass; the settle-retry keeps the pass running until the queue drains
@@ -2415,7 +2522,26 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 			if (keep) targetTier = currentTier;
 		}
 
-		if (!entityChanged && currentTier == targetTier) continue; // already correct for this chunk
+		// GGMAX 3.116: the right tier but built at a different density (Grass Density moved, or the draw
+		// distance in DX11 mode) - rebuild through the same path a tier change takes: nearest first, six a
+		// pass, and the old grass keeps rendering until its replacement exists. A 2% / 256-strand dead
+		// band keeps rounding from ever re-queueing a chunk.
+		// Checked whenever the chunk HAS grass, not only at an unchanged tier (review 3.116): a paint stroke
+		// erases the tier record, and in per-type mode the paint path would then add the new type at the
+		// new count beside old types left at the old one - with builtStrands overwritten, for good.
+		bool densityStale = false;
+		if (!entityChanged && targetTier > 0)
+		{
+			auto gs = grassChunkKeyToGrassEntities.find(key);
+			if (gs != grassChunkKeyToGrassEntities.end() && gs->second.builtStrands > 0)
+			{
+				const uint32_t want = GrassStrandsForTier(targetTier);
+				const uint32_t have = gs->second.builtStrands;
+				const uint32_t diff = (want > have) ? want - have : have - want;
+				if (diff >= 256 && diff * 50u > have) { densityStale = true; g_dbgGrassDensityStale++; }
+			}
+		}
+		if (!entityChanged && currentTier == targetTier && !densityStale) continue; // already correct for this chunk
 
 		auto git = grassChunkKeyToGrassEntities.find(key);
 		bool hasExistingEntities = false;
@@ -2490,7 +2616,7 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 		// strands) keeps its old low-density entities — the existing-entity branch in Phase 2 only
 		// updates vertex_lengths, not strandCount, so the visible density stays stuck at the lower
 		// tier even after the chunk re-enters the dense ring.
-		bool tierChanged = (currentTier > 0 && currentTier != targetTier && hasExistingEntities);
+		bool tierChanged = (currentTier > 0 && currentTier != targetTier && hasExistingEntities) || densityStale;
 
 		// Capture the world matrix by value (a transform pointer would be invalidated when we
 		// create transform components for grass entities in Phase 2).
@@ -2584,6 +2710,7 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 				existingEntities.merged = wi::ecs::INVALID_ENTITY;
 				existingEntities.mergedTypeMask[0] = existingEntities.mergedTypeMask[1] = 0;
 			}
+			existingEntities.builtStrands = 0;
 		}
 
 		grassChunkKeyToChunkEntity[pc.key] = pc.entity;
@@ -2660,10 +2787,9 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 
 			// Fixed strand count per tier — independent of paint state, so painting a new type
 			// into the chunk never perturbs an existing entity's strandCount.
-			constexpr uint32_t STAGE1_STRANDS_PER_TIER = 100000;
-			uint32_t strands = (uint32_t)(STAGE1_STRANDS_PER_TIER * GrassTierDensityScale(pc.tier) + 0.5f);
-			if (strands < 1024) strands = 1024;
+			const uint32_t strands = GrassStrandsForTier(pc.tier);   // GGMAX 3.116: latched Grass Density
 			hair.strandCount = strands;
+			existingEntities.builtStrands = strands;
 
 			hair.CreateFromMesh(*pc.mesh);
 			// Force FP32 position buffer (CreateFromMesh defaults to R16G16B16A16_UNORM for static
@@ -3588,6 +3714,34 @@ static void UpdateWickedGrassManager(wi::terrain::Terrain* terrain, const wi::sc
 		// over without writing keep their grass intact and don't reshuffle.
 		float gridChunkStride = terrain ? (wi::terrain::chunk_width - 1) * terrain->chunk_scale : s_bakeGrassChunkStride;
 		GGGrass::GGGrass_SetChunkStride(gridChunkStride);
+
+		// GGMAX 3.116: the Grass Density LATCH. Inputs = density mode, percentage, raw draw distance and
+		// the low-VRAM preset. Latched at once while no grass exists (level load: grow at the right
+		// density first time); otherwise only after they hold still for GG_GRASS_DENSITY_SETTLE frames,
+		// then the pass is nudged and the stale-density test above re-queues chunks.
+		{
+			float tNear = 0.0f, tMul = 1.0f;
+			GrassDensityTarget(gridChunkStride, tNear, tMul);
+			static float s_pendNear = -1.0f, s_pendMul = -1.0f;
+			static int s_stable = 0;
+			if (tNear != g_grassNearStrands || tMul != g_grassLowVramMul || !g_grassDensityLatched)
+			{
+				bool anyGrass = false;
+				for (const auto& kv : grassChunkKeyToGrassEntities) { if (kv.second.builtStrands > 0) { anyGrass = true; break; } }
+				if (tNear == s_pendNear && tMul == s_pendMul) s_stable++;
+				else { s_pendNear = tNear; s_pendMul = tMul; s_stable = 0; }
+				if (!anyGrass || !g_grassDensityLatched || s_stable >= GG_GRASS_DENSITY_SETTLE)
+				{
+					g_grassNearStrands = tNear;
+					g_grassLowVramMul = tMul;
+					g_grassDensityLatched = true;
+					g_dbgGrassDensityLatches++;
+					s_stable = 0;
+					if (anyGrass) g_grassPassNudge = true;
+				}
+			}
+			else s_stable = 0;
+		}
 		static wi::vector<uint64_t> dirtyChunks; // reused across frames; cleared per drain
 		dirtyChunks.clear();
 		if (GGGrass::GGGrass_TakeDirtyChunks(dirtyChunks))

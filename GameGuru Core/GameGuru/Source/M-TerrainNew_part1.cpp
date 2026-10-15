@@ -937,6 +937,8 @@ void imgui_terrain_loop_v3(void)
 				{
 					ImGui::TextCenter("Grass Density");
 					ImGui::SliderInt("##GrassDensity", &gggrass_global_params.paint_density, 0, 100);
+					// GGMAX 3.116: say what this one is - Graphics and Performance now has a whole-level Grass Density too
+					if (ImGui::IsItemHovered()) ImGui::SetTooltip("Brush coverage: the share of the ground your grass brush (and Populate) paints, 0-100%%. It changes the painted grass itself. For how thickly grass grows everywhere it is painted, use Grass Density (whole level) in Graphics and Performance.");
 
 					ImGui::TextCenter("Grass Draw Distance");
 					int fTmp = gggrass_global_params.lod_dist;
@@ -945,6 +947,8 @@ void imgui_terrain_loop_v3(void)
 						g.projectmodified = 1;
 						gggrass_global_params.lod_dist = fTmp;
 					}
+					// GGMAX 3.116: in the default (classic) density mode this is a density control too, as it was in DX11
+					if (ImGui::IsItemHovered()) ImGui::SetTooltip("How far away grass is drawn. As in classic GameGuru MAX, the same amount of grass is spread over the whole range, so a longer draw distance gives thinner grass near you and a shorter one gives thicker grass. Grass Density (whole level) in Graphics and Performance scales it on top.");
 
 					if (pref.iEnableAdvancedGrass)
 					{

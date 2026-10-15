@@ -153,6 +153,11 @@ void gg_visuals_reset_brutal_switches()
 	t.visuals.bNoShadows        = false;  if (gg_no_shadows)        GGSetNoShadowsLevel(0);
 	t.visuals.bNoOcclusionCull  = false;  if (gg_no_occlusion)      GGSetNoOcclusionLevel(0);
 	t.visuals.iParticlePct      = 100;    if (gg_particle_pct != 100) GGSetParticlePctLevel(100);
+	// GGMAX 3.116: Grass Density - an old file has no key, so this IS its value (100% = DX11 density)
+	{
+		extern int GGGetGrassDensityLevel(); extern void GGSetGrassDensityLevel(int);
+		t.visuals.iGrassDensityPct = 100;  if (GGGetGrassDensityLevel() != 100) GGSetGrassDensityLevel(100);
+	}
 	t.visuals.iObjectCullDist   = 0;      if (gg_object_cull_dist != 0.0f) GGSetObjectCullDistLevel(0);
 	t.visuals.iTextureDivide    = 1;
 	// GGMAX 3.28: 8 consecutive hidden frames before an object stops being drawn. Reset with
@@ -902,6 +907,14 @@ void visuals_save ( void )
 	WriteString(1, t.strwork.Get());
 	t.strwork = ""; t.strwork = t.strwork + "visuals.ParticlePct=" + Str(t.visuals.iParticlePct);
 	WriteString(1, t.strwork.Get());
+	// GGMAX 3.116: written from the LIVE level value, not t.visuals - a Test Game round trip reverts
+	// t.visuals to editorvisuals, and the engine value is the one the panel shows and the grass uses.
+	{
+		extern int GGGetGrassDensityLevel();
+		t.visuals.iGrassDensityPct = GGGetGrassDensityLevel();
+		t.strwork = ""; t.strwork = t.strwork + "visuals.GrassDensity=" + Str(t.visuals.iGrassDensityPct);
+		WriteString(1, t.strwork.Get());
+	}
 	t.strwork = ""; t.strwork = t.strwork + "visuals.ObjectCullDist=" + Str(t.visuals.iObjectCullDist);
 	WriteString(1, t.strwork.Get());
 	t.strwork = ""; t.strwork = t.strwork + "visuals.TextureDivide=" + Str(t.visuals.iTextureDivide);
@@ -1655,6 +1668,7 @@ void visuals_load ( void )
 				t.try_s = "visuals.NoShadows";       if (t.tfield_s == t.try_s) { t.visuals.bNoShadows       = ValF(t.tvalue_s.Get()) != 0; GGSetNoShadowsLevel(t.visuals.bNoShadows ? 1 : 0); }
 				t.try_s = "visuals.NoOcclusionCull"; if (t.tfield_s == t.try_s) { t.visuals.bNoOcclusionCull = ValF(t.tvalue_s.Get()) != 0; GGSetNoOcclusionLevel(t.visuals.bNoOcclusionCull ? 1 : 0); }
 				t.try_s = "visuals.ParticlePct";     if (t.tfield_s == t.try_s) { t.visuals.iParticlePct     = (int)ValF(t.tvalue_s.Get()); GGSetParticlePctLevel(t.visuals.iParticlePct); }
+				t.try_s = "visuals.GrassDensity";    if (t.tfield_s == t.try_s) { extern void GGSetGrassDensityLevel(int); extern int GGGetGrassDensityLevel(); t.visuals.iGrassDensityPct = (int)ValF(t.tvalue_s.Get()); GGSetGrassDensityLevel(t.visuals.iGrassDensityPct); t.visuals.iGrassDensityPct = GGGetGrassDensityLevel(); }
 				t.try_s = "visuals.ObjectCullDist";  if (t.tfield_s == t.try_s) { t.visuals.iObjectCullDist  = (int)ValF(t.tvalue_s.Get()); GGSetObjectCullDistLevel(t.visuals.iObjectCullDist); }
 				t.try_s = "visuals.TextureDivide";   if (t.tfield_s == t.try_s) { t.visuals.iTextureDivide   = (int)ValF(t.tvalue_s.Get()); if (t.visuals.iTextureDivide != 1) GGSetTextureDivideLive(t.visuals.iTextureDivide); }
 				t.try_s = "visuals.AnimReductionScale"; if (t.tfield_s == t.try_s) { t.visuals.iAnimReductionScale = (int)ValF(t.tvalue_s.Get()); }

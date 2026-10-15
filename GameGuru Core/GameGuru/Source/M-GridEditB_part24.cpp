@@ -554,7 +554,7 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			extern void GGApplyVisualsNow();
 			GGApplyVisualsNow(); // SSR + shadow-cap members apply immediately; grass on reload
 		}
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Trades visual reach for video memory so this level fits a 4GB graphics card: caps grass draw distance at 750, thins grass density to 75%, caps shadow cascade resolution at 1024 and turns off Screen Space Reflections. Shadow and reflection changes apply immediately; the grass changes apply the next time the level is loaded. Players with small cards can also force this on for ALL levels with lowvram=1 in setup.ini.");
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Trades visual reach for video memory so this level fits a 4GB graphics card: caps grass draw distance at 750, thins grass density to 75%%, caps shadow cascade resolution at 1024 and turns off Screen Space Reflections. All of it applies immediately - the grass rebuilds over a second or two, nearest first. Players with small cards can also force this on for ALL levels with lowvram=1 in setup.ini.");
 		ImGui::PopItemWidth();
 
 		// ====================================================================================
@@ -710,6 +710,25 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 				g.projectmodified = 1;
 			}
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("Removes every blade of grass from the scene, including the per-strand simulation that runs on the graphics card each frame. Your painted grass is kept and reappears when you untick this.");
+
+			// GGMAX 3.116: Grass Density for the whole level. Shows the LIVE level value (as Particle Density
+			// shows its engine value), so a Test Game round trip cannot desync the control. The grass follows
+			// a moment after the slider stops (GGTerrainWicked.cpp density latch), nearest chunks first.
+			{
+				extern int GGGetGrassDensityLevel(); extern void GGSetGrassDensityLevel(int);
+				extern float GGGrass_DX11DensityPerM2(); extern float GGGrass_NearDensityPerM2();
+				int gd = GGGetGrassDensityLevel();
+				ImGui::Text("Grass Density (whole level)");
+				if (ImGui::SliderInt("##gg_grass_density", &gd, 10, 200, "%d%%"))
+				{
+					GGSetGrassDensityLevel(gd);
+					t.gamevisuals.iGrassDensityPct = t.visuals.iGrassDensityPct = GGGetGrassDensityLevel();
+					g.projectmodified = 1;
+				}
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip("How thickly grass grows on painted ground, for the whole level. 100%% matches the classic (DX11) GameGuru MAX density for this level's Grass Draw Distance - as there, a longer draw distance spreads the grass thinner. Above 100%% is denser, below is sparser; grass video memory and drawing cost go up and down with it. The grass updates a moment after you let go. Your painted grass is not changed.");
+				ImGui::TextDisabled("Near you: %.1f per square metre (classic at this draw distance: %.1f)",
+					GGGrass_NearDensityPerM2(), GGGrass_DX11DensityPerM2());
+			}
 
 			bOff = gg_water_bake;
 			if (ImGui::Checkbox("Water Bake##gg_water_bake", &bOff))

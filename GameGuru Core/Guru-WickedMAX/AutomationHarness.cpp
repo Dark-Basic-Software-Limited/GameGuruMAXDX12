@@ -1484,6 +1484,13 @@ static void Cmd_GetPerfData(char* result, int resultSize)
 			"HAIR_SEG: %u  HAIR_BILLBOARD: %u  HAIR_VIEWDIST: %.0f  HAIR_LEN: %.1f\n",
 			(int)sc.hairs.GetCount(), (unsigned long long)totalStrands, (unsigned long long)maxStrands,
 			seg, bb, vd, len);
+		{
+			// GGMAX 3.116: so sweeps log the grass density they ran at
+			extern int gg_grass_density_pct; extern bool gg_grass_density_dx11;
+			extern float GGGrass_NearDensityPerM2(); extern float GGGrass_DX11DensityPerM2();
+			written += _snprintf(result + written, resultSize - written, "GRASS_DENSITY: mode=%s pct=%d near_per_m2=%.2f dx11_per_m2=%.2f\n",
+				gg_grass_density_dx11 ? "dx11" : "const", gg_grass_density_pct, GGGrass_NearDensityPerM2(), GGGrass_DX11DensityPerM2());
+		}
 
 		// GGMAX: grass systems per CHUNK. One hair system exists per (chunk x painted type),
 		// so this histogram is exactly the payoff available from merging a chunk's types into
@@ -3290,6 +3297,68 @@ static bool AutoHarness_TracerCommands(const char* cmd, const char* arg, char* r
 	result[resultSize - 1] = 0;
 	return true;
 }
+
+// GGMAX 3.116: Grass Density, hoisted per the C1061 pattern (shares the existing helper arm).
+//   SET_GRASSDENSITY <pct>          the LEVEL value (as the Graphics and Performance slider), 10..200
+//   SET_GRASSDENSITY_MACHINE <pct>  the machine value (as setup.ini grassdensity)
+//   SET_GRASSDENSITYMODE <0|1>      1 = DX11 density from the draw distance (default), 0 = pre-3.116 constant
+//   GET_GRASSDENSITY                everything the density is made of, the latch, and what is built
+extern void GGSetGrassDensity(int); extern void GGSetGrassDensityLevel(int); extern void GGSetGrassDensityDX11(int);
+extern int GGGetGrassDensityLevel(); extern int GGGetGrassDensityMachine();
+extern float GGGrass_DX11DensityPerM2(); extern float GGGrass_NearDensityPerM2(); extern float GGGrass_LodDistEffective();
+extern void GGGrass_GetDensityState(float*, float*, unsigned int*, unsigned int*, unsigned int*, unsigned int*, unsigned int*);
+static bool AutoHarness_GrassDensityCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
+{
+	extern int gg_grass_density_pct; extern bool gg_grass_density_dx11; extern bool gg_lowvram;
+	if (_stricmp(cmd, "SET_GRASSDENSITY") == 0 || _stricmp(cmd, "SET_GRASSDENSITY_MACHINE") == 0 || _stricmp(cmd, "SET_GRASSDENSITYMODE") == 0)
+	{
+		if (arg && arg[0])
+		{
+			const int v = atoi(arg);
+			if (_stricmp(cmd, "SET_GRASSDENSITY") == 0) { GGSetGrassDensityLevel(v); t.gamevisuals.iGrassDensityPct = t.visuals.iGrassDensityPct = GGGetGrassDensityLevel(); }
+			else if (_stricmp(cmd, "SET_GRASSDENSITY_MACHINE") == 0) GGSetGrassDensity(v);
+			else GGSetGrassDensityDX11(v);
+		}
+		_snprintf(result, resultSize, "OK: %s - level %d%%, machine %d%%, effective %d%%, mode %s. Grass rebuilds once the inputs hold still (15 frames), nearest chunks first - GET_GRASSDENSITY shows the latch.",
+			cmd, GGGetGrassDensityLevel(), GGGetGrassDensityMachine(), gg_grass_density_pct, gg_grass_density_dx11 ? "DX11 (draw distance)" : "constant 100k/chunk (pre-3.116)");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "GET_GRASSDENSITY") != 0) return false;
+	float nearS = 0, lowMul = 1; unsigned int t3 = 0, t2 = 0, t1 = 0, stale = 0, latches = 0;
+	GGGrass_GetDensityState(&nearS, &lowMul, &t3, &t2, &t1, &stale, &latches);
+	unsigned long long total = 0; unsigned int systems = 0, minS = 0xFFFFFFFFu, maxS = 0;
+	{
+		wi::scene::Scene& sc = wi::scene::GetScene();
+		for (size_t i = 0; i < sc.hairs.GetCount(); i++)
+		{
+			const wi::HairParticleSystem& h = sc.hairs[i];
+			if (h.grass_type == 0) continue;   // not GG grass
+			systems++; total += h.strandCount;
+			if (h.strandCount < minS) minS = h.strandCount;
+			if (h.strandCount > maxS) maxS = h.strandCount;
+		}
+	}
+	if (systems == 0) minS = 0;
+	const float nearPM2 = GGGrass_NearDensityPerM2(), dx11PM2 = GGGrass_DX11DensityPerM2();   // (near is a windef.h macro)
+	_snprintf(result, resultSize,
+		"GRASS DENSITY (GGMAX 3.116)\n"
+		"  mode              : %s\n"
+		"  percent           : level %d%%, machine %d%%, effective %d%%\n"
+		"  draw distance     : raw %d, effective %.0f (lowvram %d, density x%.2f)\n"
+		"  latched           : %.0f strands per chunk at full density; per system: tier3 %u, tier2 %u, tier1 %u (latch moved %u times)\n"
+		"  near density      : %.2f per m2 now | classic (DX11) at this draw distance %.2f | ratio %.3f\n"
+		"  built             : %u systems, %llu strands (min %u, max %u per system); %u chunks still at an old density\n",
+		gg_grass_density_dx11 ? "DX11 - density from the Grass Draw Distance (default)" : "constant 100,000 per chunk (pre-3.116)",
+		GGGetGrassDensityLevel(), GGGetGrassDensityMachine(), gg_grass_density_pct,
+		(int)GGGrass::gggrass_global_params.lod_dist, GGGrass_LodDistEffective(), gg_lowvram ? 1 : 0, lowMul,
+		nearS, t3, t2, t1, latches,
+		nearPM2, dx11PM2, (dx11PM2 > 0) ? nearPM2 / dx11PM2 : 0.0f,
+		systems, total, minS, maxS, stale);
+	result[resultSize - 1] = 0;
+	return true;
+}
+
 
 // GGMAX 3.87: DUMP_POSTFX - the five level-authored post-processing flags in BOTH stores at once,
 // plus the tree LOD distance the quality preset dials.
@@ -8697,7 +8766,7 @@ void AutoHarness_CheckForCommand(void)
 			extern void GGApplyVisualsNow();
 			GGApplyVisualsNow(); // SSR + shadow-cap members apply immediately; grass on reload
 		}
-		_snprintf(result, sizeof(result), "OK: SET_LOWVRAM %d grassdistcap=%.0f grassdensity=%.0f%% (RELOAD the level to rebuild grass)",
+		_snprintf(result, sizeof(result), "OK: SET_LOWVRAM %d grassdistcap=%.0f grassdensity=%.0f%% (GGMAX 3.116: grass rebuilds live, nearest first - no reload)",
 			gg_lowvram ? 1 : 0, gg_lowvram_grass_dist, gg_lowvram_grass_density * 100.0f);
 		result[sizeof(result) - 1] = 0;
 	}
@@ -8774,7 +8843,8 @@ void AutoHarness_CheckForCommand(void)
 		|| AutoHarness_TracerCommands(cmd, arg, result, sizeof(result))
 		|| AutoHarness_TreeWindCommands(cmd, arg, result, sizeof(result))
 		|| AutoHarness_MouseCommands(cmd, arg, result, sizeof(result))
-		|| AutoHarness_PostFXCommands(cmd, arg, result, sizeof(result))) // C1061: share the arm, never add one
+		|| AutoHarness_PostFXCommands(cmd, arg, result, sizeof(result))
+		|| AutoHarness_GrassDensityCommands(cmd, arg, result, sizeof(result))) // C1061: share the arm, never add one
 	{
 		// handled in the helper (see above the dispatch function)
 	}

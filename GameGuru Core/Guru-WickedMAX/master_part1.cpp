@@ -158,6 +158,18 @@ static int gg_particle_pct_machine = 100, gg_particle_pct_level = 100;
 static void GGRecalcParticlePct() { gg_particle_pct = (gg_particle_pct_machine < gg_particle_pct_level) ? gg_particle_pct_machine : gg_particle_pct_level; }
 void GGSetParticlePct     (int pct) { if (pct < 0) pct = 0; if (pct > 100) pct = 100; gg_particle_pct_machine = pct; GGRecalcParticlePct(); }
 void GGSetParticlePctLevel(int pct) { if (pct < 0) pct = 0; if (pct > 100) pct = 100; gg_particle_pct_level   = pct; GGRecalcParticlePct(); }
+// GGMAX 3.116: Grass Density, percent of DX11's density (GGTerrainWicked.cpp). Machine (setup.ini
+// grassdensity) and level (visuals.GrassDensity) MULTIPLY - unlike particle percent this one may go
+// above 100, so taking the lower of the two would block a level that asks for more.
+extern int gg_grass_density_pct; extern bool gg_grass_density_dx11;
+static int gg_grass_density_machine = 100, gg_grass_density_level = 100;
+static void GGRecalcGrassDensity() { int v = gg_grass_density_machine * gg_grass_density_level / 100; if (v < 5) v = 5; if (v > 400) v = 400; gg_grass_density_pct = v; }
+static int  GGClampGrassPct(int pct) { if (pct < 10) pct = 10; if (pct > 200) pct = 200; return pct; }
+void GGSetGrassDensity     (int pct) { gg_grass_density_machine = GGClampGrassPct(pct); GGRecalcGrassDensity(); }
+void GGSetGrassDensityLevel(int pct) { gg_grass_density_level   = GGClampGrassPct(pct); GGRecalcGrassDensity(); }
+int  GGGetGrassDensityLevel()   { return gg_grass_density_level; }
+int  GGGetGrassDensityMachine() { return gg_grass_density_machine; }
+void GGSetGrassDensityDX11(int on) { gg_grass_density_dx11 = (on != 0); }
 // GGMAX 3.11: object detail distance in world inches. 0 = off. Machine and level take the
 // LOWER NON-ZERO of the two (0 means "no opinion", not "cap at zero").
 static float gg_objcull_machine = 0.0f, gg_objcull_level = 0.0f;

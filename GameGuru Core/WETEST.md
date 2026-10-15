@@ -1413,6 +1413,9 @@ All take effect next frame unless noted. Notes sections in `NIGHT_INVESTIGATIONS
 | `SET_TERRAINFAR_DEBUG <n>` | 1 tint, 2 coverage cells, 3 clipmap levels, 9 flat colour (cost instrument) |
 | `SET_TERRAINFAR_SINK <x>` | Border sink multiplier (x segment size), default 1 |
 | `SET_FOGCURVE 0\|1` | 3.114: 1 = DX11 fog curve (optical depth past fog start only, default), 0 = stock engine curve |
+| `GET_GRASSDENSITY` | 3.116 grass density: mode, level/machine/effective %, draw distance, latched strands per tier, near density per m2 vs classic DX11, built systems, chunks still at an old density |
+| `SET_GRASSDENSITY <pct>` / `SET_GRASSDENSITY_MACHINE <pct>` | 3.116: the level's Grass Density (as the panel slider) / the machine value (as setup.ini grassdensity), 10-200; they multiply. Live, nearest chunks first |
+| `SET_GRASSDENSITYMODE 0\|1` | 3.116: 1 = DX11 density from the Grass Draw Distance (default), 0 = the pre-3.116 constant 100,000 per chunk |
 
 Probes (in `tools/harness/`, MAX open on a level, grass switched off for the run):
 - `bake_colour_probe.sh [tag] ["x y z ax ay"] [masks]` - baked vs live COLOUR per band (3.113)

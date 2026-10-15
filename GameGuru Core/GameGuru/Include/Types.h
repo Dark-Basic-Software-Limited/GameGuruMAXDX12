@@ -3851,6 +3851,7 @@ struct visualstype
 	bool bNoShadows;        // Shadows Off
 	bool bNoOcclusionCull;  // Occlusion Culling Off
 	int  iParticlePct;      // Particle Density, 0..100, neutral = 100
+	int  iGrassDensityPct;  // GGMAX 3.116 Grass Density, 10..200 percent of DX11's density, neutral = 100
 	int  iObjectCullDist;   // Object Detail Distance in world units, neutral = 0 (off)
 	int  iTextureDivide;    // Texture Detail: 1 = Full, 2 = Half, 4 = Quarter
 	int  iAnimReductionScale; // GGMAX 3.25 Reduction Scale under Lower Animation, 1..100, DEFAULT 25 (1 = off)
