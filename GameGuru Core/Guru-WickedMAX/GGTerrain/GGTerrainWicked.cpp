@@ -2861,8 +2861,9 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 	}
 
 	// Step 1 auto-resolve (see SCRATCHPAD "Advanced Grass Settings — DX11 Baseline Port Plan"):
-	// GGGrass_ScanRegion rewrites any encoded==1 cells with a real_type resolved from terrain
-	// height/material. If any cell was rewritten, the R8_UNORM texGrassMap on the GPU still holds
+	// GGGrass_ScanRegion resolves encoded==1 cells from terrain height/material (a real_type, or 0 on
+	// ground with no matching grass - 3.118; a cell whose lookups fail stays 1). If any cell was
+	// rewritten, the R8_UNORM texGrassMap on the GPU still holds
 	// the pre-resolve byte, so the hair simulate CS (Option B mask check) will keep matching only
 	// Course Grass entities until we re-upload. Fold that into a single 16 MB upload per frame
 	// regardless of how many chunks resolved — the paint stroke path already uses this cadence

@@ -2611,6 +2611,58 @@ static void AutoHarness_TerrainEditTick(void)
 	}
 }
 
+// GGMAX 3.118: GRASS_PAINT_TEST - a synthetic Grass tool SPRAY stroke through the shipped
+// GGGrass_Update_Painting (the sibling of PAINT_TEST). Edit mode, paint type/material/mode and the stroke
+// mouse state are set ONLY around our own call and restored straight after, so the editor's real grass
+// dispatch (driven by the real mouse) never sees the synthetic state. The last frame is the release
+// frame: Update_Painting itself finalizes the undo action and publishes the stroke rect then.
+extern int gggrass_initialised;   // GGGrass.cpp (global, not in the header)
+static int      s_grassTestFrames = 0, s_grassTestFrame = 0, s_grassTestMatch = 1;
+static uint64_t s_grassTestType = 1;
+static float    s_grassTestX = 0.0f, s_grassTestZ = 0.0f;
+static void AutoHarness_GrassPaintTick(void)
+{
+	using namespace GGTerrain;
+	if (s_grassTestFrames <= 0) return;
+	if (!AutoHarness_TerrainEditAllowed())
+	{
+		// abandoned mid-stroke (Test Game, storyboard, level closed - review 3.118): the first frame armed the
+		// SHARED terrain/grass undo slot (g_iCalculatingChangeBounds + g_pTerrainSnapshot). Run the release
+		// frame so Update_Painting clears it, uploads and publishes; with the grass system gone just disarm.
+		if (s_grassTestFrame == 0) { s_grassTestFrames = 0; return; }
+		if (!::gggrass_initialised || !ggterrain_initialised)
+		{
+			g_iCalculatingChangeBounds = 0;
+			s_grassTestFrames = 0;
+			return;
+		}
+		s_grassTestFrames = 1;   // this call becomes the release frame
+	}
+	const int savedEdit = ggterrain_extra_params.edit_mode;
+	const int savedMat = GGGrass::gggrass_global_params.paint_material;
+	const uint64_t savedType = GGGrass::gggrass_global_params.paint_type;
+	const int savedMode = GGGrass::gggrass_global_params.paint_mode;
+	ggterrain_extra_params.edit_mode = GGTERRAIN_EDIT_GRASS;
+	GGGrass::gggrass_global_params.paint_material = s_grassTestMatch ? 0 : 1;
+	GGGrass::gggrass_global_params.paint_type = s_grassTestType;
+	GGGrass::gggrass_global_params.paint_mode = GGGRASS_PAINT_SPRAY;
+	const bool last = (s_grassTestFrames == 1);
+	GGGrass::gggrass_internal_params.mouseLeftPressed = (s_grassTestFrame == 0) ? 1 : 0;
+	GGGrass::gggrass_internal_params.mouseLeftState = last ? 0 : 1;
+	GGGrass::gggrass_internal_params.mouseLeftReleased = last ? 1 : 0;
+	RAY ray(XMVectorSet(s_grassTestX, 50000.0f, s_grassTestZ, 0.0f), XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));
+	GGGrass::GGGrass_Update_Painting(ray);
+	GGGrass::gggrass_internal_params.mouseLeftPressed = 0;
+	GGGrass::gggrass_internal_params.mouseLeftState = 0;
+	GGGrass::gggrass_internal_params.mouseLeftReleased = 0;
+	ggterrain_extra_params.edit_mode = savedEdit;
+	GGGrass::gggrass_global_params.paint_material = savedMat;
+	GGGrass::gggrass_global_params.paint_type = savedType;
+	GGGrass::gggrass_global_params.paint_mode = savedMode;
+	s_grassTestFrame++;
+	s_grassTestFrames--;
+}
+
 // ---------------------------------------------------------------------------
 // VERIFY_MESH / VERIFY_WATCH — GPU mesh-buffer content oracle (reload-corruption hunt).
 //
@@ -3331,6 +3383,71 @@ static bool AutoHarness_GrassDensityCommands(const char* cmd, const char* arg, c
 		if (arg && arg[0]) { const int v = atoi(arg); if (v >= 0 && v <= 2) gg_grass_far_mode = v; }
 		_snprintf(result, resultSize, "OK: SET_GRASSFARMODE %d (1 = DX11 far field: full size to the draw distance, then the dissolve; 0 = strand LOD with widened survivors; 2 = DX11 rings, no dissolve)", gg_grass_far_mode);
 		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_TERRAINBRUSH") == 0)
+	{
+		// GGMAX 3.118: SET_TERRAINBRUSH <size> - the terrain/grass brush radius (world units), as the editor slider
+		if (arg && arg[0]) { const float v = (float)atof(arg); if (v > 0.0f) GGTerrain::ggterrain_global_render_params2.brushSize = v; }
+		_snprintf(result, resultSize, "OK: SET_TERRAINBRUSH %.0f", GGTerrain::ggterrain_global_render_params2.brushSize);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "GRASS_POPULATE") == 0)
+	{
+		// GGMAX 3.118: GRASS_POPULATE <match 0|1> - the Grass tool's "Populate Vegetation Everywhere" button minus
+		// its confirmation box: 1 = Match Terrain Color (every cell auto, resolved by the ground under it), 0 =
+		// the selected grass. In memory only - the harness never marks the project modified.
+		const int match = (arg && arg[0]) ? atoi(arg) : 1;
+		const int savedMat = GGGrass::gggrass_global_params.paint_material;
+		GGGrass::gggrass_global_params.paint_material = match ? 0 : 1;
+		if (GGGrass::gggrass_global_params.paint_type == 0) GGGrass::gggrass_global_params.paint_type = 1;
+		GGGrass::GGGrass_AddAll();
+		GGGrass::gggrass_global_params.paint_material = savedMat;
+		_snprintf(result, resultSize, "OK: GRASS_POPULATE %s (paint density %d%%)", match ? "Match Terrain Color (auto)" : "selected grass", GGGrass::gggrass_global_params.paint_density);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "GRASS_PAINT_TEST") == 0)
+	{
+		// GGMAX 3.118: GRASS_PAINT_TEST <worldX> <worldZ> <frames> [match 0|1 (default 1)] [paint_type mask (default 1 =
+		// Course Grass)] - a synthetic Grass tool spray stroke at the brush size (SET_TERRAINBRUSH). In memory only.
+		float gx = 0, gz = 0; int gf = 0, gm = 1; unsigned long long gt = 1;
+		const int got = (arg && arg[0]) ? sscanf_s(arg, "%f %f %d %d %llu", &gx, &gz, &gf, &gm, &gt) : 0;
+		if (!AutoHarness_TerrainEditAllowed()) _snprintf(result, resultSize, "ERROR: GRASS_PAINT_TEST needs the level editor with terrain initialised");
+		else if (s_grassTestFrames > 0) _snprintf(result, resultSize, "ERROR: a grass test stroke is already running (%d frames left)", s_grassTestFrames);
+		else if (s_terrainTestFrames > 0) _snprintf(result, resultSize, "ERROR: a terrain test is running (%d frames left)", s_terrainTestFrames);
+		else if (g_iCalculatingChangeBounds != 0) _snprintf(result, resultSize, "ERROR: a terrain/grass stroke is in progress - release the mouse first");
+		else if (got >= 3 && gf > 0)
+		{
+			s_grassTestX = gx; s_grassTestZ = gz; s_grassTestMatch = gm ? 1 : 0; s_grassTestType = gt ? (uint64_t)gt : 1;
+			s_grassTestFrame = 0; s_grassTestFrames = gf + 1;   // + the release frame
+			_snprintf(result, resultSize, "OK: GRASS_PAINT_TEST at (%.0f, %.0f) for %d frames, Match Terrain Color %s, types 0x%llx (brushSize=%.0f)",
+				gx, gz, gf, s_grassTestMatch ? "ON" : "OFF", (unsigned long long)s_grassTestType, GGTerrain::ggterrain_global_render_params2.brushSize);
+		}
+		else _snprintf(result, resultSize, "ERROR: GRASS_PAINT_TEST needs <worldX> <worldZ> <frames> [match] [typemask]");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "GRASS_CLEAR_BARE") == 0)
+	{
+		// GGMAX 3.118: GRASS_CLEAR_BARE [1 = do it; default 0 = dry run] - GGGrass_RemoveCourseGrassFromBareGround.
+		// Clears Course Grass (byte 2) a pre-3.118 DX12 build wrote onto sand/rock. In-memory only: the harness
+		// never marks the project modified, so nothing is saved unless the level is saved by hand.
+		const bool doIt = (arg && atoi(arg) == 1);
+		const int n = GGGrass::GGGrass_RemoveCourseGrassFromBareGround(!doIt);
+		if (n < 0) _snprintf(result, resultSize, "ERROR: GRASS_CLEAR_BARE - terrain or grass map not ready");
+		else _snprintf(result, resultSize, "OK: GRASS_CLEAR_BARE %s %d Course Grass cell(s) on bare ground (of 16,777,216)", doIt ? "cleared" : "would clear (dry run; GRASS_CLEAR_BARE 1 to do it)", n);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "GET_GRASSMAP_AUDIT") == 0)
+	{
+		// GGMAX 3.118: the grass map against the ground under each cell (GGGrass_AuditMap). [step] samples
+		// every step-th cell each way (default 4 = 1M of the 16.7M cells).
+		int step = 4;
+		if (arg && arg[0]) step = atoi(arg);
+		GGGrass::GGGrass_AuditMap(step, result, resultSize);
 		return true;
 	}
 	if (_stricmp(cmd, "GET_GROUNDDIST_GRID") == 0)
@@ -8307,6 +8424,7 @@ void AutoHarness_CheckForCommand(void)
 
 	AutoHarness_SkinWatchTick();
 	AutoHarness_TerrainEditTick();
+	AutoHarness_GrassPaintTick();   // GGMAX 3.118
 	AutoHarness_VerifyTick();
 	// Init paths and uptime tracking on first call
 	if (!s_initialized)
@@ -10134,6 +10252,10 @@ void AutoHarness_CheckForCommand(void)
 		{
 			_snprintf(result, sizeof(result), "ERROR: a terrain test is already running (%d frames left)", s_terrainTestFrames);
 		}
+		else if (s_grassTestFrames > 0)
+		{
+			_snprintf(result, sizeof(result), "ERROR: a grass test stroke is running (%d frames left)", s_grassTestFrames);   // GGMAX 3.118
+		}
 		else if (g_iCalculatingChangeBounds != 0)
 		{
 			_snprintf(result, sizeof(result), "ERROR: a real terrain stroke is in progress — release the mouse first");
@@ -10169,6 +10291,10 @@ void AutoHarness_CheckForCommand(void)
 		else if (s_terrainTestFrames > 0)
 		{
 			_snprintf(result, sizeof(result), "ERROR: a terrain test is already running (%d frames left)", s_terrainTestFrames);
+		}
+		else if (s_grassTestFrames > 0)
+		{
+			_snprintf(result, sizeof(result), "ERROR: a grass test stroke is running (%d frames left)", s_grassTestFrames);   // GGMAX 3.118
 		}
 		else if (g_iCalculatingChangeBounds != 0)
 		{

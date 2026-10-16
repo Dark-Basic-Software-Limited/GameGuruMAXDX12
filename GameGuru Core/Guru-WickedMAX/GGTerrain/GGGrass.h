@@ -70,6 +70,7 @@ namespace GGGrass
 
 	extern GGGrassParams gggrass_save_params;
 	extern GGGrassParams gggrass_global_params; // modify this anywhere
+	extern GGGrassInternalParams gggrass_internal_params; // GGMAX 3.118: the harness GRASS_PAINT_TEST stroke drives it (restored after each call)
 
 	void GGGrass_Init_Textures(LPSTR pRemoteGrassPath);
 	void GGGrass_Init();
@@ -101,9 +102,11 @@ namespace GGGrass
 	// Used by the Wicked-side hair-entity manager to decide which per-(chunk, type) entities
 	// to create/destroy; per-cell visibility WITHIN the chunk is handled in the simulate CS.
 	//
-	// Also performs the DX11 GGGrass_UpdateInstances "auto-resolve" step for encoded value 1:
-	// cells painted with Match Terrain Color get rewritten in-place with a terrain-appropriate
-	// real_type (seaweed 43 if underwater, else GGGrass_GetRealIndex(material_at_cell, 0)).
+	// Also performs the DX11 auto-resolve of encoded value 1 (Match Terrain Color / Populate / new level):
+	// the cell is rewritten in place to seaweed (real type 43, byte 45) underwater, else to
+	// GGGrass_GetRealIndex(material_at_cell, 0) + 2, or to 0 (EMPTY, no typesSeen entry) where that ground
+	// has no matching grass (255: sand, rock, mud... - GGMAX 3.118, DX11 parity). A cell whose height or
+	// normal lookup fails stays 1 until a later scan.
 	// If any cell is rewritten, GGGrass_TakePendingMapUpload() will return true so the caller
 	// can schedule a texGrassMap re-upload once per frame.
 	void GGGrass_ScanRegion( float minX, float minZ, float maxX, float maxZ, bool* typesSeen );
@@ -113,6 +116,23 @@ namespace GGGrass
 	// lot of area at once (the Terrain Bake grass emitters ask it of every chunk in one frame,
 	// where ScanRegion's per-cell Match Terrain Color resolve cost 4.4 s on the first bake).
 	bool GGGrass_RegionHasGrass( float minX, float minZ, float maxX, float maxZ );
+
+	// GGMAX 3.118: harness GET_GRASSMAP_AUDIT - every step-th grass map cell against the ground under it
+	// (bare material = no matching grass type, grassy material, underwater): how many are empty, still
+	// auto (1), Course Grass (2), another type, flattened. A pure read. Names a map that holds grass on
+	// sand/rock, and whether the cells are still unresolved (1) or already written as a real type.
+	void GGGrass_AuditMap( int step, char* out, size_t outSize );
+
+	// GGMAX 3.118: one-shot REPAIR for levels saved by DX12 builds since 2026-07-10, whose auto-resolve and
+	// Match-Terrain brush wrote Course Grass (byte 2) onto bare ground. Clears every cell holding exactly
+	// byte 2 (low 7 bits), whose ground (height AND normal lookups succeeding) has no
+	// matching grass (above or below the water - the old brush wrote it under water too). A FLATTENED
+	// cell (0x82) becomes auto + flattened (0x81), so when the flat area goes the resolve decides by the
+	// ground under it instead of the Course Grass coming back. Returns the number changed, or -1 if the
+	// terrain is not ready (every lookup would fail and fall back to bare material 31). WARNING: also
+	// clears Course Grass deliberately painted on sand or rock with Match Terrain Color OFF - the bytes
+	// are identical, so it is opt-in, never automatic.
+	int GGGrass_RemoveCourseGrassFromBareGround( bool dryRun );
 
 	// Take-and-clear: true if ScanRegion rewrote at least one pGrassMap cell since the last call.
 	// The Wicked hair simulate CS samples texGrassMap for per-strand visibility, so any in-place

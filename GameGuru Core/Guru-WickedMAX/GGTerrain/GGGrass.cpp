@@ -677,13 +677,14 @@ void GGGrass_ScanRegion( float minX, float minZ, float maxX, float maxZ, bool* t
 			if ( v == 0 || ( v & 0x80 ) ) continue; // empty or flattened
 			uint8_t encoded = v & 0x7F;
 
-			// DX11-parity auto-resolve for Match Terrain Color paint: brush leaves value 1 in
-			// the cell as an "unresolved" marker and the legacy GGGrass_UpdateInstances step
-			// used to rewrite each such cell with a terrain-appropriate real_type on its next
-			// pass. UpdateInstances is gated OFF in Wicked mode (perf), so we do the resolve
-			// here — cheap because it only fires for encoded == 1, and the in-place rewrite
-			// prevents subsequent scans / .fpm save from ever seeing the placeholder again.
-			// The resolved byte encoding matches the existing paint path: real_type + 2.
+			// DX11-parity auto-resolve of value 1 ("auto": GGGrass_Init fills the map with it, and
+			// Populate / every new-level preset writes it via GGGrass_AddAll with Match Terrain
+			// Color - the brush never writes 1). DX11 resolved it in GrassChunk::Update; in Wicked
+			// mode only the per-stroke call to that is gated off - its countdown/flatten/undo calls
+			// still run, sparsely and without a texGrassMap upload, and resolve bare ground to 0 the
+			// same as here - so this is the resolve that matters. Cheap: only encoded == 1 cells,
+			// and the in-place rewrite means later scans and the .fpm save see the resolved byte.
+			// Encoding: 0 = no grass, real_type + 2 = that grass.
 			//
 			// Slope filtering (grass on cliffs) is handled per-strand in the Wicked hair
 			// simulate CS, not here — see WICKED_ENGINE_CHANGES.md entry 1.5. Filtering at
@@ -708,14 +709,29 @@ void GGGrass_ScanRegion( float minX, float minZ, float maxX, float maxZ, bool* t
 				}
 				else
 				{
+					// GGMAX 3.118: GGTerrain_GetMaterialIndex falls back to material 31 (a bare row) when its
+					// own normal lookup fails - and bare ground now resolves to EMPTY, so a transient failure
+					// would DELETE the grass. Leave the cell auto (1) and resolve it on a later scan (DX11
+					// GrassChunk::Update also required GGTerrain_GetNormal to succeed before resolving).
+					float ny;
+					if ( !GGTerrain_GetNormal( worldX, worldZ, 0, &ny, 0 ) ) continue;
 					int material = GGTerrain_GetMaterialIndex( worldX, worldZ );
 					realType = GGGrass_GetRealIndex( (uint32_t)material, 0u );
 				}
-				if ( realType >= GGGRASS_NUM_TYPES ) realType = 0;
-
-				row[ x ] = (uint8_t)( realType + 2 );
-				encoded = row[ x ];
+				// GGMAX 3.118: DX11 parity (DX11 GGGrass.cpp:371-374) - ground with no matching grass (255 in
+				// grassMaterialTypes: sand, rock, mud, gravel, pebbles...) resolves to EMPTY. Stage B.10 wrote
+				// real type 0 + 2 = Course Grass there, and saving the level kept it. Never leave it at 1: the
+				// hair simulate CS draws an unresolved 1 as Course Grass as well. Never (uint8_t)(255 + 2):
+				// that wraps to 1 - re-resolved every scan, a 16 MB map upload every frame.
+				row[ x ] = ( realType >= GGGRASS_NUM_TYPES ) ? (uint8_t)0 : (uint8_t)( realType + 2 );
 				s_gggrass_map_upload_pending = true;
+				// Deliberate divergence (review 3.118): DX11 left STEEP (ny < 0.7) or out-of-height-band cells at 1
+				// and resolved them later, so a cliff sculpted flat regrew grass. Leaving them at 1 here would draw
+				// them as Course Grass on the gentler triangles of rocky cliffs (the CS reads 1 as type 0) - the
+				// very thing this fixes - so bare ground resolves to empty at any slope; repaint or Populate after
+				// flattening a cliff.
+				if ( row[ x ] == 0 ) continue;   // nothing grows here - must not mark typesSeen[0]
+				encoded = row[ x ];
 			}
 
 			uint32_t typeIdx = ( encoded >= 2 ) ? (uint32_t)( encoded - 2 ) : 0u; // mirror C++ side
@@ -752,6 +768,59 @@ bool GGGrass_RegionHasGrass( float minX, float minZ, float maxX, float maxZ )
 	return false;
 }
 
+// GGMAX 3.118: see GGGrass.h. Cell centres and the height/material lookups match GGGrass_ScanRegion, so
+// the audit sees each cell the way the resolve does.
+void GGGrass_AuditMap( int step, char* out, size_t outSize )
+{
+	if ( !out || outSize == 0 ) return;
+	out[ 0 ] = 0;
+	if ( !gggrass_initialised || !pGrassMap ) { _snprintf( out, outSize, "ERROR: grass map not initialised" ); out[ outSize - 1 ] = 0; return; }
+	if ( step < 1 ) step = 1;
+	const float editableSize = ggterrain_global_render_params2.editable_size;
+	const float cellToWorldScale = 2.0f * editableSize / (float)GGGRASS_MAP_SIZE;
+	const float waterH = g.gdefaultwaterheight;
+	// rows: 0 bare ground above water, 1 grassy material above water, 2 bare underwater, 3 grassy underwater
+	// cols: 0 empty, 1 auto (unresolved), 2 Course Grass (real type 0), 3 another real type, 4 flattened
+	uint32_t c[ 4 ][ 5 ] = {};
+	uint32_t bareCourse[ GGTERRAIN_MAX_SOURCE_TEXTURES ] = {}, bareAuto[ GGTERRAIN_MAX_SOURCE_TEXTURES ] = {};
+	uint32_t sampled = 0, noHeight = 0;
+	for ( int z = 0; z < GGGRASS_MAP_SIZE; z += step )
+	{
+		for ( int x = 0; x < GGGRASS_MAP_SIZE; x += step )
+		{
+			const uint8_t v = pGrassMap[ z * GGGRASS_MAP_SIZE + x ];
+			const float wx = ( (float)x + 0.5f ) * cellToWorldScale - editableSize;
+			const float wz = ( (float)z + 0.5f ) * cellToWorldScale - editableSize;
+			float h;
+			if ( !GGTerrain_GetHeight( wx, wz, &h ) ) { noHeight++; continue; }
+			const int mat = GGTerrain_GetMaterialIndex( wx, wz );
+			const bool bareGround = ( GGGrass_GetRealIndex( (uint32_t)mat, 0u ) >= GGGRASS_NUM_TYPES );
+			const int row = ( h >= waterH ) ? ( bareGround ? 0 : 1 ) : ( bareGround ? 2 : 3 );
+			const int col = ( v & 0x80 ) ? 4 : ( v == 0 ? 0 : ( v == 1 ? 1 : ( v == 2 ? 2 : 3 ) ) );
+			c[ row ][ col ]++;
+			sampled++;
+			if ( row == 0 && mat >= 0 && mat < GGTERRAIN_MAX_SOURCE_TEXTURES )
+			{
+				if ( col == 2 ) bareCourse[ mat ]++;
+				else if ( col == 1 ) bareAuto[ mat ]++;
+			}
+		}
+	}
+	static const char* rowName[ 4 ] = { "bare ground (no matching grass)", "grassy material", "underwater, bare ground", "underwater, grassy material" };
+	int len = _snprintf( out, outSize, "GRASSMAP AUDIT (every %d cell(s), %u sampled, %u off the terrain)\n"
+		"  %-32s %9s %9s %9s %9s %9s %9s\n", step, sampled, noHeight, "ground under the cell", "total", "empty", "auto(1)", "course(2)", "other", "flat" );
+	for ( int r = 0; r < 4 && len > 0 && len < (int)outSize - 160; r++ )
+	{
+		const uint32_t t = c[ r ][ 0 ] + c[ r ][ 1 ] + c[ r ][ 2 ] + c[ r ][ 3 ] + c[ r ][ 4 ];
+		len += _snprintf( out + len, outSize - len, "  %-32s %9u %9u %9u %9u %9u %9u\n", rowName[ r ], t, c[ r ][ 0 ], c[ r ][ 1 ], c[ r ][ 2 ], c[ r ][ 3 ], c[ r ][ 4 ] );
+	}
+	if ( len > 0 && len < (int)outSize - 64 ) len += _snprintf( out + len, outSize - len, "  bare materials (index: course(2) / auto(1)):" );
+	for ( int m = 0; m < GGTERRAIN_MAX_SOURCE_TEXTURES && len > 0 && len < (int)outSize - 32; m++ )
+		if ( bareCourse[ m ] || bareAuto[ m ] ) len += _snprintf( out + len, outSize - len, " %d: %u / %u;", m, bareCourse[ m ], bareAuto[ m ] );
+	if ( len > 0 && len < (int)outSize - 2 ) len += _snprintf( out + len, outSize - len, "\n" );
+	out[ outSize - 1 ] = 0;
+}
+
 bool GGGrass_TakePendingMapUpload()
 {
 	if ( !s_gggrass_map_upload_pending ) return false;
@@ -769,6 +838,44 @@ bool GGGrass_TakeFullRebuildPending()
 	if ( !s_gggrass_full_rebuild_pending ) return false;
 	s_gggrass_full_rebuild_pending = false;
 	return true;
+}
+
+// GGMAX 3.118: see GGGrass.h. Same cell centres and lookups as GGGrass_ScanRegion.
+int GGGrass_RemoveCourseGrassFromBareGround( bool dryRun )
+{
+	if ( !gggrass_initialised || !pGrassMap ) return -1;
+	if ( !GGTerrain_IsReady() ) return -1;
+	const float editableSize = ggterrain_global_render_params2.editable_size;
+	const float cellToWorldScale = 2.0f * editableSize / (float)GGGRASS_MAP_SIZE;
+	int cleared = 0;
+	for ( int z = 0; z < GGGRASS_MAP_SIZE; z++ )
+	{
+		uint8_t* row = &pGrassMap[ z * GGGRASS_MAP_SIZE ];
+		for ( int x = 0; x < GGGRASS_MAP_SIZE; x++ )
+		{
+			const uint8_t v = row[ x ];
+			if ( ( v & 0x7F ) != 2 ) continue;   // Course Grass, flattened or not
+			const float wx = ( (float)x + 0.5f ) * cellToWorldScale - editableSize;
+			const float wz = ( (float)z + 0.5f ) * cellToWorldScale - editableSize;
+			float h, ny;
+			// above OR below the water (review 3.118): the pre-3.118 Match-on brush wrote byte 2 on underwater
+			// sand too, while the resolve only ever wrote seaweed there - so byte 2 underwater is the same case
+			if ( !GGTerrain_GetHeight( wx, wz, &h ) ) continue;
+			if ( !GGTerrain_GetNormal( wx, wz, 0, &ny, 0 ) ) continue;
+			const int mat = GGTerrain_GetMaterialIndex( wx, wz );
+			if ( GGGrass_GetRealIndex( (uint32_t)mat, 0u ) < GGGRASS_NUM_TYPES ) continue;   // ground that grows grass
+			// a flattened cell goes back to AUTO + flattened: when the flat area is removed the resolve judges the
+			// real ground, instead of the Course Grass reappearing (review 3.118)
+			if ( !dryRun ) row[ x ] = ( v & 0x80 ) ? (uint8_t)0x81 : (uint8_t)0;
+			cleared++;
+		}
+	}
+	if ( !dryRun && cleared > 0 )
+	{
+		GGGrass_UploadGrassMap();
+		s_gggrass_full_rebuild_pending = true;   // as GGGrass_AddAll: the Wicked hair cache is per chunk
+	}
+	return cleared;
 }
 
 float GGGrass_GetDefaultWaterHeight()
@@ -1874,8 +1981,9 @@ void GGGrass_Update_Painting( RAY ray )
 													uint32_t realIndex = 0;
 													if ( i >= GGGRASS_CUSTOM_SLOT_BASE )
 													{
-														// Custom slot: direct real_type encoding.
-														realIndex = (uint32_t)i + 24;
+														// Custom slot: direct real_type encoding - byte = slot + 26 (at most 89,
+														// below the 0x80 flatten bit).
+														realIndex = (uint32_t)i + 24 + 2;
 													}
 													else
 													{
@@ -1902,12 +2010,15 @@ void GGGrass_Update_Painting( RAY ray )
 															int material = GGTerrain_GetMaterialIndex( fX, fZ );
 															realIndex = GGGrass_GetRealIndex( material, i );
 														}
+														// GGMAX 3.118: DX11 parity (DX11 GGGrass.cpp:1523-1524) - a stock grass painted with
+														// Match Terrain Color on ground with no matching variant (255: sand, rock...) writes
+														// EMPTY. Stage B.9 capped the 255 to real type 0 and wrote Course Grass there.
+														// (Match off looks up material 0, which always has a variant.)
+														if ( realIndex >= GGGRASS_NUM_TYPES ) realIndex = 0;
+														else realIndex += 2;
 													}
 
-													// Byte encoding: 0/1 reserved, 2+ = real_type + 2, bit 7 = flattened.
-													// Cap defensively at 125 (max real_type) so we never set the flatten bit accidentally.
-													if ( realIndex > 125 ) realIndex = 0;
-													realIndex += 2;
+													// Byte encoding: 0 = empty, 1 = auto, 2+ = real_type + 2, bit 7 = flattened.
 
 													//pGrassMap[ index ] &= 0x80; // keep flattened state
 													pGrassMap[ index ] = 0; // allow painting in flattened areas

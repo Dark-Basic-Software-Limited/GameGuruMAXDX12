@@ -16181,3 +16181,75 @@ Harness: `SET_GRASSFARMODE 0|1|2`, `GET_GROUNDDIST_GRID [cols rows [kind]]` (0 =
 `grass_falloff_probe.sh` + `grass_falloff_measure.py`, `grass_farmode_ab.sh`. setup.ini `grassfardx11`.
 
 ### LEE-CONFIRMED 3.117, 2026-10-16: "Far field grass confirmed working" - the DX11 far field (full size to the Grass Draw Distance, per-strand DX11 dissolve over +2500, one full-density ring to the cull, flowers to the full distance) kept as the default, setup.ini grassfardx11=0 = the old strand LOD; plus the 65,536-strand seed fix (denser near grass below draw distance ~2400). Engine `2cc2de0a`, game `0a447fed`. Open, Lee's call: blade area / darker DX11 blades, Auto grass on bare materials (GGGrass.cpp:714), the 4096 near-tier bake default; the TESTPRO1 grass-benchmark coverage baseline predates the seed fix (re-measure before using it as a gate).
+
+### 3.118 Auto grass no longer grows on sand and rock - 2026-10-16
+
+Lee: "Now fix Auto grass growing on sand and rock" (the 3.116 "Not done" item).
+
+**The two engines.** A grass-map cell holds 0 (empty), 1 ("auto": Match Terrain Color, resolved later by the ground
+under it), or real type + 2. `grassMaterialTypes[material][slot]` maps the ground to a grass variant; 19 of the 32
+materials (wet/dry/desert sand, gravel, mud, the rocks, pebbles, rough ground, checkerboard) hold 255 = no matching
+grass for the four stock grasses. A new level, Populate with Match Terrain Color, and every new-level preset fill
+the map with 1 (`GGGrass_Init` memset, `GGGrass_AddAll`).
+- **DX11** resolved a 1 in `GrassChunk::Update` (DX11 GGGrass.cpp:357-374): 255 -> **0** (empty), else type + 2.
+  The Grass brush with Match Terrain Color on did the same (DX11 :1519-1528).
+- **DX12** had three routes to grass on bare ground, all from 2026-07-10:
+  - (A) `GGGrass_ScanRegion` (the resolve the Wicked grass actually uses) kept DX11's `realType = 0` but then wrote
+    `realType + 2` unconditionally = **Course Grass** on every bare cell it scanned (Stage B.10, 6cebb745).
+  - (B) the Grass brush spray with Match Terrain Color on (the default) capped 255 to 0 and added 2 the same way -
+    painting any stock grass over sand wrote Course Grass (Stage B.9 custom palette, b6857051).
+  - (C) the hair simulate CS draws an unresolved 1 as Course Grass, so "leave it at 1" is no fix - bare must be 0.
+- Saving the level kept the bytes (the grass map is a raw 16 MB memcpy into the .fpm), so every DX12-saved level
+  holds Course Grass wherever the camera went over bare ground.
+
+**What changed (game only, GGGrass.cpp).**
+- (A) The resolve writes **0** for no-matching ground, as DX11, and does not mark the chunk as holding Course Grass
+  for it. It now also requires the terrain normal lookup to succeed first: `GGTerrain_GetMaterialIndex` falls back
+  to material 31 (checkerboard, a bare row) when its own normal lookup fails, which would now DELETE grass on a
+  transient failure - the cell stays auto and resolves on a later scan (DX11 required the same lookup).
+- (B) The brush uses DX11's two-way mapping for the stock grasses (255 -> empty); custom palette slots keep their
+  own encoding. Match Terrain Color OFF still paints Course Grass anywhere, sand included - as DX11.
+- Slope and height filters needed nothing: DX12 applies them per strand in the simulate CS.
+
+- Deliberate divergence, kept: DX11 left STEEP (ny < 0.7) or out-of-height-band cells unresolved, so a cliff sculpted
+  flat later regrew grass. Leaving them auto here would draw them as Course Grass on the gentler triangles of rocky
+  cliffs (the CS reads auto as type 0) - the very thing this fixes - so bare ground resolves to empty at any slope;
+  repaint or Populate after flattening a cliff.
+
+**Measured** (DESKTOP, DX12TESTLEVEL, in memory, `tools/harness/grass_bare_probe.sh`: a dry-sand patch, then every
+path; GET_GRASSMAP_AUDIT's "bare ground" row, every 4th cell):
+
+| step | Course Grass on bare | empty | notes |
+|---|---|---|---|
+| level as saved | 125 | 40 | all on mud (material 9): the pre-3.118 resolve, saved |
+| Populate, Match Terrain Color | **0** | 165 | the sand patch and the old mud cells resolve to empty |
+| brush Course Grass, Match ON, over the sand | **0** | 165 | pre-3.118 wrote Course Grass |
+| brush Course Grass, Match OFF | 65 | 100 | deliberate - DX11 allows it |
+| GRASS_CLEAR_BARE 1 | 0 | 165 | 1,049 cells, = its dry run |
+
+DX12TESTLEVEL itself is nearly all grassy ground by the material rules (550 of 1,048,576 sampled cells bare), so
+its saved damage is small: ~1,850 Course Grass cells on mud. A level with beaches or rock is where it shows.
+
+**Levels saved by DX12 since 2026-07-10 keep their Course Grass on bare ground** - the byte is identical to Course
+Grass painted on purpose with Match Terrain Color off (and to Classic-import grass), so nothing can repair it
+automatically without also deleting deliberate grass. Options: Populate with Match Terrain Color (resets ALL grass
+layout), Terrain Paint with "Match Painted Grass" over the sand (re-resolves that area, exact DX11 behaviour), or
+the new opt-in repair `GRASS_CLEAR_BARE` (harness; clears byte-2 cells on bare ground, above or below the water - would
+also clear deliberate Match-off Course Grass on sand). An editor button for it is Lee's call.
+
+**Adversarial review (2 reviewers + 9 verifiers, 9 confirmed - all minor, 0 refuted; 8 fixed, 1 kept on purpose):**
+- the repair skipped UNDERWATER cells, but the pre-3.118 Match-on brush wrote Course Grass on underwater sand too
+  (the resolve only ever writes seaweed there) - it now covers both; the audit splits underwater by ground;
+- the repair skipped FLATTENED Course Grass (0x82), which would return on the sand when the object moves - it now
+  becomes auto + flattened (0x81), so the resolve judges the real ground when the flat area goes;
+- `GRASS_PAINT_TEST` abandoned mid-stroke (Test Game, storyboard) left the SHARED terrain/grass undo slot armed -
+  every later terrain stroke would get no undo; it now runs the release frame (verified: Test Game entered with
+  ~2,000 stroke frames left, back in the editor a terrain paint is accepted); and it refuses to start during a
+  terrain test or a real stroke, and PAINT_TEST / SCULPT_TEST refuse during it (verified);
+- the ScanRegion contract comments (GGGrass.h, GGTerrainWicked.cpp) and the probe's step-1 comment were false;
+- kept: the steep-cell divergence above.
+
+Harness: `GET_GRASSMAP_AUDIT [step]` (the grass map against the ground under it: empty / auto / Course / other /
+flattened, for bare and grassy ground, above and below the water), `GRASS_CLEAR_BARE [1]` (dry run by default),
+`GRASS_POPULATE <match>`, `GRASS_PAINT_TEST <x> <z> <frames> [match] [typemask]`, `SET_TERRAINBRUSH <size>`.
+Tool: `grass_bare_probe.sh`.
