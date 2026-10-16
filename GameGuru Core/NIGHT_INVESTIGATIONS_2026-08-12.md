@@ -16071,3 +16071,5 @@ not only at an unchanged tier, so it takes the full rebuild.
 
 Harness: `SET_GRASSDENSITY <pct>`, `SET_GRASSDENSITY_MACHINE <pct>`, `SET_GRASSDENSITYMODE <0|1>`,
 `GET_GRASSDENSITY`; `GET_PERF_DATA` line `GRASS_DENSITY:`. setup.ini `grassdensity`, `grassdensitydx11`.
+
+### LEE-CONFIRMED 3.116, 2026-10-16: "Grass density confirmed working" - DX11 density mode (density from the Grass Draw Distance) kept as the default, Grass Density (whole level) slider + setup.ini grassdensity / grassdensitydx11. Game `7035a2bd` + readout wrap `e0a5a753`. Open, Lee's call: the far-field profile, blade area, Auto grass on bare materials (see 3.116 "Not done").
