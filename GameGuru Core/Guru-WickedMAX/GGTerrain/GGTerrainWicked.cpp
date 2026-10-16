@@ -422,12 +422,26 @@ void GGApplyLowSpecSwitches()
 		if ( gg_particle_pct != 100 )
 		{
 			const float k = (float)gg_particle_pct * 0.01f;
+			// GGMAX 3.121: the Particle Library's own preview effect is not the level's - Particle Density
+			// is a per-level setting, and at 25% the hovered effect previewed a quarter of its particles
+			// (at 0% none, and 3.111 thumbnail generation then saw an empty tile). Children of the library's
+			// preview root keep their authored count.
+			extern uint32_t g_LibraryPreviewWPERoot;
 			for ( size_t i = 0; i < scene.emitters.GetCount(); i++ )
 			{
 				const wi::ecs::Entity e = scene.emitters.GetEntity(i);
 				float base = -1.0f;
 				for ( size_t j = 0; j < s_origCount.size(); j++ )
 					if ( s_origCount[j].first == e ) { base = s_origCount[j].second; break; }
+				if ( g_LibraryPreviewWPERoot != 0 )
+				{
+					const wi::scene::HierarchyComponent* h = scene.hierarchy.GetComponent( e );
+					if ( h && h->parentID == g_LibraryPreviewWPERoot )
+					{
+						if ( base >= 0.0f ) scene.emitters[i].count = base;   // scaled before it became the preview
+						continue;
+					}
+				}
 				if ( base < 0.0f ) { base = scene.emitters[i].count; s_origCount.push_back( std::make_pair(e, base) ); }
 				scene.emitters[i].count = base * k;
 			}

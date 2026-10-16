@@ -16392,3 +16392,79 @@ Harness: `SET_WATERBAKEUNDER <0|1> [gain x100] [seabed mix x100]`, `SET_UWCEILIN
 line. setup.ini `waterbakeunder`, `waterbakeundergain`. Tools: `water_bake_under_probe.sh` + `water_bake_under_measure.py`.
 
 ### LEE-CONFIRMED 3.120, 2026-10-16: "Baked underwater confirmed working" - under the baked water: an opaque depth-writing ceiling in the ocean's slot (customDraw_WaterSurface) and the engine's own underwater post-process run with the ocean off. Game `01a3a5ba`, engine `84fce6e1`.
+
+### 3.121 The library live previews ignore the level - and the 3.97 studio had never reached a draw - 2026-10-17
+
+Lee (Particle Library screenshot, a pale-blue live tile on TESTPRO2 > DX12TESTLEVEL): "when I changed the weather fog,
+it also affects my particle live preview. Can you ensure the fog and other scene settings to NOT affect the live preview
+for particles and objects."
+
+**Reproduced and measured first.** Hovered `beam_hot.arx`, the tile median was 129,162,184 with Lee's fog (start 0,
+density 1.38e-4) and 2,2,5 with `SET_FOGDENS 0`. The backdrop plane sits 21,202 units out, so his fog covers it 95%
+(1 - exp(-1.38e-4 x 21202)), and in Simulated Sky mode the fog colour is the sky's horizon colour, pale blue, even at
+Fog Opacity 0. The particles were not the cause: gpup (.arx) reads no frame constants.
+
+**★★★ The 3.97 studio override had never reached a single draw.** 3.97 added an engine hook that gives the preview
+camera an edited copy of the frame constants: no sun, no fog, no level probe, fixed ambient, studio cube. It bound the
+copy ONCE, and then `DrawScene`, `DrawSky`, the tiled light culling and the light visualisers each call
+`BindCommonResources` on entry, which binds the LEVEL's frame constants again. So from 3.97 to now, every preview drew
+with the level's fog, sun, ambient and probes. Measured: `studio 0` vs `studio 1` gave the SAME tile to 0.1/255
+(129.1,162.7,184.0 both). `s_studioFrames` counted the hook's CALLS and looked healthy the whole time; 3.97's
+"blown 16.4% -> 0%" came from the light-energy fix that shipped with it, not from the override.
+★ **A count of calls is not a count of successes** (the debugging-habits rule) - and an override that is bound once
+is only as good as the first function that re-binds the slot.
+
+**What changed.**
+- Engine (WICKED_ENGINE_CHANGES 3.121): `wi::renderer::GG_SetFrameCBOverride / GG_ClearFrameCBOverride /
+  GG_HasFrameCBOverride` - a per-command-list (thread-local, keyed on the list) replacement that `BindCommonResources`
+  honours, so the copy survives every pass. The render-to-texture camera job registers the hook's copy for its whole
+  job and clears it at the end. `RenderMeshes` also skips Super Quick Objects for such a list: Super Quick is a
+  per-LEVEL performance setting and was rendering preview items flat on a level that ticked it.
+- Game (`master_part2.cpp`): one function, `GGObjectPreview_ApplyStudio`, for both places that draw the preview - the
+  engine's camera job and the game's own particle + tonemap list (WPE particle draws and the tonemap bound the level's
+  constants too). Beyond 3.97's list it now also replaces: the level **wind** (zero global wind = DX11's own no-wind
+  case: plain vegetation stands still, an entity tree with its own Tree Wind Modifier still sways by that), the level
+  **sky** wherever the backdrop leaves a gap (studio radiance; the static-sky path points at the studio cube; black
+  behind particles; the item's own `_fpe_cube.dds` showcase sky is left alone), aerial perspective, Super Quick's
+  fast-shadow bit, and in the Particle Library the level's WPE **force fields** and the light on **lit (SOFT_LIGHTING)
+  WPE particles** - now plain white light (`gg_objpreview_particlelight` 1.0, minus what the studio cube already adds)
+  instead of the level's sun and ambient. No studio cube = no override (with globalprobe -1 the shader's ambient is
+  uninitialised).
+
+**Measured** (DESKTOP RX 9060 XT, TESTPRO2 > DX12TESTLEVEL, nothing saved; `tools/harness/preview_isolation_probe.sh`).
+New harness verb `PERTURB_SCENE 1` pushes every level input to an extreme - ambient red 1.5, magenta fog 0.002 from 0
+at full opacity, wind 60, sun green x4 - and `PERTURB_SCENE 0` puts the saved values back. The tile is the median/mean
+over 4 shots; the studio-OFF control proves the instrument can see a leak:
+
+| hovered tile | perturbed vs base (max /255) | studio OFF control | restored |
+|---|---|---|---|
+| `beam_hot.arx` (Particle Library) | **0.0** | 212 (tile goes magenta) | 0.0 |
+| a WPE effect (Particle Library, animating) | **0.1** | 212 | 0.0 |
+| `Purple Mist.pe`, `Steam.pe` (the LIT WPE effects) | **0.0** | 212 | 0.0 |
+| *Brick Half Pyramid* (Object Library, turntable frozen) | **0.0** | 214 | 0.0 |
+
+- The main view does not change with a hover (an override leaking onto another list would light the whole view with
+  the studio): hovered vs not 4.1-4.9 mean abs against a 3.9 floor between two un-hovered shots - grass and water motion.
+- 3.110 regression `particle_preview_probe.sh` on `beam_fire.arx`: PASS, pair diffs 0.97-1.55 (3.110: 1.0-1.3),
+  neighbour 0.00, un-hover 0.00. (`beam_hot.arx` barely moves - 0.3-0.6 - so it cannot pass that probe's animation test.)
+
+**The look: studio ambient 0 -> 0.6.** With the override finally working, the preview lost the level's sun and ambient,
+and the 3.98 stage had been judged by Lee with them silently on (testpro2level's ambient 0.608). Fog off, the subject's
+luminance dropped 216 -> 179. A hovered tile should not jump in brightness from the static thumbnail it replaces, so the
+studio's flat ambient was swept against the static thumbnail in the same cell (p99/p90/p75 luminance, four Arctic items):
+mean abs error 20.5 at 0, 14.9 at 0.2, 9.5 at 0.45, **7.1 at 0.6**, 4.5 at 0.8, 3.3 at 1.0 - p90 is best at 0.6 and
+overshoots above it, and 0.6 is also the ambient Lee approved the stage under. Characters (Astra, Aztec Attendant
+Priest, two Aztec warriors) read clearly dark at 0 and close to their thumbnails at 0.6. No blown pixels at 0.6.
+Default **0.6**; one knob (`SET_OBJPREVIEW_LIGHT 0 4 45 1 <ambient>`) if Lee wants it brighter or darker.
+
+**Adversarial review:** 3 reviewers + 4 verifiers; 3 distinct findings confirmed, all fixed and re-measured, 1 refuted. Each was a level setting that still reached a preview by a path the frame constants do not carry - and none of them could show up in the first probe, because PERTURB_SCENE did not touch them:
+- **Object Detail Distance** (per level) is written into every object's draw distance; from the preview camera the backdrop is 21,200 units out, so a 20,000 cap dithered holes in it and anything below ~14,000 culled it (the item sat on the studio gradient), and a large item ~8,800 out dissolved at 8,000. Engine: a list with the override skips the distance fade (DrawScene cull + RenderMeshes dither).
+- **Particle Density** (per level) scaled the library's own preview emitters - 25% previewed a quarter of the particles, 0% none (and 3.111 generation then saw an empty tile). `GGApplyLowSpecSwitches` now skips children of `g_LibraryPreviewWPERoot`. Interleaved A/B on `firearea.pe`, density 0 vs 100: tile mean 36.4 vs 36.0, 35.7 vs 35.3.
+- **Wind**: zeroing the wind direction/amplitude left an entity tree with a Tree Wind Modifier swaying by the level's 3D gust field (Wind Speed / Gust Size / Randomness; all zero on a no-wind level). The preview now samples its own 1x1x1 zero wind texture - preview items stand still. (No stock library item sets a Tree Wind Modifier.)
+- Refuted: Texture Detail - a machine-wide VRAM budget applied in the shared texture cache, not a scene setting; a full-resolution preview would need a second copy of every texture.
+`PERTURB_SCENE` now also sets wind speed 8 / gust 4 / randomness 20, Object Detail Distance 8000 and Particle Density 0%; every probe above was re-run with it: beam_hot, Steam (lit), the pyramid 0.0; `firearea.pe` (a flickering fire) 2.3 on 4 shots, 1.2 on 12 - an interleaved PERTURB 1/0 x2 gave -0.5 and 0.0 at the same FPS, so it is flicker. The two other lit WPE effects (Purple Mist, Steam) pass at 0.0; the third lit emitter is the smoke in Explosion Burst.
+
+Harness: `PERTURB_SCENE <1|0>`; `SET_OBJPREVIEW_LIGHT` 9th argument = particle light; `DUMP_OBJPREVIEW` adds
+`studioOwn` (frames the particle + tonemap list bound the studio copy), `cubeAvg`, `plight`; `DUMP_EMITTERS` adds
+`st` (shader type, 3 = lit). Tools: `preview_isolation_probe.sh` + `preview_isolation_measure.py`.
+⚠ Supersedes 3.110's "Lit WPE particles take the level's lighting, as in DX11" - Lee's request overrides that parity choice.

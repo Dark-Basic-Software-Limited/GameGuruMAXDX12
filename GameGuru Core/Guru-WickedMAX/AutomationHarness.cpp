@@ -3714,6 +3714,71 @@ static bool AutoHarness_MouseCommands(const char* cmd, const char* arg, char* re
 		return true;
 	}
 
+	if (_stricmp(cmd, "PERTURB_SCENE") == 0)
+	{
+		// GGMAX 3.121: PERTURB_SCENE <1|0> - push every LEVEL input the Object/Particle Library live preview
+		// must ignore to an extreme (1), or put the saved values back exactly (0). Live-only, nothing saved:
+		// ambient, fog density/start/opacity/colour (horizon), zenith, wind (direction, speed, gust size,
+		// randomness), the sun light's colour and intensity, Object Detail Distance (8000) and Particle Density
+		// (0%). Tool preview_isolation_probe.sh: the preview tile must not move between 1 and 0.
+		// Here, not in the else-if chain below: one more link there is C1061 (blocks nested too deeply).
+		static bool s_saved = false;
+		static XMFLOAT3 s_amb, s_hor, s_zen, s_wind, s_sunCol;
+		static float s_fogD = 0, s_fogS = 0, s_fogO = 0, s_sunI = 0, s_wSpd = 0, s_wWave = 0, s_wRand = 0, s_cull = 0;
+		static int s_pct = 100;
+		extern float gg_object_cull_dist;
+		extern int gg_particle_pct;
+		extern wi::ecs::Entity g_weatherEntityID;
+		extern wi::ecs::Entity g_entitySunLight;
+		wi::scene::WeatherComponent* weather = wi::scene::GetScene().weathers.GetComponent(g_weatherEntityID);
+		wi::scene::LightComponent* sun = wi::scene::GetScene().lights.GetComponent(g_entitySunLight);
+		const int on = (arg && arg[0]) ? atoi(arg) : 0;
+		if (!weather)
+		{
+			_snprintf(result, resultSize, "ERROR: PERTURB_SCENE no weather component");
+		}
+		else if (on)
+		{
+			if (!s_saved)
+			{
+				s_amb = weather->ambient; s_hor = weather->horizon; s_zen = weather->zenith; s_wind = weather->windDirection;
+				s_fogD = weather->fogDensity; s_fogS = weather->fogStart; s_fogO = weather->gg_fog_opacity;
+				if (sun) { s_sunCol = sun->color; s_sunI = sun->intensity; }
+				s_wSpd = weather->windSpeed; s_wWave = weather->windWaveSize; s_wRand = weather->windRandomness;
+				s_cull = gg_object_cull_dist; s_pct = gg_particle_pct;
+				s_saved = true;
+			}
+			weather->ambient = XMFLOAT3(1.5f, 0.1f, 0.1f);		// strong red
+			weather->horizon = XMFLOAT3(1.0f, 0.0f, 1.0f);		// magenta fog colour
+			weather->zenith = XMFLOAT3(0.0f, 1.0f, 0.0f);
+			weather->fogDensity = 0.002f;
+			weather->fogStart = 0.0f;
+			weather->gg_fog_opacity = 1.0f;
+			weather->windDirection = XMFLOAT3(60.0f, 0.0f, 60.0f);
+			weather->windSpeed = 8.0f; weather->windWaveSize = 4.0f; weather->windRandomness = 20.0f;
+			gg_object_cull_dist = 8000.0f;	// below the backdrop's 21200 - radius: culls it outright unless exempt
+			gg_particle_pct = 0;
+			if (sun) { sun->color = XMFLOAT3(0.0f, 1.0f, 0.0f); sun->intensity = (s_sunI > 0.0f ? s_sunI : 1.0f) * 4.0f; }
+			_snprintf(result, resultSize, "OK: PERTURB_SCENE 1 (ambient red, fog magenta 0.002 from 0, wind 60 speed 8, sun green x4, object detail 8000, particles 0%%%s)",
+				sun ? "" : " - NO SUN LIGHT");
+		}
+		else
+		{
+			if (s_saved)
+			{
+				weather->ambient = s_amb; weather->horizon = s_hor; weather->zenith = s_zen; weather->windDirection = s_wind;
+				weather->fogDensity = s_fogD; weather->fogStart = s_fogS; weather->gg_fog_opacity = s_fogO;
+				if (sun) { sun->color = s_sunCol; sun->intensity = s_sunI; }
+				weather->windSpeed = s_wSpd; weather->windWaveSize = s_wWave; weather->windRandomness = s_wRand;
+				gg_object_cull_dist = s_cull; gg_particle_pct = s_pct;
+				s_saved = false;
+				_snprintf(result, resultSize, "OK: PERTURB_SCENE 0 (restored)");
+			}
+			else _snprintf(result, resultSize, "OK: PERTURB_SCENE 0 (nothing to restore)");
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_OBJPREVIEW") == 0)
 	{
 		// Stage the live preview so a device hang names WHICH of the three steps did it:
@@ -3759,9 +3824,10 @@ static bool AutoHarness_MouseCommands(const char* cmd, const char* arg, char* re
 		extern float gg_objpreview_envscale;
 		extern float gg_objpreview_modulate;
 		extern int gg_objpreview_freeze;
-		// 3.97b: [modulate] [freeze 0|1] appended.
-		float lk = -1.0f, li = -1.0f, fv = -1.0f, am = -1.0f, es = -1.0f, md = -1.0f; int st2 = -1, fz = -1;
-		const int got = (arg && arg[0]) ? sscanf_s(arg, "%f %f %f %d %f %f %f %d", &lk, &li, &fv, &st2, &am, &es, &md, &fz) : 0;
+		extern float gg_objpreview_particlelight;
+		// 3.97b: [modulate] [freeze 0|1] appended. 3.121: [particle light] appended (lit WPE particles' total white light).
+		float lk = -1.0f, li = -1.0f, fv = -1.0f, am = -1.0f, es = -1.0f, md = -1.0f, pl = -1.0f; int st2 = -1, fz = -1;
+		const int got = (arg && arg[0]) ? sscanf_s(arg, "%f %f %f %d %f %f %f %d %f", &lk, &li, &fv, &st2, &am, &es, &md, &fz, &pl) : 0;
 		if (got < 1)
 		{
 			_snprintf(result, resultSize,
@@ -3778,9 +3844,10 @@ static bool AutoHarness_MouseCommands(const char* cmd, const char* arg, char* re
 			if (got >= 6 && es >= 0.0f) gg_objpreview_envscale = es;
 			if (got >= 7 && md >= 0.0f) gg_objpreview_modulate = md;
 			if (got >= 8 && fz >= 0) gg_objpreview_freeze = fz;
+			if (got >= 9 && pl >= 0.0f) gg_objpreview_particlelight = pl;
 			_snprintf(result, resultSize,
-				"OK: SET_OBJPREVIEW_LIGHT k=%.5f abs=%.2f fov=%.1f studio=%d ambient=%.3f envscale=%.3f modulate=%.3f freeze=%d",
-				gg_objpreview_lightk, gg_objpreview_lightint, gg_objpreview_fovdeg, gg_objpreview_studio, gg_objpreview_ambient, gg_objpreview_envscale, gg_objpreview_modulate, gg_objpreview_freeze);
+				"OK: SET_OBJPREVIEW_LIGHT k=%.5f abs=%.2f fov=%.1f studio=%d ambient=%.3f envscale=%.3f modulate=%.3f freeze=%d plight=%.2f",
+				gg_objpreview_lightk, gg_objpreview_lightint, gg_objpreview_fovdeg, gg_objpreview_studio, gg_objpreview_ambient, gg_objpreview_envscale, gg_objpreview_modulate, gg_objpreview_freeze, gg_objpreview_particlelight);
 		}
 		result[resultSize - 1] = 0;
 		return true;
@@ -9174,7 +9241,7 @@ void AutoHarness_CheckForCommand(void)
 			if (tr) { XMFLOAT3 p = tr->GetPosition(); wx = p.x; wy = p.y; wz = p.z; }
 			written += _snprintf(result + written, sizeof(result) - written,
 				"[%d] e=%u par=%u '%s' vis=%d act=%d flags=0x%X cnt=%.2f life=%.2f size=%.2f max=%u "
-				"world=(%.1f,%.1f,%.1f) alive=%u mat=%d blend=%d basecol.a=%.2f tex=%d fadein=%.3f\n",
+				"world=(%.1f,%.1f,%.1f) alive=%u mat=%d blend=%d basecol.a=%.2f tex=%d fadein=%.3f st=%d\n",
 				i, (unsigned)e, (unsigned)(hier ? hier->parentID : 0),
 				nm ? nm->name.c_str() : "?",
 				ec.IsVisible() ? 1 : 0, ec.IsActive() ? 1 : 0, ec._flags,
@@ -9183,7 +9250,7 @@ void AutoHarness_CheckForCommand(void)
 				mt ? 1 : 0, mt ? (int)mt->userBlendMode : -1,
 				mt ? mt->baseColor.w : -1.0f,
 				(mt && mt->textures[wiScene::MaterialComponent::BASECOLORMAP].resource.IsValid()) ? 1 : 0,
-				ec.fadein_time);
+				ec.fadein_time, (int)ec.shaderType);	// 3.121: st 3 = SOFT_LIGHTING (lit)
 		}
 		result[sizeof(result) - 1] = 0;
 	}

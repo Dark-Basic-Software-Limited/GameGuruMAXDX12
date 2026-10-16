@@ -36,8 +36,9 @@
 //      LDR texture, because ImGui samples raw and would otherwise show linear HDR,
 //   3. hands that LDR texture to the ImGui DX12 bridge so the thumbnail cell can draw it.
 //
-// ⚠ NO ENGINE CHANGE. Nothing in WickedEngineDX12 is touched, so no WICKED_ENGINE_CHANGES.md
-//   delta row is owed and the sweeps see an unchanged engine.
+// ⚠ NO ENGINE CHANGE (3.83). Later rounds did add engine deltas for the preview: 3.97 the per-camera
+//   frame-constant hook, 3.121 the per-list frame-CB override that makes it reach the draws (both in
+//   WICKED_ENGINE_CHANGES.md).
 //
 // ⚠ COST WHEN IDLE IS ZERO. resolution == {0,0} makes RenderCameraComponents free its
 //   resources and `continue` on its first line, and GGObjectPreview_Render() early-outs.
@@ -111,7 +112,22 @@ float gg_objpreview_lightint = 4.0f;   // key light energy, DX11 units; fill is 
 // a fixed studio value. 0 = inherit the level exactly as before (A/B only).
 int gg_objpreview_studio = 1;
 // Flat ambient added on top of the studio cube's own (weather.ambient replacement), linear.
-float gg_objpreview_ambient = 0.0f;
+// ★ 3.121: 0.6, not 0. The 3.98 stage was judged by Lee with the LEVEL's ambient silently on (0.608 in
+// testpro2level - see below: the override never reached a draw), so 0 made every preview darker than
+// what he approved. 0.6 restores that, level-independently, and is also where the live preview lands
+// nearest the cell's own static thumbnail (p90 on four Arctic items: 0 -> 20.5 mean abs error, 0.6 -> 7.1;
+// characters at 0 read clearly dark). Live-tunable: SET_OBJPREVIEW_LIGHT 0 4 45 1 <ambient>.
+float gg_objpreview_ambient = 0.6f;
+// ★★★ 3.121 THE OVERRIDE NOW ACTUALLY REACHES THE DRAWS. From 3.97 to 3.121 the engine's DrawScene and
+// DrawSky re-bound the LEVEL's frame constants on entry, over the copy the hook bound - so every
+// preview drew with the level's fog, sun, ambient and probes while s_studioFrames counted the calls.
+// Measured on TESTPRO2: studio 0 vs 1 gave the SAME tile to 0.1/255, and the level's fog painted the
+// particle tile its fog colour (2,2,5 -> 129,162,184). The engine now keeps the copy for the whole
+// camera job (wi::renderer::GG_SetFrameCBOverride), and the game's particle + tonemap step binds it too.
+// Particle Library: the TOTAL diffuse light a lit (SOFT_LIGHTING) WPE particle receives - the studio
+// cube's own ambient is subtracted, so 1.0 = white light and a lit particle shows its authored colour.
+// Before 3.121 lit particles took the level's sun, ambient and fog. Objects keep gg_objpreview_ambient.
+float gg_objpreview_particlelight = 1.0f;
 // Brightness of the generated studio sky cube, which feeds BOTH the ambient (its 1x1 mip, per
 // face) and the reflections metals depend on. Rebuilt on change - it is 32x32 per face.
 float gg_objpreview_envscale = 0.35f;
@@ -214,7 +230,12 @@ namespace GGObjectPreview
 	static wi::graphics::Texture s_studioCube;
 	static int s_studioCubeIndex = -1;		// bindless SRV index, -1 = not built
 	static float s_studioCubeBuiltScale = -1.0f;
-	static int s_studioFrames = 0;			// frames the override has actually been applied (diagnostic)
+	static int s_studioFrames = 0;			// frames the hook returned true (calls - see 3.121: NOT proof it reached a draw)
+	static int s_studioOwnFrames = 0;		// 3.121: frames the particle + tonemap step bound the studio copy too
+	static float s_studioCubeAvg = 0.0f;	// 3.121: mean of the cube's 1x1 mips = the ambient it gives (grey)
+	// 3.121: a 1x1x1 zero 'wind field' in place of the level's 3D wind texture - see ApplyStudio
+	static wi::graphics::Texture s_zeroWind;
+	static int s_zeroWindIndex = -1;
 	static float s_subAng[3] = { 0, 0, 0 };	// 3.99 diag: angles handed to Submit (GG camera 0)
 
 	// 3.110 PARTICLE LIBRARY. The same camera and render target, with no object: the hovered
@@ -534,6 +555,32 @@ static void GGObjectPreview_StudioRadiance(float x, float y, float z, float out[
 	out[0] = v; out[1] = v; out[2] = v;
 }
 
+// 3.121: the zero wind field the preview samples instead of the level's (ApplyStudio). MAIN THREAD
+// ONLY, like the cube. Same format as the engine's TEXTYPE_3D_WIND; one texel, so it is ~2 bytes.
+static void GGObjectPreview_EnsureZeroWind(void)
+{
+	using namespace GGObjectPreview;
+	if (s_zeroWind.IsValid()) return;
+	wi::graphics::GraphicsDevice* device = wi::graphics::GetDevice();
+	if (!device) return;
+	const uint16_t zero = 0;	// half 0.0
+	wi::graphics::SubresourceData sd;
+	sd.data_ptr = &zero;
+	sd.row_pitch = sizeof(zero);
+	sd.slice_pitch = sizeof(zero);
+	wi::graphics::TextureDesc desc;
+	desc.type = wi::graphics::TextureDesc::Type::TEXTURE_3D;
+	desc.width = 1; desc.height = 1; desc.depth = 1; desc.mip_levels = 1;
+	desc.format = wi::graphics::Format::R16_FLOAT;
+	desc.bind_flags = wi::graphics::BindFlag::SHADER_RESOURCE;
+	desc.layout = wi::graphics::ResourceState::SHADER_RESOURCE;
+	wi::graphics::Texture tex;
+	if (!device->CreateTexture(&desc, &sd, &tex)) return;
+	device->SetName(&tex, "GGMax ObjectPreview ZeroWind");
+	s_zeroWind = tex;
+	s_zeroWindIndex = device->GetDescriptorIndex(&s_zeroWind, wi::graphics::SubresourceType::SRV);
+}
+
 // Build (or rebuild) the studio cube. MAIN THREAD ONLY - called from Submit, which runs inside
 // GrabBackBufferCopy on the game loop, per the resource-creation rule.
 static void GGObjectPreview_EnsureStudioCube(void)
@@ -610,16 +657,25 @@ static void GGObjectPreview_EnsureStudioCube(void)
 	s_studioCube = cube;		// the old one (if any) is released by the device's deferred destroy
 	s_studioCubeIndex = device->GetDescriptorIndex(&s_studioCube, wi::graphics::SubresourceType::SRV);
 	s_studioCubeBuiltScale = gg_objpreview_envscale * gg_objpreview_modulate;
+	// 3.121: GetAmbient samples the cube at its LAST mip (1x1 per face) - the ambient it adds. The cube
+	// is grey, so one number; the particle preview subtracts it to light lit particles with plain white.
+	float avg = 0.0f;
+	for (int f = 0; f < 6; ++f) avg += texels[f][MIPS - 1][0];
+	s_studioCubeAvg = avg / 6.0f;
 }
 
-// The engine calls this from the preview camera's render job with a copy of this frame's
-// constants (wiRenderPath3D.cpp, gg_rtt_frame_override). Every value below would otherwise come
-// from the LEVEL. ⚠ dst is write-combined upload memory: read src, only WRITE dst.
-// ⚠ Job thread: touches nothing but plain module state that the main thread sets.
-static bool GGObjectPreview_FrameOverride(wi::ecs::Entity cameraEntity, const FrameCB& src, FrameCB& dst)
+// The preview's own frame constants: every value below would otherwise come from the LEVEL.
+// 3.121: ONE function for both places that draw the preview - the engine's camera job (through
+// GGObjectPreview_FrameOverride) and the game's particle + tonemap step (GGObjectPreview_Render) -
+// so the two can never drift apart. ⚠ dst is write-combined upload memory: read src, only WRITE dst.
+// ⚠ Called on a job thread: touches nothing but plain module state that the main thread sets.
+static bool GGObjectPreview_ApplyStudio(const FrameCB& src, FrameCB& dst)
 {
 	using namespace GGObjectPreview;
-	if (!gg_objpreview_studio || !s_active || cameraEntity != s_camEntity) return false;
+	if (!gg_objpreview_studio || !s_active) return false;
+	// 3.121: no studio cube = no override. With globalprobe -1, GetAmbient (lightingHF.hlsli) returns an
+	// UNINITIALISED value - harmless while the override never reached a draw, a garbage tile now.
+	if (s_studioCubeIndex < 0) return false;
 
 	// the level's sun, and any other directional light, lights everything at any distance
 	dst.directional_lights = 0;
@@ -642,7 +698,67 @@ static bool GGObjectPreview_FrameOverride(wi::ecs::Entity cameraEntity, const Fr
 	dst.options = src.options & ~(uint32_t)(OPTION_BIT_HEIGHT_FOG | OPTION_BIT_VXGI_ENABLED
 		| OPTION_BIT_VXGI_REFLECTIONS_ENABLED | OPTION_BIT_SURFELGI_ENABLED | OPTION_BIT_RAYTRACED_SHADOWS
 		| OPTION_BIT_SHADOW_MASK | OPTION_BIT_DISABLE_ALBEDO_MAPS | OPTION_BIT_FORCE_DIFFUSE_LIGHTING
-		| OPTION_BIT_VOLUMETRICCLOUDS_CAST_SHADOW);
+		| OPTION_BIT_VOLUMETRICCLOUDS_CAST_SHADOW | OPTION_BIT_REALISTIC_SKY_AERIAL_PERSPECTIVE);
+	// 3.121: the level's wind - the preview item stands still. Zeroing the direction and amplitude is not
+	// enough on its own: an entity tree with a Tree Wind Modifier still sways by matWind^2 x the GUST FIELD,
+	// and that 3D texture is computed from the level's Wind Speed / Gust Size / Randomness (and is all
+	// zero on a level with no wind direction) - review find. So the field itself is swapped for a zero one.
+	dst.scene.weather.wind.direction = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	dst.scene.weather.wind.gg_object_amplitude = 0.0f;
+	if (s_zeroWindIndex >= 0)	// never -1: the shader samples it whenever a vertex has wind weight
+	{
+		dst.texture_wind_index = s_zeroWindIndex;
+		dst.texture_wind_prev_index = s_zeroWindIndex;
+	}
+	// 3.121: a lit WPE particle is shaded by GetAmbient (cube 1x1 mip + flat ambient) and the lights,
+	// and nothing else - so white light of gg_objpreview_particlelight in total, whatever the level.
+	// The backdrop is UNLIT and gpup (.arx) reads no frame constants, so nothing else in a particle
+	// preview moves.
+	if (s_particleMode)
+	{
+		float a = gg_objpreview_particlelight - s_studioCubeAvg;
+		if (!(a > 0.0f)) a = 0.0f;
+		dst.scene.weather.ambient = wi::math::pack_half3(a, a, a);
+		// the level's WPE force fields (the shared entity array) push the preview's particles too
+		dst.forces = 0;
+	}
+	// 3.121: Super Quick's single-tap shadow bit is a LEVEL performance setting (RenderMeshes skips its
+	// material rungs for this list in the engine); the preview casts no shadows anyway.
+	dst.options &= ~(uint32_t)OPTION_BIT_GG_FAST_SHADOWS;
+	// 3.121: the level SKY. DrawSky fills every pixel the backdrop leaves empty - a large preview between
+	// 513 and 1023 wide keeps a stale 50% backdrop scale, and the 3.99 non-opaque backdrop - with the level's
+	// realistic sky, skybox or gradient. Studio radiance instead (black behind particles, whose backdrop is
+	// dark) - unless the ITEM brought its own showcase cube: CreateBackdropObject put the .fpe's
+	// _fpe_cube.dds into the sky on purpose and hid the backdrop to show it.
+	extern bool bBackbufferCubemapActive;
+	if (!bBackbufferCubemapActive)
+	{
+		dst.options &= ~(uint32_t)(OPTION_BIT_REALISTIC_SKY | OPTION_BIT_REALISTIC_SKY_HIGH_QUALITY
+			| OPTION_BIT_REALISTIC_SKY_RECEIVE_SHADOW | OPTION_BIT_VOLUMETRICCLOUDS_RECEIVE_SHADOW
+			| OPTION_BIT_OVERRIDE_FOG_COLOR | OPTION_BIT_STATIC_SKY_SPHEREMAP);
+		float hz[3], zn[3];
+		GGObjectPreview_StudioRadiance(1.0f, 0.0f, 0.0f, hz);
+		GGObjectPreview_StudioRadiance(0.0f, 1.0f, 0.0f, zn);
+		dst.scene.weather.horizon = wi::math::pack_half3(hz[0], hz[1], hz[2]);
+		dst.scene.weather.zenith = wi::math::pack_half3(zn[0], zn[1], zn[2]);
+		// a level with a skybox draws through the STATIC sky PSO (chosen on the CPU from weather.skyMap):
+		// point it at the studio cube, which is a cube map, as the non-spheremap path samples
+		dst.scene.globalenvmap = s_studioCubeIndex;
+		dst.scene.weather.sky_rotation_sin = 0.0f;
+		dst.scene.weather.sky_rotation_cos = 1.0f;
+		dst.scene.weather.stars = 0.0f;
+		dst.scene.weather.sky_exposure = s_particleMode ? 0.0f : 1.0f;
+	}
+	return true;
+}
+
+// The engine calls this from each render-to-texture camera's job with a copy of this frame's
+// constants (wiRenderPath3D.cpp, gg_rtt_frame_override); true = that camera draws with the copy.
+static bool GGObjectPreview_FrameOverride(wi::ecs::Entity cameraEntity, const FrameCB& src, FrameCB& dst)
+{
+	using namespace GGObjectPreview;
+	if (cameraEntity != s_camEntity) return false;
+	if (!GGObjectPreview_ApplyStudio(src, dst)) return false;
 	s_studioFrames++;
 	return true;
 }
@@ -684,7 +800,7 @@ void GGObjectPreview_Submit(int imageId, int width, int height,
 	// 3.97: the studio environment. The hook is a plain pointer the engine checks per camera, so
 	// registering it every submit costs nothing and survives anything that might reset it.
 	wi::gg_rtt_frame_override = GGObjectPreview_FrameOverride;
-	if (gg_objpreview_studio) GGObjectPreview_EnsureStudioCube();
+	if (gg_objpreview_studio) { GGObjectPreview_EnsureStudioCube(); GGObjectPreview_EnsureZeroWind(); }
 
 	// (re)create the camera entity. Checked EVERY submit, not just once: a level load clears
 	// the scene and the entity goes with it, and a stale handle would silently render nothing.
@@ -747,9 +863,8 @@ void GGObjectPreview_Submit(int imageId, int width, int height,
 	// facing UP (the cartridges inside the pistol-ammo box) got almost nothing. Lights now sit on a
 	// sphere around the SUBJECT, placed in the camera's own frame (gg_objpreview_stage), so the
 	// stage stays put while the turntable carries each face through it.
-	// 3.110: not for a particle preview - there is no subject to light, and a lit WPE effect takes
-	// the level's lighting, as it did in DX11 (it is drawn by GGObjectPreview_DrawParticles with the
-	// level's frame constants, not inside the studio-lit engine pass).
+	// 3.110: not for a particle preview - there is no subject to light. 3.121: a lit WPE effect is lit
+	// by plain white light (gg_objpreview_particlelight), no longer by the level's sun and ambient.
 	if (!s_particleMode)
 	{
 		extern wi::ecs::Entity g_entityThumbLight, g_entityThumbLight2;
@@ -955,6 +1070,7 @@ static void GGObjectPreview_DrawParticles(wi::scene::CameraComponent& cam, const
 	if (!wpe.empty())
 	{
 		// UpdateGPU bound compute state; give the draws a clean frame + camera binding
+		// (3.121: BindCommonResources binds the studio copy - GGObjectPreview_Render registered it)
 		wi::renderer::BindCommonResources(cmd);
 		wi::renderer::BindCameraCB(cam, cam, cam, cmd);
 		for (uint32_t i : wpe)
@@ -1023,6 +1139,25 @@ void GGObjectPreview_Render(float fExposure)
 	if (gg_objpreview_mode < 2) return;   // stage 1: engine render only
 
 	wi::graphics::CommandList cmd = device->BeginCommandList();
+	// ★ 3.121: this list draws with the SAME studio frame constants as the engine's pass of this camera.
+	// Every BindCommonResources here (ours, em.Draw's, the tonemap's) would otherwise bind the LEVEL's:
+	// a lit WPE particle took the level's fog, sun and ambient. Copied from the frame the engine has just
+	// rendered (RenderPath3D::Render has returned, so frameCB is this frame's and no job is reading it).
+	bool bStudioCB = false;
+	{
+		const FrameCB& frameSrc = master.masterrenderer.frameCB;
+		wi::graphics::GraphicsDevice::GPUAllocation fcb = device->AllocateGPU(sizeof(FrameCB), cmd);
+		if (fcb.IsValid())
+		{
+			std::memcpy(fcb.data, &frameSrc, sizeof(FrameCB));
+			if (GGObjectPreview_ApplyStudio(frameSrc, *(FrameCB*)fcb.data))
+			{
+				wi::renderer::GG_SetFrameCBOverride(cmd, fcb.buffer, fcb.offset);
+				bStudioCB = true;
+				s_studioOwnFrames++;
+			}
+		}
+	}
 	// 3.110: a Particle Library effect goes onto mip 0 of the HDR image before it is tonemapped
 	// (Postprocess_Tonemap samples mip 0 only, so the stale mips the engine built do not matter).
 	if (s_particleMode) GGObjectPreview_DrawParticles(*cam, src, cmd);
@@ -1050,6 +1185,8 @@ void GGObjectPreview_Render(float fExposure)
 		1.0f
 	);
 	device->EventEnd(cmd);
+	// 3.121: before any return - the override is per-thread, and this is the main thread
+	if (bStudioCB) wi::renderer::GG_ClearFrameCBOverride(cmd);
 	s_renderedSinceArm++;	// 3.111: one more frame of the armed request is in s_ldr
 
 	// hand the result to ImGui. The resource pointer is stable for the life of s_ldr, so the
@@ -1160,6 +1297,13 @@ void GGObjectPreview_DebugStatus(char* buf, int bufsize)
 			_snprintf(buf + used, bufsize - used, " studio=%d cube=%d studioFrames=%d key=%.2f amb=%.3f env=%.2f mod=%.3f freeze=%d",
 				gg_objpreview_studio, s_studioCubeIndex, s_studioFrames, gg_objpreview_lightint, gg_objpreview_ambient, gg_objpreview_envscale,
 				gg_objpreview_modulate, gg_objpreview_freeze);
+	}
+	{
+		// 3.121: the particle + tonemap list's own binding of the studio copy, and the lit-particle light
+		const size_t used = strlen(buf);
+		if (used + 80 < (size_t)bufsize)
+			_snprintf(buf + used, bufsize - used, " studioOwn=%d cubeAvg=%.3f plight=%.2f",
+				s_studioOwnFrames, s_studioCubeAvg, gg_objpreview_particlelight);
 	}
 	{
 		// 3.99: the preview camera's own forward, next to the angles it was built from, so a backdrop

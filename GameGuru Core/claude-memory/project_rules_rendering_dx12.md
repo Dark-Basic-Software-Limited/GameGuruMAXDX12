@@ -115,3 +115,5 @@ metadata:
   so only the copies move. ★ Any `(a << 16) | b` packing needs b < 65536 PROVEN, not assumed.
   ★ A count that matches its formula exactly says nothing about what was DRAWN - measure coverage.
   [[project-grass-density]]
+
+- ★★★ **A constant buffer bound ONCE is undone by the first callee that re-binds its slot** (3.121): DrawScene, DrawSky and the tiled light culling all call BindCommonResources on entry, so the 3.97 per-camera FrameCB copy never reached a draw for 3 weeks while its call counter rose. Make the override something the binder itself honours (`GG_SetFrameCBOverride`), and prove it with an A/B that MUST move (studio on vs off) before trusting a "no change".
