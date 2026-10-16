@@ -16390,3 +16390,5 @@ colour of screen bands; camera 184 below the surface over a deep basin):
 
 Harness: `SET_WATERBAKEUNDER <0|1> [gain x100] [seabed mix x100]`, `SET_UWCEILING <0|1>`; DUMP_BAKE "underwater 3.120"
 line. setup.ini `waterbakeunder`, `waterbakeundergain`. Tools: `water_bake_under_probe.sh` + `water_bake_under_measure.py`.
+
+### LEE-CONFIRMED 3.120, 2026-10-16: "Baked underwater confirmed working" - under the baked water: an opaque depth-writing ceiling in the ocean's slot (customDraw_WaterSurface) and the engine's own underwater post-process run with the ocean off. Game `01a3a5ba`, engine `84fce6e1`.
