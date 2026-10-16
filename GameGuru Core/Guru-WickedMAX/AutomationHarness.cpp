@@ -3309,7 +3309,7 @@ extern float GGGrass_DX11DensityPerM2(); extern float GGGrass_NearDensityPerM2()
 extern void GGGrass_GetDensityState(float*, float*, unsigned int*, unsigned int*, unsigned int*, unsigned int*, unsigned int*);
 static bool AutoHarness_GrassDensityCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
 {
-	extern int gg_grass_density_pct; extern bool gg_grass_density_dx11; extern bool gg_lowvram;
+	extern int gg_grass_density_pct; extern bool gg_grass_density_dx11; extern bool gg_lowvram; extern int gg_grass_far_mode;
 	if (_stricmp(cmd, "SET_GRASSDENSITY") == 0 || _stricmp(cmd, "SET_GRASSDENSITY_MACHINE") == 0 || _stricmp(cmd, "SET_GRASSDENSITYMODE") == 0)
 	{
 		if (arg && arg[0])
@@ -3321,6 +3321,69 @@ static bool AutoHarness_GrassDensityCommands(const char* cmd, const char* arg, c
 		}
 		_snprintf(result, resultSize, "OK: %s - level %d%%, machine %d%%, effective %d%%, mode %s. Grass rebuilds once the inputs hold still (15 frames), nearest chunks first - GET_GRASSDENSITY shows the latch.",
 			cmd, GGGetGrassDensityLevel(), GGGetGrassDensityMachine(), gg_grass_density_pct, gg_grass_density_dx11 ? "DX11 (draw distance)" : "constant 100k/chunk (pre-3.116)");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_GRASSFARMODE") == 0)
+	{
+		// GGMAX 3.117: 1 = DX11 far field (default), 0 = 1.49b strand LOD, 2 = DX11 rings with no dissolve (baseline)
+		extern int gg_grass_far_mode;
+		if (arg && arg[0]) { const int v = atoi(arg); if (v >= 0 && v <= 2) gg_grass_far_mode = v; }
+		_snprintf(result, resultSize, "OK: SET_GRASSFARMODE %d (1 = DX11 far field: full size to the draw distance, then the dissolve; 0 = strand LOD with widened survivors; 2 = DX11 rings, no dissolve)", gg_grass_far_mode);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "GET_GROUNDDIST_GRID") == 0)
+	{
+		// GGMAX 3.117: the TRUE camera->terrain distance through a grid of screen points (NDC cell centres over
+		// the camera's FULL projection = the whole client window / SCREENSHOT, row-major from its top-left; in the
+		// editor the 3D panel is only a CROP of it - map a screenshot pixel by the full image size, as
+		// grass_falloff_measure.py does), by marching each ray against the terrain heights. A
+		// flat-ground row->distance mapping read grass PAST the cull radius on a hilly level - this is the
+		// instrument for anything that measures a distance-dependent effect off a screenshot.
+		// usage: GET_GROUNDDIST_GRID [cols rows [kind]] (default 32 20, max 64 40). kind 0 = 3D distance (default),
+		// 1 = HORIZONTAL (xz) distance, 2 = the hit point's ground Y. -1 = no hit within 40000.
+		int cols = 32, rows = 20, kind = 0;
+		if (arg && arg[0]) sscanf(arg, "%d %d %d", &cols, &rows, &kind);
+		cols = std::max(2, std::min(cols, 64)); rows = std::max(2, std::min(rows, 40));
+		const wi::scene::CameraComponent& cam = wi::scene::GetCamera();
+		const XMMATRIX invVP = cam.GetInvViewProjection();
+		const XMVECTOR eye = XMLoadFloat3(&cam.Eye);
+		int len = _snprintf(result, resultSize, "OK: GROUNDDIST %d %d eye %.1f %.1f %.1f kind %d\n", cols, rows, cam.Eye.x, cam.Eye.y, cam.Eye.z, kind);
+		for (int r = 0; r < rows && len > 0 && len < (int)resultSize - 16; r++)
+		{
+			for (int c = 0; c < cols; c++)
+			{
+				const float nx = -1.0f + 2.0f * (c + 0.5f) / cols;
+				const float ny = 1.0f - 2.0f * (r + 0.5f) / rows;
+				const XMVECTOR onRay = XMVector3TransformCoord(XMVectorSet(nx, ny, 0.5f, 1.0f), invVP);
+				XMFLOAT3 d; XMStoreFloat3(&d, XMVector3Normalize(XMVectorSubtract(onRay, eye)));
+				float hitT = -1.0f, prevT = 0.0f;
+				for (float tt = 25.0f; tt <= 40000.0f; tt += 25.0f)
+				{
+					float gy = 0.0f;
+					if (GGTerrain::GGTerrain_GetHeight(cam.Eye.x + d.x * tt, cam.Eye.z + d.z * tt, &gy, 1) && cam.Eye.y + d.y * tt <= gy)
+					{
+						float lo = prevT, hi = tt;   // bisect the crossing to well under a unit
+						for (int it = 0; it < 14; it++)
+						{
+							const float mid = 0.5f * (lo + hi);
+							float my = 0.0f;
+							GGTerrain::GGTerrain_GetHeight(cam.Eye.x + d.x * mid, cam.Eye.z + d.z * mid, &my, 1);
+							if (cam.Eye.y + d.y * mid <= my) hi = mid; else lo = mid;
+						}
+						hitT = hi;
+						break;
+					}
+					prevT = tt;
+				}
+				float outV = hitT;
+				if (hitT > 0.0f && kind == 1) outV = hitT * sqrtf(d.x * d.x + d.z * d.z);
+				else if (hitT > 0.0f && kind == 2) outV = cam.Eye.y + d.y * hitT;
+				len += _snprintf(result + len, resultSize - len, (c + 1 < cols) ? "%.0f " : "%.0f\n", outV);
+				if (len <= 0 || len >= (int)resultSize - 16) break;
+			}
+		}
 		result[resultSize - 1] = 0;
 		return true;
 	}
@@ -3340,21 +3403,28 @@ static bool AutoHarness_GrassDensityCommands(const char* cmd, const char* arg, c
 		}
 	}
 	if (systems == 0) minS = 0;
+	// GGMAX 3.117: the camera and the ground under it, so a screenshot row maps to a ground distance
+	const XMFLOAT3 camEye = wi::scene::GetCamera().Eye;
+	float groundY = 0.0f;
+	GGTerrain::GGTerrain_GetHeight(camEye.x, camEye.z, &groundY, 1);
 	const float nearPM2 = GGGrass_NearDensityPerM2(), dx11PM2 = GGGrass_DX11DensityPerM2();   // (near is a windef.h macro)
 	_snprintf(result, resultSize,
 		"GRASS DENSITY (GGMAX 3.116)\n"
-		"  mode              : %s\n"
+		"  mode              : %s; far field %s\n"
 		"  percent           : level %d%%, machine %d%%, effective %d%%\n"
 		"  draw distance     : raw %d, effective %.0f (lowvram %d, density x%.2f)\n"
 		"  latched           : %.0f strands per chunk at full density; per system: tier3 %u, tier2 %u, tier1 %u (latch moved %u times)\n"
 		"  near density      : %.2f per m2 now | classic (DX11) at this draw distance %.2f | ratio %.3f\n"
-		"  built             : %u systems, %llu strands (min %u, max %u per system); %u chunks still at an old density\n",
+		"  built             : %u systems, %llu strands (min %u, max %u per system); %u chunks still at an old density\n"
+		"  camera            : eye %.1f %.1f %.1f, ground under it %.1f (height above ground %.1f)\n",
 		gg_grass_density_dx11 ? "DX11 - density from the Grass Draw Distance (default)" : "constant 100,000 per chunk (pre-3.116)",
+		(gg_grass_far_mode == 1) ? "DX11 (full size to the draw distance, dissolve to +2500)" : ((gg_grass_far_mode == 2) ? "DX11 rings, NO dissolve (baseline)" : "strand LOD (pre-3.117)"),
 		GGGetGrassDensityLevel(), GGGetGrassDensityMachine(), gg_grass_density_pct,
 		(int)GGGrass::gggrass_global_params.lod_dist, GGGrass_LodDistEffective(), gg_lowvram ? 1 : 0, lowMul,
 		nearS, t3, t2, t1, latches,
 		nearPM2, dx11PM2, (dx11PM2 > 0) ? nearPM2 / dx11PM2 : 0.0f,
-		systems, total, minS, maxS, stale);
+		systems, total, minS, maxS, stale,
+		camEye.x, camEye.y, camEye.z, groundY, camEye.y - groundY);
 	result[resultSize - 1] = 0;
 	return true;
 }
@@ -10280,12 +10350,20 @@ void AutoHarness_CheckForCommand(void)
 			if (n >= 3 && f4 > 0) wi::gg_grass_lod_step4_frac = f4;
 			if (n >= 4 && bo > 0) wi::gg_grass_lod_width_boost = bo;
 			// AUTO grass tiers follow this knob (1.0/1.7 off, 1.5/2.2 on) — nudge the gated
-			// grass pass so the tier change applies without waiting for a camera move
-			extern bool g_grassPassNudge;
+			// grass pass so the tier change applies without waiting for a camera move.
+			// GGMAX 3.117: the DX11 far field (default) bypasses the engine strand LOD whenever it is on; it
+			// also collapses the AUTO tiers - but only with the DX11 density and no explicit SET_GRASS tier/
+			// lodchunks (GGGrass_FarRingCollapsed, the predicate ProcessGrassChunks uses). Say exactly which.
+			extern bool g_grassPassNudge; extern int gg_grass_far_mode; extern bool GGGrass_FarRingCollapsed();
 			g_grassPassNudge = true;
-			_snprintf(result, sizeof(result), "OK: SET_GRASSLOD %s (step2=%.2f step4=%.2f boost=%.2f x viewdist)",
+			const char* farNote = "";
+			if (gg_grass_far_mode != 0)
+				farNote = GGGrass_FarRingCollapsed()
+					? " - INACTIVE: the DX11 far field (SET_GRASSFARMODE != 0) bypasses the strand LOD and has collapsed the AUTO tiers; SET_GRASSFARMODE 0 to A/B it"
+					: " - strand LOD INACTIVE (the DX11 far field bypasses it; SET_GRASSFARMODE 0 to A/B it); the AUTO tiers still follow this knob (constant density or an explicit SET_GRASS tier)";
+			_snprintf(result, sizeof(result), "OK: SET_GRASSLOD %s (step2=%.2f step4=%.2f boost=%.2f x viewdist)%s",
 				wi::gg_grass_lod ? "ON" : "OFF",
-				wi::gg_grass_lod_step2_frac, wi::gg_grass_lod_step4_frac, wi::gg_grass_lod_width_boost);
+				wi::gg_grass_lod_step2_frac, wi::gg_grass_lod_step4_frac, wi::gg_grass_lod_width_boost, farNote);
 		}
 		else
 		{

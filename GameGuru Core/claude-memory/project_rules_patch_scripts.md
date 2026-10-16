@@ -82,3 +82,9 @@ See also [[project-rules-environment]] and [[project-porting-clusters]].
 A python-in-bash `<< 'EOF'` patch collapsed the C literal's doubled backslash (thumbbank, two backslashes, lastnewlevel.jpg) to ONE: `\l` is C4129, the path lost its separator and a CopyFileA silently failed - caught only by the harness run (node titled, no thumb file). **Write patch scripts with the Write tool, or use the Edit tool; never put C string literals with backslashes through a heredoc.** After any scripted edit, grep the added lines for `"...\x..."` single backslashes and for comments ending in `\` (a line continuation that comments out the next line).
 
 ⚠ Hit AGAIN 2026-10-12 (3.108c): a Python block in a `<< 'EOF'` heredoc wrote a C tooltip with `\n` -> real newlines inside the string literal. Caught by reading the diff before building. For ANY C/C++ text containing backslashes: the Edit/Write tools only.
+
+- ★★ **Python's `open()` defaults to cp1252 on this Windows box (3.117).** A read-modify-write
+  with `open(p).read()` ... `open(p, 'w').write(s)` on a UTF-8 file holding a ★ TRUNCATED it to
+  0 bytes: `'w'` empties the file at open, then the encode fails mid-write. Always pass
+  `encoding='utf-8'` (or use binary mode + explicit decode, as the patch scripts do), and assert
+  before you open for writing.

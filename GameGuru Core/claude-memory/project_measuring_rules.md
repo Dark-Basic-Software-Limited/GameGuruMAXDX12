@@ -197,3 +197,12 @@ which is the signature of a reflection-UV fix. A single global number said neith
 ⚠ Related and already recorded above: a pixel diff is also invalid when the scene ANIMATES
 (volumetric clouds, 3.77) - there the control was two frames of the same build. Between them:
 **a pixel diff needs both a static scene AND a threshold inside the content's range.**
+
+★★★ **The editor's 3D panel is a CROP of a full-window projection (3.117).** The scene camera
+projects over the WHOLE client window (1536x801, vertical FOV 60); the "3D Level Editor" panel
+(x 212..1285, y 105..777) shows a sub-rectangle of it. So a screenshot pixel's NDC is pixel /
+WINDOW size, not pixel / panel size. Assuming the panel spans NDC -1..1 inflated far distances up
+to 2.2x and "showed" grass past its own cull radius. ★ Calibrate any screen->world mapping against
+`PICK_AT x y 8` (terrain hit) before trusting it; `GET_GROUNDDIST_GRID` returns the true per-cell
+ground distance (ray-march against the terrain). A flat-ground row mapping is also wrong on a hilly
+level. ★ A baseline mode that "violates" a hard cull is the instrument's fault until proven otherwise.

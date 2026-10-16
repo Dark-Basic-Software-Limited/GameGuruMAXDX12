@@ -207,9 +207,21 @@ static float    g_grassLODChunksOverride = 0.0f;
 // values are COUPLED to the LOD opt-in: 0 = AUTO (LOD off -> stock 1.0/1.7; LOD on -> 1.5/2.2,
 // where the strand LOD decimates the added far strands and pays most of the bill). An explicit
 // SET_GRASS tier3/tier2 value always overrides AUTO.
+// GGMAX 3.117: all of this applies to the pre-3.117 far field only (gg_grass_far_mode 0, setup.ini
+// grassfardx11=0) or a constant-density level (grassdensitydx11=0). Under the default DX11 far field the
+// rings collapse to one full-density ring at the cull (ProcessGrassChunks) - unless SET_GRASS lodchunks,
+// tier3 or tier2 is set explicitly, which restores the ring structure for that A/B.
 static float    g_grassTier3Chunks = 0.0f;   // 0 = AUTO; explicit value = full-density ring
 static float    g_grassTier2Chunks = 0.0f;   // 0 = AUTO; explicit value = mid-density ring
 namespace wi { extern bool gg_grass_lod; }   // engine strand-LOD opt-in (wiHairParticle.cpp)
+namespace wi { extern int gg_grass_dx11_falloff; extern float gg_grass_dx11_fade_range; }   // GGMAX 3.117 (wiHairParticle.cpp)
+// GGMAX 3.117: the DX11 grass FAR FIELD. 1 (default) = every strand full size out to the Grass Draw
+// Distance, then DX11's per-blade dissolve to +2500 (engine HAIR_FLAG_GG_DX11_FALLOFF), full density in
+// every chunk that can hold a visible strand, flowers to the same distance as the rest - as DX11 drew
+// it. 0 = the 1.49b strand LOD (survivors widened 2-4x, fade over the last 20%, 18%/5% outer rings).
+// 2 = mode 1 with the dissolve pushed out to the cull (a measuring baseline). setup.ini grassfardx11,
+// harness SET_GRASSFARMODE.
+int gg_grass_far_mode = 1;
 
 // GGMAX 1.74 merged grass opt-in. DEFAULT OFF until the TESTPRO1 density gate signs it off —
 // grass is the one subsystem in this codebase that has already been broken once by an
@@ -539,6 +551,20 @@ static const uint32_t GG_GRASS_MAX_STRANDS = 150000;   // per system: DX11 at th
 static float g_grassNearStrands = 100000.0f;   // strands per chunk at full (tier 3) density
 static float g_grassLowVramMul = 1.0f;
 static bool  g_grassDensityLatched = false;
+// GGMAX 3.117 (follow-up review): the density MODE rides the latch too - the far-field ring collapse reads
+// this, not the live flag, so rings and strand counts flip in the SAME pass (reading the live flag let a
+// harness SET_GRASSDENSITYMODE collapse the ring ~15 frames before the counts followed: outer chunks built
+// at the old constant 100k, then rebuilt again - every chunk twice, ~+550 MB transient at 6000).
+static bool  g_grassDensityDX11Latched = true;
+// GGMAX 3.117: ONE predicate for "the DX11 far field has collapsed the tier rings to one full-density ring
+// at the cull" - ProcessGrassChunks and the harness (SET_GRASSLOD reply) must agree. Only with the DX11
+// density (a constant 100k per chunk would grow with R^2) and no explicit SET_GRASS lodchunks/tier3/tier2.
+static bool GrassFarRingCollapsed()
+{
+	return gg_grass_far_mode != 0 && g_grassDensityDX11Latched && g_grassLODChunksOverride <= 0.0f
+		&& g_grassTier3Chunks <= 0.0f && g_grassTier2Chunks <= 0.0f;
+}
+bool GGGrass_FarRingCollapsed() { return GrassFarRingCollapsed(); }
 static const int GG_GRASS_DENSITY_SETTLE = 15;
 unsigned int g_dbgGrassDensityStale = 0;      // chunks queued for a density rebuild by the last pass
 unsigned int g_dbgGrassDensityLatches = 0;    // how many times the latch moved
@@ -1858,7 +1884,8 @@ static void BuildGrassAppearance()
 			a.width = sf;
 			a.billboardCount = 2;
 			// viewDistance: ApplyGrassDrawDistance() halves the slider value for FLOWER (tiny features
-			// benefit from earlier cull). No per-case assignment needed.
+			// benefit from earlier cull) - in far mode 0 only (GGMAX 3.117: under the DX11 far field flowers
+			// reach the full Grass Draw Distance, as in DX11). No per-case assignment needed.
 			break;
 		case GCAT_KELP:
 			// DX11 parity: same length as Course Grass (grass_scale = 40) with SF applied to width
@@ -1953,13 +1980,15 @@ static void ApplyGrassDrawDistance()
 {
 	// Per-strand visibility cull. Matches the DX11 grassRadius semantic (lod_dist + 2500), so the
 	// slider directly represents "visible grass radius in inches above 2500". outerC in
-	// ProcessGrassChunks always sits 1 chunk past this so chunks are created with their near edges
-	// outside the cull — strands fade in gradually instead of whole chunks popping.
+	// ProcessGrassChunks sits 1 chunk past this in far mode 0 so chunks are created with their near edges
+	// outside the cull — strands fade in gradually instead of whole chunks popping. (GGMAX 3.117: under
+	// the DX11 far field + DX11 density the ring is the cull + the half-diagonal - GrassFarRingCollapsed.)
 	const float viewDistInches = GGGrass_LodDistEffective() + 2500.0f;
 	for (uint32_t t = 0; t < GGGRASS_TOTAL_REAL_TYPES; t++)
 	{
 		// Flowers cull at half the radius — tiny features that don't read past mid-distance.
-		float vd = (CategoryFor(t) == GCAT_FLOWER) ? viewDistInches * 0.5f : viewDistInches;
+		// GGMAX 3.117: not under the DX11 far field - DX11 drew every grass type to the same distance.
+		float vd = (CategoryFor(t) == GCAT_FLOWER && gg_grass_far_mode == 0) ? viewDistInches * 0.5f : viewDistInches;
 		g_grassAppearance[t].viewDistance = vd;
 	}
 	// Push to live entities (those already created on prior frames). New CREATEs pick up the
@@ -1969,6 +1998,12 @@ static void ApplyGrassDrawDistance()
 	{
 		wi::HairParticleSystem& h = scene.hairs[hi];
 		if (h.grass_type == 0) continue;                  // not a GG grass entity (upstream hair)
+		// GGMAX 3.117: the cull radius and the far-field mode are both read by the SIMULATE CS. WHEN the
+		// 1.37 static-skip is on (SET_HAIRSKIP 1 - it is OFF by default since 2026-07-25, so this is a
+		// guard, not a fix) it never re-simulates a parked camera without wind, and a slider drag or a
+		// far-mode switch while parked would change nothing on screen. Unsettle the system: the next
+		// frames run full-rate (4 sims fill both ping-pong buffers), then the skip re-engages.
+		h.gg_sim_runs = 0;
 		// GGMAX 1.97: merged systems carry per-type values in grass_types[] — the typeIdx guard
 		// below silently skipped them, which is why the Grass Draw Distance slider went dead on
 		// merged grass (and why three SET_GRASS probe rows in the flicker hunt were void).
@@ -2372,16 +2407,34 @@ static void ProcessGrassChunks(wi::terrain::Terrain* terrain, const XMFLOAT3& ca
 	//
 	// Tier 3 (full density) and tier 2 (mid) keep their canonical 1.0 / 1.7 chunk boundaries
 	// clamped DOWN to outerC. SET_GRASS "lodchunks" hard-overrides via g_grassLODChunksOverride.
+	// GGMAX 3.117: the "1 chunk PAST" lead above is far mode 0 (and the override paths). Under the DX11
+	// far field with the DX11 density (GrassFarRingCollapsed) the ring below is R/stride + 0.7072: a new chunk's near edge is 0.207 chunk outside the
+	// cull along an axis and exactly AT it on the diagonal (the cull is 3D, the ring horizontal, so never
+	// inside), and the dissolve over [R-2500, R] hides a chunk that arrives late.
 	const float viewDistInches = GGGrass_LodDistEffective() + 2500.0f;
-	const float outerC = (g_grassLODChunksOverride > 0.0f)
+	float outerC = (g_grassLODChunksOverride > 0.0f)
 		? g_grassLODChunksOverride
 		: std::max(0.5f, viewDistInches / chunkStride + 1.0f);
 	// AUTO tier boundaries follow the strand-LOD opt-in (see g_grassTier3Chunks comment)
 	const bool lodOn = wi::gg_grass_lod;
 	const float tier3C = (g_grassTier3Chunks > 0.0f) ? g_grassTier3Chunks : (lodOn ? 1.5f : 1.0f);
 	const float tier2C = (g_grassTier2Chunks > 0.0f) ? g_grassTier2Chunks : (lodOn ? 2.2f : 1.7f);
-	const float midC   = std::min(tier2C, outerC);
-	const float nearC  = std::min(tier3C, outerC);
+	float midC   = std::min(tier2C, outerC);
+	float nearC  = std::min(tier3C, outerC);
+	// GGMAX 3.117: under the DX11 far field EVERY chunk that can hold a visible strand gets the full count
+	// (DX11 was one uniform density out to the cull, then the dissolve): the ring reaches the cull radius
+	// plus the half-diagonal (a chunk whose centre is inside it has ground within the cull). Nothing past
+	// it is built - its strands could never be seen, and they arrive dissolved to nothing anyway, so a
+	// chunk created as its corner crosses the cull cannot pop.
+	// ★ Only with the DX11 DENSITY (review 3.117): DX11 density falls with R^2, so the collapsed ring stays
+	// a bounded budget (~56250*pi*(1 + 0.71*stride/R)^2 strands); a constant 100k per chunk
+	// (grassdensitydx11=0) would grow with R^2 - 1.7M+ strands at 6000 - so that mode keeps its rings and
+	// still gets the engine dissolve. An explicit SET_GRASS tier2 (or tier3/lodchunks) restores the rings.
+	if (GrassFarRingCollapsed())
+	{
+		const float fullC = std::min(outerC, viewDistInches / chunkStride + 0.7072f);
+		nearC = midC = outerC = fullC;
+	}
 
 	struct PendingGrass {
 		wi::ecs::Entity entity;
@@ -3684,6 +3737,19 @@ static void UpdateWickedGrassManager(wi::terrain::Terrain* terrain, const wi::sc
 	// along with it (rather than waiting for chunks to be rebuilt on camera move).
 	// Compare the EFFECTIVE distance, not the raw slider: under the low-VRAM cap the slider can
 	// move without the effective value changing, and re-applying then would be pure churn.
+	// GGMAX 3.117: the far-field mode rides to the engine every frame; a change re-applies the per-type
+	// view distances (flowers) and re-tiers every chunk (the full-density ring moves).
+	{
+		static int s_prevFarMode = -1;
+		wi::gg_grass_dx11_falloff = gg_grass_far_mode;
+		wi::gg_grass_dx11_fade_range = 2500.0f;   // DX11 GGGRASS_LOD_TRANSITION
+		if (gg_grass_far_mode != s_prevFarMode)
+		{
+			if (s_prevFarMode >= 0) { g_grassPassNudge = true; g_grassTierShrinkPending = true; }
+			s_prevFarMode = gg_grass_far_mode;
+			ApplyGrassDrawDistance();
+		}
+	}
 	if (GGGrass_LodDistEffective() != g_grassPrevSliderInches)
 	{
 		ApplyGrassDrawDistance();
@@ -3723,17 +3789,24 @@ static void UpdateWickedGrassManager(wi::terrain::Terrain* terrain, const wi::sc
 			float tNear = 0.0f, tMul = 1.0f;
 			GrassDensityTarget(gridChunkStride, tNear, tMul);
 			static float s_pendNear = -1.0f, s_pendMul = -1.0f;
+			static int s_pendMode = -1;
 			static int s_stable = 0;
-			if (tNear != g_grassNearStrands || tMul != g_grassLowVramMul || !g_grassDensityLatched)
+			const int tMode = gg_grass_density_dx11 ? 1 : 0;
+			if (tNear != g_grassNearStrands || tMul != g_grassLowVramMul || !g_grassDensityLatched
+				|| tMode != (g_grassDensityDX11Latched ? 1 : 0))
 			{
 				bool anyGrass = false;
 				for (const auto& kv : grassChunkKeyToGrassEntities) { if (kv.second.builtStrands > 0) { anyGrass = true; break; } }
-				if (tNear == s_pendNear && tMul == s_pendMul) s_stable++;
-				else { s_pendNear = tNear; s_pendMul = tMul; s_stable = 0; }
+				if (tNear == s_pendNear && tMul == s_pendMul && tMode == s_pendMode) s_stable++;
+				else { s_pendNear = tNear; s_pendMul = tMul; s_pendMode = tMode; s_stable = 0; }
 				if (!anyGrass || !g_grassDensityLatched || s_stable >= GG_GRASS_DENSITY_SETTLE)
 				{
+					// a density-MODE change moves the far-field ring too (GrassFarRingCollapsed): re-tier
+					// without the downgrade hysteresis holding the old rings at a parked camera
+					if (anyGrass && tMode != (g_grassDensityDX11Latched ? 1 : 0)) g_grassTierShrinkPending = true;
 					g_grassNearStrands = tNear;
 					g_grassLowVramMul = tMul;
+					g_grassDensityDX11Latched = (tMode != 0);
 					g_grassDensityLatched = true;
 					g_dbgGrassDensityLatches++;
 					s_stable = 0;

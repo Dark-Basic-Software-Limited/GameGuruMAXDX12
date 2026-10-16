@@ -16073,3 +16073,109 @@ Harness: `SET_GRASSDENSITY <pct>`, `SET_GRASSDENSITY_MACHINE <pct>`, `SET_GRASSD
 `GET_GRASSDENSITY`; `GET_PERF_DATA` line `GRASS_DENSITY:`. setup.ini `grassdensity`, `grassdensitydx11`.
 
 ### LEE-CONFIRMED 3.116, 2026-10-16: "Grass density confirmed working" - DX11 density mode (density from the Grass Draw Distance) kept as the default, Grass Density (whole level) slider + setup.ini grassdensity / grassdensitydx11. Game `7035a2bd` + readout wrap `e0a5a753`. Open, Lee's call: the far-field profile, blade area, Auto grass on bare materials (see 3.116 "Not done").
+
+### 3.117 The grass far field matches DX11 (full size to the draw distance, then DX11's dissolve) - and every blade past 65,536 was a duplicate - 2026-10-16
+
+Lee: "Now fix the far field grass to match DX11" (the 3.116 "Not done" item).
+
+**How the two differed.**
+- **DX11** (GGGrassPS.hlsl ~221): every blade full size out to the Grass Draw Distance L, then a per-pixel
+  discard at `dist > noise * 2500 + L` (bilinear noise texture): an S-shaped dissolve, 100% at L, 50% at
+  L+1250, 0 at R = L+2500. One density everywhere inside R (the 400k fixed budget), and every grass type -
+  flowers included - to the same distance.
+- **DX12 before** (1.49b strand LOD + the GG tier rings): half the strands dropped around 0.35R and three
+  quarters around 0.60R with the survivors drawn 2-4x WIDER, then a dither fade over the last 20% (0.8R..R);
+  chunks past ~1.5 chunks carried 18% / 5% of the density; flowers stopped at half the distance. Coverage-
+  neutral on paper, but it reads as sparse fat clumps in the mid field, a fade that starts thousands of units
+  later than DX11's and ends sharply, and 1.15-1.2x DX11's coverage where DX11 was already dissolving.
+
+**What changed.**
+- Engine (`HAIR_FLAG_GG_DX11_FALLOFF`, WICKED_ENGINE_CHANGES 3.117): with the new global
+  `wi::gg_grass_dx11_falloff` on, GG grass skips the 1.49b LOD: every strand full size (no widening) to
+  L = viewDistance - 2500, then each strand drops at its OWN distance L + u x 2500, u = the mean of three
+  hashed uniforms (Irwin-Hall n=3, sd 0.167 - the S-curve DX11's filtered noise produced, sd ~0.17). Pure
+  function of (strand id, camera distance): bit-stable at a parked camera, single blades in motion, like
+  DX11's world-space noise. The VS 80-100% fade is off under the flag (it would thin the far band twice).
+- Game (GGTerrainWicked.cpp): `gg_grass_far_mode` 1 (default) = the DX11 far field: every chunk that can hold
+  a visible strand (centre within R + the half-diagonal) is built at full density - one ring, no 18%/5%
+  outer rings, nothing past it built; flowers to the full distance. 0 = the old strand LOD, 2 = DX11 rings
+  with no dissolve (the measuring baseline). setup.ini `grassfardx11=0` restores the old far field.
+- A guard for the opt-in 1.37 hair static-skip (`SET_HAIRSKIP 1`; OFF by default since 2026-07-25): it never
+  re-simulates a parked camera without wind, and the far mode and the Grass Draw Distance cull are both read
+  by the simulate CS, so with the skip ON a change while parked would not reach the screen.
+  `ApplyGrassDrawDistance` now resets every GG grass system's `gg_sim_runs` (event-driven callers only, never
+  per frame). With the skip off - the shipped default - the grass re-simulates every frame anyway.
+
+**★ THE 65,536-STRAND SEED COLLISION (found by the adversarial review; predates 3.117 - since the port).**
+Wicked's `RNG::init` packs `s0 = (id.x << 16) | id.y`, and the hair simulate CS seeds it with
+`(xHairRandomSeed, strand index)`. GG grass never sets a seed, so it is 1 - and every strand at index 65,536..
+131,071 OR-ed its high bit into the SAME seed as strand index - 65,536: a bit-identical copy (same triangle,
+barycentrics, length, billboards). Any chunk over 65,536 strands drew only ~65.5k unique blades: the pre-3.116
+constant 100k (34k copies), 3.116 at the 1500 default (98,010 per chunk, 32.5k copies = 33%), 148k at the 750
+minimum (44%). The 3.117 dissolve then dropped each copy on its own, so a blade lived if EITHER copy did -
+the far band read denser than DX11 (draw distance 1500: survival 0.47 vs DX11 0.32). Fix: seed with
+`(seed + (index >> 16), index & 0xFFFF)` - identical to stock whenever `seed & (index >> 16)` is 0, so every
+strand below 65,536 and every one already unique keeps its exact placement; only the copies move. Measured at
+draw distance 1500: grass coverage **+20-35% per distance band** (the copies are real blades now - DX11's
+5.45/m2 at last, where DX12 had been showing ~3.6), same strand count, same work. Levels at draw distance 2392+
+(fewer than 65,536 per chunk, e.g. DX12TESTLEVEL at 7000) are unchanged. TESTPRO1's benchmark (2247) gains ~6%.
+
+**Measured** (DESKTOP RX 9060 XT, DX12TESTLEVEL, camera 1500 above the ground at 35 degrees,
+`tools/harness/grass_falloff_probe.sh`). Coverage vs a Grass Off shot per TRUE distance band (ray-march grid);
+survival = Boolean-linearised coverage relative to mode 2 (no dissolve):
+
+Draw distance 3000 (51,840 per chunk - no copies):
+
+| band | 3000-3416 | 3416-3833 | 3833-4250 | 4250-4666 | 4666-5083 | 5083-5500 | 5500+ |
+|---|---|---|---|---|---|---|---|
+| DX11 model | 1.00 | 0.93 | 0.68 | 0.32 | 0.07 | 0.00 | 0 |
+| **3.117 (mode 1)** | 1.05 | **0.95** | **0.71** | **0.34** | **0.09** | **0.01** | 0 |
+| before (mode 0) | 1.14 | 1.19 | 1.16 | 1.15 | 0.70 | 0.24 | 0.05 |
+
+Draw distance 1500 (98,010 per chunk - the copies), before/after the seed fix:
+
+| band | 1500-1916 | 1916-2333 | 2333-2750 | 2750-3166 | 3166-3583 | 3583-4000 |
+|---|---|---|---|---|---|---|
+| DX11 model | 1.00 | 0.93 | 0.68 | 0.32 | 0.07 | 0.00 |
+| 3.117 with the copies | 1.01 | 0.91 | 0.73 | 0.47 | 0.13 | 0.01 |
+| **3.117 + seed fix** | **0.98** | **0.88** | **0.69** | **0.36** | **0.10** | **0.01** |
+
+- Baseline (mode 2) holds full coverage to R and drops to ~0.02 just past it: the cull is exactly R.
+- Cost, interleaved A/B x3 at the default view, draw distance 7000: **147.9 vs 153.3 FPS (+0.24 ms,
+  -3.5%)**, 365k vs 180k strands, about +60 MB VRAM; re-run after the review fixes in a later launch: 138.5 vs
+  142.9 (-3.0%) - both arms ~7% lower = session drift (no strand past 65,536 at 7000, so the seed fix cannot
+  touch it); the relative cost held. Still far below pre-3.116 (124.5 FPS, 1.03M strands).
+- At the 750 minimum it is CHEAPER, A/B x2: **133.3 vs 129.5 FPS (+2.9%)**, 742k vs 1.34M strands (5 vs 9
+  systems - mode 0's 1.5-chunk full ring was wider than the cull needs), VRAM 2622-2774 vs 2902 MB.
+- Strand budget is bounded at any draw distance: ~56250 x pi x (1 + 0.71 x 5280/R)^2.
+
+**Adversarial review (3 reviewers + 11 verifiers, 7 confirmed - all fixed):**
+- the seed collision above (major);
+- with `grassdensitydx11=0` (constant 100k per chunk) the collapsed ring grew with R^2 (1.7M+ strands at 6000)
+  - the collapse now needs the DX11 density; constant mode keeps its rings and still gets the dissolve
+  (verified: 1,025,000 strands, min 5,000 / max 100,000 per system, = the pre-3.116 figure), and a density-mode
+  flip re-tiers at once;
+- `SET_GRASSLOD` replied OK while doing nothing under the far field - it now says INACTIVE; an explicit
+  `SET_GRASS tier2` alone was swallowed by the collapse - any explicit tier now restores the rings;
+- comments that still described the old 1-chunk lead / flower half-radius / "Step2Dist 0 = disabled";
+- the probe measured against the RAW draw distance (Low VRAM caps it) and the grid comment pointed at the 3D
+  panel instead of the full window.
+
+**Four measuring traps (instrument notes - each cost a run):**
+- The editor projects the scene over the WHOLE client window; the 3D panel (y 105..777) is a crop of it, not
+  the full projection. Mapping the panel to NDC -1..1 inflated far distances up to 2.2x and showed grass
+  "past the cull". PICK_AT terrain hits proved it (top-of-panel angle 12.5 deg = the full-window 60 deg
+  projection). `GET_GROUNDDIST_GRID` (ray-march grid over NDC) + full-window pixel mapping is the instrument;
+  a flat-ground row mapping is wrong on a hilly level anyway.
+- ★ I first blamed the 1.37 static-skip for inconsistent mode shots and "fixed" it - but it has been OFF by
+  default since 2026-07-25 (`GET_PERF_DATA` HAIRSKIP: disabled). The real causes were the two below. Check a
+  mechanism's live switch before blaming it.
+- "0 chunks still at an old density" reads 0 BEFORE the density latch moves (15 still frames) - a shot right
+  after a draw-distance change caught the old density (mode 1 read 1.9x the baseline). The probe now waits
+  until every system carries the latched count.
+- Blades a mode switch re-shows restart their physics and settle over ~15 s (the skip drops to its wind
+  cadence) - a shot 10 s in read up to +0.04 coverage in the near-mid bands. The probe relaxes 20 s.
+
+Harness: `SET_GRASSFARMODE 0|1|2`, `GET_GROUNDDIST_GRID [cols rows [kind]]` (0 = 3D distance, 1 = horizontal,
+2 = ground Y), `GET_GRASSDENSITY` reports the far field and the camera height. Tools:
+`grass_falloff_probe.sh` + `grass_falloff_measure.py`, `grass_farmode_ab.sh`. setup.ini `grassfardx11`.

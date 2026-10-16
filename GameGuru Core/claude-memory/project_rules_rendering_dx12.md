@@ -94,3 +94,24 @@ metadata:
   normal came out zero -> NaN -> black face in every level (Pistol Ammo contents). Now float.
   ★ When rebuilding the data changes nothing, find what the shader actually reads.
   ★ A health check must test `x == x` - NaN fails every < and > and reads as healthy.
+
+- ★★ **A SKIPPED PRODUCER ALSO SKIPS PARAMETER CHANGES - when it is ON (3.117).** The 1.37 hair
+  static-skip (`gg_hair_sim_static_skip`, OFF by default since 2026-07-25 - it caused grass flicker;
+  `SET_HAIRSKIP 1` opts in) re-simulates only on camera motion, an unsettled system
+  (`gg_sim_runs < 4`) or the wind cadence, so with it ON anything the simulate CS reads (draw
+  distance cull, far-field flag, LOD steps) changed at a parked camera never reaches the screen.
+  Guard: `gg_sim_runs = 0` on a sim-read parameter change (`ApplyGrassDrawDistance` does it).
+  ⚠ I blamed this skip for inconsistent 3.117 probe shots and wrote it up as a shipped defect - it
+  was not even enabled (`GET_PERF_DATA` HAIRSKIP: disabled). ★ Read a mechanism's LIVE switch
+  before blaming it.
+
+- ★★★ **A PACKED RNG SEED COLLIDES PAST ITS FIELD WIDTH (3.117 review).** Wicked `RNG::init` packs
+  `s0 = (id.x << 16) | id.y`; the hair simulate CS passed `(xHairRandomSeed, strand index)`, so with
+  seed 1 every strand at index 65,536..131,071 got the SAME seed as index - 65,536: bit-identical
+  copies. Every GG grass chunk over 65,536 strands (the pre-3.116 constant 100k; 3.116 at the 1500
+  default) drew only ~65.5k unique blades since the port, and the GET_GRASSDENSITY "ratio 1.000"
+  hid it (it counts strands, not blades). Fix = carry the high bits by ADDING to the seed:
+  `uint2(seed + (i >> 16), i & 0xFFFF)` - identical to stock whenever `seed & (i >> 16)` == 0,
+  so only the copies move. ★ Any `(a << 16) | b` packing needs b < 65536 PROVEN, not assumed.
+  ★ A count that matches its formula exactly says nothing about what was DRAWN - measure coverage.
+  [[project-grass-density]]
