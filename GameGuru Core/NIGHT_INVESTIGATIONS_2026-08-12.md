@@ -16255,3 +16255,68 @@ flattened, for bare and grassy ground, above and below the water), `GRASS_CLEAR_
 Tool: `grass_bare_probe.sh`.
 
 ### LEE-CONFIRMED 3.118, 2026-10-16: "Sand and rock grass confirmed working" - Auto grass resolves to empty on ground with no matching grass and the Match-on brush paints nothing there (DX11 parity). Game `919d6233`. Open, Lee's call: an editor button for the GRASS_CLEAR_BARE repair (levels saved by older DX12 builds keep their Course Grass on sand); blade area / darker DX11 blades; the 4096 near-tier bake default; re-measure the TESTPRO1 grass benchmark baseline (predates the 3.117 seed fix).
+
+### 3.119 Baked water goes opaque with depth and distance, like DX11's water - 2026-10-16
+
+Lee (DX11 vs DX12 shots of DX12TESTLEVEL): "the cheap water in DX11 has a nice Fresnel effect that makes the water
+appear more opaque the deeper and more distant it is, whereas in DX12 ... you see the bottom of the terrain under the
+water with no attempt to make those areas opaque. Work out how to recreate this with the baked Water in DX12 without
+increasing its performance cost too much."
+
+**What DX11 actually did.** "Cheap water" is the ordinary Wicked FFT ocean with Reflections off (the Low preset) -
+no separate shader. DX11 oceanSurfacePS (GG-modified, "Paul's shader", D:/max/WickedRepo shaders/oceanSurfacePS.hlsl
+:54-93) mixes a refraction copy of the scene behind with the LIT water colour by how much water the ray crosses:
+- t = view-Z gap from the surface to the opaque scene behind (sky = z_far), boosted by the camera height,
+  t * (1 + V.y) - over a flat bed t grows as 1/V.y, which IS the "more opaque with distance"; depth gives the rest
+- fade = min(1 - WaterFogMinAmount, exp(-4 (t - WaterFogMin) / (WaterFogMax - WaterFogMin))) = how much bed shows
+- water colour lit by sun diffuse + half the ambient; then lerp toward a BLACK reflection by 0.5 F (Schlick) -
+  the "Fresnel" Lee sees; atmospheric fog on top. The Water Base Color alpha did nothing in DX11.
+- Under water: t = distance, unlit colour, no Fresnel or fog.
+The DX12 Water Bake plane (3.25) drew the authored colour at one alpha (the picker's A, 0.5 when unset) plus the 3.35f
+Schlick ramp on view angle only - no depth at all, so the shoreline was a hard edge at full tint and the bed read the
+same everywhere. (The live DX12 ocean has a different, vertical-depth model and none of GG's water-fog terms.)
+
+**What changed (game only - no engine edit).** With a flat plane the "refraction" is simply the pixel behind, so
+DX11's mix becomes an alpha: a = 1 - fade * keep, rgb = Cw (1 - fade) keep / a (straight alpha, the existing PSO).
+The depth behind comes from the engine's own linear-depth copy (rtLinearDepth via
+GetCamera().texture_lineardepth_index - built from the prepass, so it holds the lake bed whether the terrain is live
+or baked, and never the water), already pixel-readable in the transparent pass: ONE 4-byte load per water pixel. It
+uses the level's own Water Fog Min / Max / Min Amount - the numbers DX11 used, still saved in every level - so
+DX11-authored levels match without retuning. The three **Water Fog sliders are back** in the Water panel (Advanced
+Water Settings: Water Fog Start / Maximum / Minimum - hidden since the 07-28 UI audit as "did nothing"). The Water Base
+Color **alpha is now the minimum opacity** (0 - every DX11-authored level - is exactly DX11, which ignored it); the
+3.35f distance ramp is not used in this mode. `waterbakedepth=0` / `SET_WATERBAKEDEPTH 0` is the 3.35f plane exactly. GGWaterBake_Draw now re-binds the
+frame CB first (light shafts can leave slot 0 holding their own constants when no transparent is visible).
+
+**Measured** (DESKTOP RX 9060 XT, DX12TESTLEVEL at the level's camera = Lee's DX12 shot; Water Fog 0 / 1000 / 0.25;
+median colour of the water away from the grass blades; my old-mode shot reproduces Lee's DX12 shot to 1 unit):
+
+| region | DX11 (Lee) | DX12 before | **DX12 3.119** | (3.119 unlit) |
+|---|---|---|---|---|
+| near water | 91 64 37 | 64 42 18 | **90 59 31** | 86 54 31 |
+| mid water | 70 53 24 | 52 34 10 | **69 46 19** | 61 39 18 |
+| far water | 42 29 0 | 36 24 1 | **35 26 0** | 16 9 0 |
+| dry bed | 109 76 50 | 107 77 44 | 108 75 44 | |
+
+- Cost, interleaved A/B x4 with water filling the frame: GPU frame **2.631 vs 2.622 ms (+0.008 ms, noise)**.
+- The thickness view (debug 4) is identical with the live terrain and with Terrain Bake (the bed is in the depth copy
+  on both paths), and under FSR (internal 1024x534 - no shoreline offset). Under water the plane draws with DX11's
+  near-camera 25% tint (the old mode drew its 50% fallback). Open water over sky reads opaque, as DX11.
+- Not reproduced (optional, off): DX11's sun glint (needs FFT normals to look right), the sun-shadow darkening of
+  water in a cliff's shadow, atmosphere transmittance at sunset, and DX11's double fogging of the bed.
+
+**Adversarial review (2 reviewers + 8 verifiers, 6 confirmed - 3 distinct - 2 refuted):**
+- (major, twice) with the default depth mode the water's opacity came only from the Water Fog values, whose sliders the
+  DX12 editor had hidden, and the alpha bar Lee specified on 08-26 silently did nothing - sliders restored, alpha kept
+  as the minimum opacity (verified: alpha 0.9 takes the near water from 90 59 31 to 59 42 2; 0 leaves the DX11 match);
+- harness replies described modes not drawn (a debug view with depth 0; SET_WATERBAKEALPHA / FRESNEL under depth 1) -
+  the view bits are now set only in depth mode and every reply says what is actually used;
+- stale comments (shader header, GGWaterBake.cpp, setup.ini DOCDOC);
+- kept, documented: with Terrain Bake on, an ENTITY buried under the lake bed keeps its PrimitiveID in the engine's
+  depth resolve (the bake prepass masks RT0), so its silhouette reads as deeper water. The fix is one line in the
+  engine's visibility_resolveCS (depth = max(depth, customDepth) - also fixes SSAO/clouds there) but it costs a load
+  per pixel EVERY frame; not taken without Lee's say-so.
+
+Harness: `SET_WATERBAKEDEPTH <depth 0|1> [lit 0|1] [view 0|3|4]` (3 = opacity grey, 4 = thickness grey);
+DUMP_BAKE prints the mode and the level's Water Fog values. setup.ini `waterbakedepth`, `waterbakelit`. Tool:
+`tools/harness/water_bake_fog_probe.sh`.

@@ -6843,8 +6843,28 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		// -1 (or any negative) hands control back to the Water Base Color picker's own A.
 		if (v < 0) gg_water_bake_alpha = -1.0f;
 		else if (v <= 100) gg_water_bake_alpha = (float)v * 0.01f;
-		_snprintf(result, resultSize, "OK: SET_WATERBAKEALPHA - plane alpha %s",
-			(gg_water_bake_alpha < 0.0f) ? "follows the Water Base Color picker" : "overridden");
+		extern int gg_water_bake_depth;
+		_snprintf(result, resultSize, "OK: SET_WATERBAKEALPHA - plane alpha %s%s",
+			(gg_water_bake_alpha < 0.0f) ? "follows the Water Base Color picker" : "overridden",
+			gg_water_bake_depth ? " - in the DX11 water fog (waterbakedepth 1) it is the MINIMUM opacity, 0 = none" : "");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_WATERBAKEDEPTH") == 0)
+	{
+		// GGMAX 3.119: SET_WATERBAKEDEPTH <depth 0|1> [lit 0|1] [view 0|3|4] - the Water Bake DX11 water fog.
+		// depth 1 = opaque with depth and distance from the scene depth behind the plane (default), 0 = the 3.35f
+		// flat plane; lit = sun + ambient on the water colour; view 3 = opacity as grey, 4 = thickness as grey.
+		extern int gg_water_bake_depth, gg_water_bake_lit, gg_water_bake_view;
+		int d = -1, l = -1, v = -1;
+		const int n = (arg && arg[0]) ? sscanf_s(arg, "%d %d %d", &d, &l, &v) : 0;
+		if (n >= 1 && (d == 0 || d == 1)) gg_water_bake_depth = d;
+		if (n >= 2 && (l == 0 || l == 1)) gg_water_bake_lit = l;
+		if (n >= 3 && (v == 0 || v == 3 || v == 4)) gg_water_bake_view = v;
+		_snprintf(result, resultSize, "OK: SET_WATERBAKEDEPTH depth %d lit %d view %d (%s)", gg_water_bake_depth, gg_water_bake_lit, gg_water_bake_view,
+			!gg_water_bake_depth ? (gg_water_bake_view ? "3.35f flat plane - the debug view needs depth 1" : "3.35f flat plane")
+			: gg_water_bake_view == 3 ? "DEBUG: opacity as grey" : gg_water_bake_view == 4 ? "DEBUG: thickness / Water Fog Max as grey"
+			: "DX11 water fog: opaque with depth and distance");
 		result[resultSize - 1] = 0;
 		return true;
 	}
@@ -6872,11 +6892,13 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		{
 			gg_water_bake_fresnel = (float)s * 0.01f;
 			if (n >= 2 && p >= 10 && p <= 160) gg_water_bake_fresnel_power = (float)p * 0.1f;
+			extern int gg_water_bake_depth;
 			_snprintf(result, resultSize,
-				"OK: SET_WATERBAKEFRESNEL strength %.2f power %.1f - %s",
+				"OK: SET_WATERBAKEFRESNEL strength %.2f power %.1f - %s%s",
 				gg_water_bake_fresnel, gg_water_bake_fresnel_power,
 				(s == 0) ? "off, plane is uniformly semi-transparent"
-				         : "water closes toward opaque as it recedes");
+				         : "water closes toward opaque as it recedes",
+				gg_water_bake_depth ? " - NOT USED while waterbakedepth=1 (the DX11 water fog owns the opacity; SET_WATERBAKEDEPTH 0 to use it)" : "");
 		}
 		result[resultSize - 1] = 0;
 		return true;

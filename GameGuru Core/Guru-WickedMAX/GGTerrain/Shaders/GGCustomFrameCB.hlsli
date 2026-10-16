@@ -64,6 +64,14 @@ struct GGCustomFrameData {
 #define GG_OPT_BAKE_DETAIL_NORMAL  0x80u   // near detail: the live materials' normal maps too
 #define GG_OPT_BAKE_SHADING_ALL    0xFFu
 #define GG_OPT_BAKE_SHADING_MASK   0xFFu   // the low byte of ggOptions belongs to the bake
+// GGMAX 3.119: Water Bake DX11 water fog (GGWaterBakePS.hlsl). DEPTH = DX11's depth/distance opacity from the
+// scene depth behind the plane (rtLinearDepth); LIT = the water colour lit by sun + ambient as DX11's ocean
+// did; VIEW_ALPHA / VIEW_THICK = debug: opaque grey of the opacity / of thickness over Water Fog Max.
+#define GG_OPT_WATERBAKE_DEPTH      0x100u
+#define GG_OPT_WATERBAKE_LIT        0x200u
+#define GG_OPT_WATERBAKE_VIEW_ALPHA 0x1000u
+#define GG_OPT_WATERBAKE_VIEW_THICK 0x2000u
+#define GG_OPT_WATERBAKE_MASK       0xFF00u
 
 #ifdef __cplusplus
 	#undef GG_FLOAT3

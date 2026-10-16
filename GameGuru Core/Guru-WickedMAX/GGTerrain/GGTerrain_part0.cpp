@@ -187,6 +187,7 @@ uint32_t gg_ddsSliceRefused = 0;
 char gg_ddsSliceRefusedWhat[ 200 ] = { 0 };   // the first refusal: file, slice, array size
 // GGMAX 3.113: Terrain Bake shading bits (GGTerrainBake.cpp, global scope) - uploaded in ggOptions.
 extern uint32_t gg_terrain_bake_shading;
+extern int gg_water_bake_depth, gg_water_bake_lit, gg_water_bake_view;   // GGMAX 3.119 (GGWaterBake.cpp)
 
 namespace GGTerrain
 {
@@ -825,6 +826,16 @@ void GGCustomFrame_Update( wiGraphics::CommandList cmd )
 	// GGMAX 3.113: the low byte of ggOptions is the Terrain Bake shading switch (GG_OPT_BAKE_*).
 	ggCustomFrameStaging.ggOptions = ( ggCustomFrameStaging.ggOptions & ~GG_OPT_BAKE_SHADING_MASK )
 		| ( ::gg_terrain_bake_shading & GG_OPT_BAKE_SHADING_MASK );
+	// GGMAX 3.119: the second byte is the Water Bake DX11 water fog (GG_OPT_WATERBAKE_*).
+	{
+		uint32_t w = 0;
+		if ( ::gg_water_bake_depth ) w |= GG_OPT_WATERBAKE_DEPTH;
+		if ( ::gg_water_bake_lit ) w |= GG_OPT_WATERBAKE_LIT;
+		// the debug views exist only inside the depth mode - set them only there, so the bits match what is drawn
+		if ( ::gg_water_bake_depth && ::gg_water_bake_view == 3 ) w |= GG_OPT_WATERBAKE_VIEW_ALPHA;
+		if ( ::gg_water_bake_depth && ::gg_water_bake_view == 4 ) w |= GG_OPT_WATERBAKE_VIEW_THICK;
+		ggCustomFrameStaging.ggOptions = ( ggCustomFrameStaging.ggOptions & ~GG_OPT_WATERBAKE_MASK ) | w;
+	}
 
 	// Upload to GPU
 	wiGraphics::GetDevice()->UpdateBuffer(&ggCustomFrameBuffer, &ggCustomFrameStaging, cmd, sizeof(GGCustomFrameData));

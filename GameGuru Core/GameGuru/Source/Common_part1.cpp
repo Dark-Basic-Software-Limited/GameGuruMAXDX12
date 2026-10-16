@@ -720,6 +720,9 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					t.tryfield_s = "waterbakealpha"; if (t.field_s == t.tryfield_s) { extern float gg_water_bake_alpha; if (t.value1 >= 0 && t.value1 <= 100) gg_water_bake_alpha = (float)t.value1 * 0.01f; }
 					// GGMAX 3.35f: the distance opacity ramp on the baked water plane. 0 disables it (3.25 behaviour).
 					t.tryfield_s = "waterbakefresnel"; if (t.field_s == t.tryfield_s) { extern float gg_water_bake_fresnel; if (t.value1 >= 0 && t.value1 <= 100) gg_water_bake_fresnel = (float)t.value1 * 0.01f; }
+					// DOCDOC: waterbakedepth = Water Bake DX11 water fog (GGMAX 3.119), DEFAULT 1: the baked water goes opaque with depth and distance like DX11's water, from the level's Water Fog settings; 0 = the earlier flat plane (Water Base Color alpha + distance ramp). waterbakelit (DEFAULT 1) lights the water colour by sun and ambient as DX11 did. With waterbakedepth=1, waterbakealpha and the Water Base Color alpha are the MINIMUM opacity (0 = none, as DX11) and waterbakefresnel / waterbakefresnelpower are not used.
+					t.tryfield_s = "waterbakedepth"; if (t.field_s == t.tryfield_s) { extern int gg_water_bake_depth; gg_water_bake_depth = (t.value1 != 0) ? 1 : 0; }
+					t.tryfield_s = "waterbakelit"; if (t.field_s == t.tryfield_s) { extern int gg_water_bake_lit; gg_water_bake_lit = (t.value1 != 0) ? 1 : 0; }
 					t.tryfield_s = "waterbakefresnelpower"; if (t.field_s == t.tryfield_s) { extern float gg_water_bake_fresnel_power; if (t.value1 >= 1 && t.value1 <= 160) gg_water_bake_fresnel_power = (float)t.value1 * 0.1f; }
 					t.tryfield_s = "noterrain"; if (t.field_s == t.tryfield_s) { extern void GGSetNoTerrain(int); GGSetNoTerrain(t.value1); }
 					t.tryfield_s = "notrees";   if (t.field_s == t.tryfield_s) { extern void GGSetNoTrees(int);   GGSetNoTrees(t.value1); }

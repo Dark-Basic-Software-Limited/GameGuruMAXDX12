@@ -62,6 +62,15 @@ float gg_water_bake_alpha = -1.0f;
 // alpha everywhere including underfoot, which is what hid the lake bed. This leaves the water by
 // your feet at exactly the authored alpha and only closes it up in the distance, which is what he
 // asked for on 08-29. Set waterbakefresnel=0 in setup.cfg for the 3.25 behaviour.
+// GGMAX 3.119: DX11 WATER FOG on the plane (GGWaterBakePS.hlsl) - DEFAULT ON. depth = DX11's depth and distance
+// opacity from the scene depth behind the water, driven by the level's Water Fog Min/Max/Min Amount (the
+// values DX11 used); lit = the water colour lit by sun + ambient as DX11's ocean was. With depth on, the
+// authored Water Base Color A and the 3.35f Fresnel ramp below are NOT used (DX11 ignored the A); depth 0 is
+// the 3.35f plane exactly. view 3 / 4 = debug greys of the opacity / thickness. setup.ini waterbakedepth /
+// waterbakelit, harness SET_WATERBAKEDEPTH <depth> [lit] [view].
+int   gg_water_bake_depth = 1;
+int   gg_water_bake_lit = 1;
+int   gg_water_bake_view = 0;
 float gg_water_bake_fresnel = 0.85f;
 float gg_water_bake_fresnel_power = 3.0f;
 int   gg_water_bake_drawn = 0;
@@ -136,7 +145,8 @@ namespace
 		//
 		// So the surface colour is approximated the way the ocean effectively arrives at one: the
 		// authored tint mixed toward the sky it would be reflecting. Done HERE, on the CPU, once
-		// per change - the pixel shader stays a flat colour lookup with no per-pixel sky work,
+		// per change - the colour stays a flat lookup with no per-pixel sky work (GGMAX 3.119: the default depth
+		// mode adds the depth load, sun + ambient lighting and the Schlick term per pixel in the shader),
 		// which is what Lee asked for. gg_water_bake_tint is the mix, so 0 gives the pure authored
 		// value for anyone who wants exactly that.
 		float r = t.visuals.WaterRed_f;
@@ -164,7 +174,8 @@ namespace
 		}
 		// ★ ALPHA FROM THE PICKER. t.visuals.WaterAlpha_f is the A of the same "Water Base Color"
 		// swatch that supplies the RGB above (M-TerrainNew_part3.cpp writes all four), so the one
-		// control the author actually looks at decides both the colour and how far through it
+		// control the author actually looks at decides both the colour and how far through it (GGMAX 3.119: with
+		// waterbakedepth=1 the A is the MINIMUM opacity of the DX11 water fog, and 0 means none - as DX11)
 		// they can see. A negative gg_water_bake_alpha means "use it"; anything else overrides.
 		float a;
 		if ( gg_water_bake_alpha >= 0.0f )
@@ -181,7 +192,8 @@ namespace
 			// ship a switch that draws nothing on almost every existing level - which is exactly
 			// the report that led here. Fall back, and SAY SO in the report rather than quietly
 			// substituting a number.
-			if ( a <= 0.0f ) a = 0.5f;
+			// GGMAX 3.119: not in the DX11 water fog - there 0 means "no floor", exactly DX11 (which ignored A).
+			if ( a <= 0.0f && !gg_water_bake_depth ) a = 0.5f;
 		}
 		if ( a < 0.0f ) a = 0.0f;
 		if ( a > 1.0f ) a = 1.0f;
@@ -347,6 +359,9 @@ void GGWaterBake_Draw( const Frustum* frustum, CommandList cmd )
 	GraphicsDevice* device = GetDevice();
 	device->EventBegin( "GGWaterBake Draw", cmd );
 	device->BindPipelineState( ( gg_water_bake_debug == 2 ) ? &g_psoDepthAlways : &g_pso, cmd );
+	// GGMAX 3.119: the shader reads the FRAME CB (b0: sun, ambient, fog) - light shafts' image draw rebinds slot 0
+	// earlier in this pass, and only a visible transparent's DrawScene restores it before this hook. Re-assert it.
+	wi::renderer::BindCommonResources( cmd );
 	GGTerrain::GGCustomFrame_Bind( cmd );
 	const GPUBuffer* vbs[] = { &g_vb };
 	const uint32_t strides[] = { sizeof( WaterVertex ) };
@@ -368,11 +383,13 @@ const char* GGWaterBake_Report()
 		"                    Terrain Tools > Water), sky mix %.0f%% -> packed 0x%08X\n"
 		"  drawn last frame: %d   (updates %u, rebuilds %u, draws %u)\n"
 		"  VERTEX BUFFER   : 0x%08X   <- what the GPU is actually drawing\n"
-		"  ocean           : %s\n",
+		"  ocean           : %s\n"
+		"  water fog 3.119 : depth %d, lit %d, view %d - %s; Water Fog min %.0f max %.0f min amount %.2f (the level's DX11 values)\n",
 		gg_water_bake ? 1 : 0, g_shadersReady ? "ok" : "FAILED", g_shaderAttempts,
 		g_vbValid ? "built" : "not built", g_lastHeight,
 		( gg_water_bake_alpha < 0.0f ) ? ( t.visuals.WaterAlpha_f / 255.0f ) : gg_water_bake_alpha,
-		( gg_water_bake_alpha >= 0.0f ) ? "overridden by waterbakealpha"
+		( gg_water_bake_alpha >= 0.0f ) ? ( gg_water_bake_depth ? "waterbakealpha override = the water fog's MINIMUM opacity" : "overridden by waterbakealpha" )
+			: gg_water_bake_depth ? ( t.visuals.WaterAlpha_f > 0.0f ? "the picker's A = the water fog's MINIMUM opacity" : "picker A 0 = no minimum, as DX11" )
 			: ( t.visuals.WaterAlpha_f > 0.0f ? "from the Water Base Color picker"
 			                                  : "FALLBACK 0.5 - the picker's A is 0 (never set on this level)" ),
 		( gg_water_bake_debug == 2 ) ? "  [DEBUG: magenta + depth test ALWAYS]"
@@ -380,7 +397,10 @@ const char* GGWaterBake_Report()
 		t.visuals.WaterRed_f, t.visuals.WaterGreen_f, t.visuals.WaterBlue_f, t.visuals.WaterAlpha_f,
 		gg_water_bake_tint * 100.0f, CurrentWaterColor(),
 		gg_water_bake_drawn, g_updates, g_rebuilds, g_draws, g_lastColor,
-		gg_no_water ? "OFF (planar reflection pass not recorded)" : "on" );
+		gg_no_water ? "OFF (planar reflection pass not recorded)" : "on",
+		gg_water_bake_depth, gg_water_bake_lit, gg_water_bake_view,
+		gg_water_bake_depth ? "DX11 depth/distance opacity (authored A = minimum opacity, 3.35f ramp NOT used)" : "3.35f flat plane (authored A + Fresnel ramp)",
+		t.visuals.WaterFogMinDist, t.visuals.WaterFogMaxDist, t.visuals.WaterFogMinAmount );
 	g_report[sizeof( g_report ) - 1] = 0;
 	return g_report;
 }

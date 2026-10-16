@@ -1740,33 +1740,35 @@ void imgui_Customize_Water_V2(int mode)
 				}
 
 
-				// UI AUDIT 2026-07-28: the three legacy "Water Fog" sliders HIDDEN — the DX11
-				// water-fog distance model they fed is gone; underwater fogging is now driven by
-				// the live "Underwater Fog" slider (underwater_fog_density, GG delta 1.23), so
-				// these visibly did nothing. Fields/save/load kept for level-file compatibility.
-				//ImGui::TextCenter("Water Fog Start");
-				//if (ImGui::MaxSliderInputFloat("##fWaterFogMinDist", &t.visuals.WaterFogMinDist, 0.0f, 100000.0f, "Closer than this distance under water will have the minimum amount of fog"))
-				//{
-				//	if (t.visuals.WaterFogMinDist > t.visuals.WaterFogMaxDist) t.visuals.WaterFogMaxDist = t.visuals.WaterFogMinDist;
-				//	t.gamevisuals.WaterFogMinDist = t.visuals.WaterFogMinDist;
-				//	Wicked_Update_Visuals((void*)&t.visuals);
-				//	g.projectmodified = 1;
-				//}
-				//ImGui::TextCenter("Water Fog Maximum");
-				//if (ImGui::MaxSliderInputFloat("##fWaterFogMaxDist", &t.visuals.WaterFogMaxDist, 0.0f, 100000.0f, "After this distance under water it will be completely opaque"))
-				//{
-				//	if (t.visuals.WaterFogMinDist > t.visuals.WaterFogMaxDist) t.visuals.WaterFogMinDist = t.visuals.WaterFogMaxDist;
-				//	t.gamevisuals.WaterFogMaxDist = t.visuals.WaterFogMaxDist;
-				//	Wicked_Update_Visuals((void*)&t.visuals);
-				//	g.projectmodified = 1;
-				//}
-				//ImGui::TextCenter("Water Fog Minimum");
-				//if (ImGui::MaxSliderInputFloat("##fWaterFogMinAmount", &t.visuals.WaterFogMinAmount, 0.0f, 1.0f, "The minimum amount of under water fog that will always be present regardless of distance"))
-				//{
-				//	t.gamevisuals.WaterFogMinAmount = t.visuals.WaterFogMinAmount;
-				//	Wicked_Update_Visuals((void*)&t.visuals);
-				//	g.projectmodified = 1;
-				//}
+				// GGMAX 3.119: the three "Water Fog" sliders are BACK. UI AUDIT 2026-07-28 hid them because the DX11 water-fog
+				// model they fed was gone ("visibly did nothing") - 3.119's Water Bake reads them again: they set how the
+				// baked water goes opaque with depth and distance, as they did DX11's water. (The live DX12 ocean still
+				// ignores them - underwater fogging there is the "Underwater Fog" slider, GG delta 1.23.)
+				ImGui::TextCenter("Water Fog Start");
+				if (ImGui::MaxSliderInputFloat("##fWaterFogMinDist", &t.visuals.WaterFogMinDist, 0.0f, 100000.0f, "Water Bake: water shallower than this (in view depth) shows the most of the ground beneath it. Also DX11's water fog start"))
+				{
+					if (t.visuals.WaterFogMinDist > t.visuals.WaterFogMaxDist) t.visuals.WaterFogMaxDist = t.visuals.WaterFogMinDist;
+					t.gamevisuals.WaterFogMinDist = t.visuals.WaterFogMinDist;
+					t.gamevisuals.WaterFogMaxDist = t.visuals.WaterFogMaxDist;
+					Wicked_Update_Visuals((void*)&t.visuals);
+					g.projectmodified = 1;
+				}
+				ImGui::TextCenter("Water Fog Maximum");
+				if (ImGui::MaxSliderInputFloat("##fWaterFogMaxDist", &t.visuals.WaterFogMaxDist, 0.0f, 100000.0f, "Water Bake: how much water it takes to hide the ground beneath it - smaller makes deep and distant water opaque sooner. Also DX11's water fog maximum"))
+				{
+					if (t.visuals.WaterFogMinDist > t.visuals.WaterFogMaxDist) t.visuals.WaterFogMinDist = t.visuals.WaterFogMaxDist;
+					t.gamevisuals.WaterFogMinDist = t.visuals.WaterFogMinDist;
+					t.gamevisuals.WaterFogMaxDist = t.visuals.WaterFogMaxDist;
+					Wicked_Update_Visuals((void*)&t.visuals);
+					g.projectmodified = 1;
+				}
+				ImGui::TextCenter("Water Fog Minimum");
+				if (ImGui::MaxSliderInputFloat("##fWaterFogMinAmount", &t.visuals.WaterFogMinAmount, 0.0f, 1.0f, "Water Bake: the least the water ever tints the ground beneath it, even at the shoreline (0 = clear, 1 = solid). Also DX11's minimum water fog"))
+				{
+					t.gamevisuals.WaterFogMinAmount = t.visuals.WaterFogMinAmount;
+					Wicked_Update_Visuals((void*)&t.visuals);
+					g.projectmodified = 1;
+				}
 			}
 		}
 		ImGui::PopItemWidth();
