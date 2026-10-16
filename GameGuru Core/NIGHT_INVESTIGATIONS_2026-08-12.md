@@ -16320,3 +16320,5 @@ median colour of the water away from the grass blades; my old-mode shot reproduc
 Harness: `SET_WATERBAKEDEPTH <depth 0|1> [lit 0|1] [view 0|3|4]` (3 = opacity grey, 4 = thickness grey);
 DUMP_BAKE prints the mode and the level's Water Fog values. setup.ini `waterbakedepth`, `waterbakelit`. Tool:
 `tools/harness/water_bake_fog_probe.sh`.
+
+### LEE-CONFIRMED 3.119, 2026-10-16: "Baked water depth fog confirmed working" - the Water Bake plane opaque with depth and distance from rtLinearDepth (DX11 water fog), Water Fog sliders back, picker alpha = minimum opacity. Game `5bee9345`. Next (Lee, same message): the baked UNDERWATER look - hide the above-water terrain and fog the submerged scene like the live ocean (3.120).
