@@ -16253,3 +16253,5 @@ Harness: `GET_GRASSMAP_AUDIT [step]` (the grass map against the ground under it:
 flattened, for bare and grassy ground, above and below the water), `GRASS_CLEAR_BARE [1]` (dry run by default),
 `GRASS_POPULATE <match>`, `GRASS_PAINT_TEST <x> <z> <frames> [match] [typemask]`, `SET_TERRAINBRUSH <size>`.
 Tool: `grass_bare_probe.sh`.
+
+### LEE-CONFIRMED 3.118, 2026-10-16: "Sand and rock grass confirmed working" - Auto grass resolves to empty on ground with no matching grass and the Match-on brush paints nothing there (DX11 parity). Game `919d6233`. Open, Lee's call: an editor button for the GRASS_CLEAR_BARE repair (levels saved by older DX12 builds keep their Course Grass on sand); blade area / darker DX11 blades; the 4096 near-tier bake default; re-measure the TESTPRO1 grass benchmark baseline (predates the 3.117 seed fix).
