@@ -16179,3 +16179,5 @@ Draw distance 1500 (98,010 per chunk - the copies), before/after the seed fix:
 Harness: `SET_GRASSFARMODE 0|1|2`, `GET_GROUNDDIST_GRID [cols rows [kind]]` (0 = 3D distance, 1 = horizontal,
 2 = ground Y), `GET_GRASSDENSITY` reports the far field and the camera height. Tools:
 `grass_falloff_probe.sh` + `grass_falloff_measure.py`, `grass_farmode_ab.sh`. setup.ini `grassfardx11`.
+
+### LEE-CONFIRMED 3.117, 2026-10-16: "Far field grass confirmed working" - the DX11 far field (full size to the Grass Draw Distance, per-strand DX11 dissolve over +2500, one full-density ring to the cull, flowers to the full distance) kept as the default, setup.ini grassfardx11=0 = the old strand LOD; plus the 65,536-strand seed fix (denser near grass below draw distance ~2400). Engine `2cc2de0a`, game `0a447fed`. Open, Lee's call: blade area / darker DX11 blades, Auto grass on bare materials (GGGrass.cpp:714), the 4096 near-tier bake default; the TESTPRO1 grass-benchmark coverage baseline predates the seed fix (re-measure before using it as a gate).
