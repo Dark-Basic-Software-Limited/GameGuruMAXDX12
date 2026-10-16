@@ -33,7 +33,7 @@ struct PixelIn
 	float4 position : SV_POSITION;
 	float4 color    : COLOR;
 	float3 worldPos : TEXCOORD0;
-	float2 fres     : TEXCOORD1;  // GGMAX 3.35f: (strength, power)
+	float4 fres     : TEXCOORD1;  // GGMAX 3.35f: (strength, power); 3.120: z = under-water ceiling gain
 };
 
 [RootSignature(GAMEGURU_ROOTSIGNATURE)]
@@ -73,6 +73,30 @@ float4 main( PixelIn IN ) : SV_TARGET
 	// water - the engine fix is depth = max(depth, customDepth) in visibility_resolveCS (not taken: a cost every
 	// frame); with the live terrain the terrain's own ID wins and it is exact.
 	const uint gg_opt = ggCustomFrame.ggOptions;
+
+	// ★★★ GGMAX 3.120: SEEN FROM BELOW - an OPAQUE ceiling, as the live ocean's underside is. The live look is two
+	// stages: the ocean surface drawn from below (Water Base Color, unlit - its GG 1.24 sky term - plus 0.765 x
+	// the mirrored lit seabed from its planar reflection, F at grazing for f0 0.02 / roughness 0.1), then the
+	// engine underwaterCS fogging it and everything submerged toward the Underwater Color. Water Bake now runs
+	// that SAME underwaterCS with the ocean off (wi::gg_underwater_without_ocean, set by GGWaterBake_Update),
+	// so this only paints the ceiling - NOT fogged here, or the fog would apply twice. The reflected seabed is
+	// stood in for by Underwater Color x lighting x gain (fres.z, tuned against the live ceiling), so the
+	// ceiling still dims at night. Opaque + depth-writing (its own PSO): the terrain above the water is gone.
+	[branch]
+	if ( ( gg_opt & GG_OPT_WATERBAKE_UNDER ) && g_xCamera_CamPos.y < IN.worldPos.y )
+	{
+		const ShaderOcean oc = GetWeather().ocean;
+		const float3 uw = ( oc.underwater_fog_density > 0 ) ? oc.underwater_color.rgb : oc.water_color.rgb;   // = underwaterCS:41
+		float3 Lt = 1.0;
+		if ( gg_opt & GG_OPT_WATERBAKE_LIT )
+			Lt = (float3)GetSunColor() * saturate( (float)GetSunDirection().y ) * ( 1.0 / PI ) + 0.5 * (float3)GetAmbientColor();
+		// the reflected seabed: the live planar reflection shows the lit, UNFOGGED seabed mirrored overhead - its
+		// colour is not known here, so fres.w mixes from the Underwater Color (0) toward a typical lit seabed
+		// albedo (1); both tuned against the live ceiling (water_bake_under_probe.sh)
+		const float3 bed = lerp( uw, float3( 0.30, 0.25, 0.20 ), saturate( IN.fres.w ) );
+		return float4( max( 0, IN.color.rgb + 0.765 * IN.fres.z * bed * Lt ), 1.0 );
+	}
+
 	[branch]
 	if ( ( gg_opt & GG_OPT_WATERBAKE_DEPTH ) && GetCamera().texture_lineardepth_index >= 0 )
 	{

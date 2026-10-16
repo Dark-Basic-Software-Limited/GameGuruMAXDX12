@@ -172,6 +172,7 @@ namespace wi {
 // GGMAX 1.39/1.40: underwater skip + command-list merge switches (wiRenderPath3D.cpp)
 namespace wi {
 	extern bool gg_skip_underwater_above_water;
+	extern bool gg_underwater_ceiling_exact;   // GGMAX 3.120: SET_UWCEILING
 	extern bool gg_render_merge_lists;
 	extern float gg_app_submit_present_ms; // 1.32c: submit+present wall time (wiApplication.cpp)
 }
@@ -6847,6 +6848,30 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		_snprintf(result, resultSize, "OK: SET_WATERBAKEALPHA - plane alpha %s%s",
 			(gg_water_bake_alpha < 0.0f) ? "follows the Water Base Color picker" : "overridden",
 			gg_water_bake_depth ? " - in the DX11 water fog (waterbakedepth 1) it is the MINIMUM opacity, 0 = none" : "");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_WATERBAKEUNDER") == 0 || _stricmp(cmd, "SET_UWCEILING") == 0)
+	{
+		// GGMAX 3.120: SET_WATERBAKEUNDER <0|1> [gain x100] - the baked water seen from below (opaque ceiling + the engine
+		// underwater postprocess with the ocean off). SET_UWCEILING <0|1> - the engine's exact-ceiling fog term (A/B).
+		extern int gg_water_bake_under; extern float gg_water_bake_under_gain; extern float gg_water_bake_under_bed;
+		int a = -1, g = -1, bm = -1;
+		const int n = (arg && arg[0]) ? sscanf_s(arg, "%d %d %d", &a, &g, &bm) : 0;
+		if (_stricmp(cmd, "SET_UWCEILING") == 0)
+		{
+			if (n >= 1) wi::gg_underwater_ceiling_exact = (a != 0);
+			_snprintf(result, resultSize, "OK: SET_UWCEILING %d (%s)", wi::gg_underwater_ceiling_exact ? 1 : 0,
+				wi::gg_underwater_ceiling_exact ? "baked ceiling fogs by exactly the distance to the plane" : "stock min(0.1 x distance behind, distance to plane) - shore terrain can ghost");
+		}
+		else
+		{
+			if (n >= 1 && (a == 0 || a == 1)) gg_water_bake_under = a;
+			if (n >= 2 && g >= 0 && g <= 2000) gg_water_bake_under_gain = (float)g * 0.01f;
+			if (n >= 3 && bm >= 0 && bm <= 100) gg_water_bake_under_bed = (float)bm * 0.01f;
+			_snprintf(result, resultSize, "OK: SET_WATERBAKEUNDER %d gain %.2f seabed mix %.2f (%s)", gg_water_bake_under, gg_water_bake_under_gain, gg_water_bake_under_bed,
+				gg_water_bake_under ? "under the baked water: opaque ceiling + the live ocean's underwater fog" : "3.119 look under water");
+		}
 		result[resultSize - 1] = 0;
 		return true;
 	}

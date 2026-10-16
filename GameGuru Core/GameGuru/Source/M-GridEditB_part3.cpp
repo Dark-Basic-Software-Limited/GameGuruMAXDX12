@@ -1721,6 +1721,14 @@ void Wicked_Update_Visuals(void *voidvisual)
 			if (gg_no_water) bWaterEnabled = false;
 		}
 
+		// GGMAX 3.120: the underwater postprocess (underwaterCS) now also runs with the ocean OFF under Water Bake
+		// (wi::gg_underwater_without_ocean), so the values it reads must be current in BOTH branches - with the ocean
+		// off they used to go stale, or stay at the engine defaults (density 0 -> fall back to waterColor.a = near-
+		// black fog). Same values, same formulas as the ocean branch below.
+		weather->oceanParameters.waterColor = XMFLOAT4(visuals->WaterRed_f / 255.0f, visuals->WaterGreen_f / 255.0f, visuals->WaterBlue_f / 255.0f, visuals->WaterAlpha_f / 255.0f);
+		weather->oceanParameters.underwater_color = XMFLOAT4(visuals->fUnderwaterColorR / 255.0f, visuals->fUnderwaterColorG / 255.0f, visuals->fUnderwaterColorB / 255.0f, 1.0f);
+		weather->oceanParameters.underwater_fog_density = visuals->fUnderwaterFog * 0.00015f;
+
 		if (bWaterEnabled)
 		{
 			weather->SetOceanEnabled(true);

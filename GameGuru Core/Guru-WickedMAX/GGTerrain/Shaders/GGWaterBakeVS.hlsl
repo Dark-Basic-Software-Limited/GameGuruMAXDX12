@@ -17,7 +17,7 @@ struct VertexIn
 {
 	float3 position : POSITION;   // xz = local offset, y = absolute water height
 	float4 color    : COLOR;
-	float2 fres     : TEXCOORD0;  // GGMAX 3.35f: (strength, power) of the distance opacity ramp
+	float4 fres     : TEXCOORD0;  // GGMAX 3.35f: (strength, power) of the distance opacity ramp; 3.120: z = under-water ceiling gain
 };
 
 struct VertexOut
@@ -25,7 +25,7 @@ struct VertexOut
 	float4 position : SV_POSITION;
 	float4 color    : COLOR;
 	float3 worldPos : TEXCOORD0;
-	float2 fres     : TEXCOORD1;  // GGMAX 3.35f
+	float4 fres     : TEXCOORD1;  // GGMAX 3.35f (+ 3.120 z)
 };
 
 [RootSignature(GAMEGURU_ROOTSIGNATURE)]

@@ -15,4 +15,7 @@ extern float gg_water_bake_tint;    // 0..1 mix of the authored tint toward sky 
 void GGWaterBake_Init();
 void GGWaterBake_Update();          // main thread
 void GGWaterBake_Draw( const wi::primitive::Frustum* frustum, wi::graphics::CommandList cmd );
+// GGMAX 3.120: the opaque ceiling seen from BELOW - engine hook customDraw_WaterSurface (the ocean's slot, before
+// the transparent scene). GGWaterBake_Draw skips that case and draws only the above-water plane.
+void GGWaterBake_DrawUnder( const wi::primitive::Frustum* frustum, wi::graphics::CommandList cmd );
 const char* GGWaterBake_Report();

@@ -627,6 +627,12 @@ void MasterRenderer::Load()
 		if (ggterrain_use_wicked_terrain) return;
 		GGTerrain_Draw(frustum, mode, cmd);
 	};
+	// GGMAX 3.120: the baked water seen from BELOW - drawn in the ocean's slot, before the transparent scene (engine
+	// hook customDraw_WaterSurface, called only while the camera is under the water). Reads the engine camera CB like
+	// GGWaterBake_Draw; the engine re-binds the camera CB and common resources right after it.
+	customDraw_WaterSurface = [](const Frustum* frustum, CommandList cmd) {
+		GGWaterBake_DrawUnder(frustum, cmd);
+	};
 	customDraw_Transparent = [](const Frustum* frustum, CommandList cmd) {
 		// GGMAX 2026-08-07: legacy gpup/.arx particle draw (task #118 — steam columns etc.).
 		// DX11's engine fork drove this from inside RenderPath3D::RenderTransparents

@@ -188,6 +188,7 @@ char gg_ddsSliceRefusedWhat[ 200 ] = { 0 };   // the first refusal: file, slice,
 // GGMAX 3.113: Terrain Bake shading bits (GGTerrainBake.cpp, global scope) - uploaded in ggOptions.
 extern uint32_t gg_terrain_bake_shading;
 extern int gg_water_bake_depth, gg_water_bake_lit, gg_water_bake_view;   // GGMAX 3.119 (GGWaterBake.cpp)
+extern int gg_water_bake_under;   // GGMAX 3.120 (GGWaterBake.cpp)
 
 namespace GGTerrain
 {
@@ -831,6 +832,7 @@ void GGCustomFrame_Update( wiGraphics::CommandList cmd )
 		uint32_t w = 0;
 		if ( ::gg_water_bake_depth ) w |= GG_OPT_WATERBAKE_DEPTH;
 		if ( ::gg_water_bake_lit ) w |= GG_OPT_WATERBAKE_LIT;
+		if ( ::gg_water_bake_under ) w |= GG_OPT_WATERBAKE_UNDER;
 		// the debug views exist only inside the depth mode - set them only there, so the bits match what is drawn
 		if ( ::gg_water_bake_depth && ::gg_water_bake_view == 3 ) w |= GG_OPT_WATERBAKE_VIEW_ALPHA;
 		if ( ::gg_water_bake_depth && ::gg_water_bake_view == 4 ) w |= GG_OPT_WATERBAKE_VIEW_THICK;

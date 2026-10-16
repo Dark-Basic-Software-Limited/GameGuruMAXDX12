@@ -68,6 +68,14 @@ float gg_water_bake_alpha = -1.0f;
 // authored Water Base Color A and the 3.35f Fresnel ramp below are NOT used (DX11 ignored the A); depth 0 is
 // the 3.35f plane exactly. view 3 / 4 = debug greys of the opacity / thickness. setup.ini waterbakedepth /
 // waterbakelit, harness SET_WATERBAKEDEPTH <depth> [lit] [view].
+// GGMAX 3.120: the baked water seen from BELOW - DEFAULT ON. under = an opaque ceiling (own depth-writing PSO) plus
+// the engine's own underwater postprocess run with the ocean off, so the submerged view fogs exactly as it does
+// with the live ocean (same Underwater Color / Underwater Fog). gain = how bright the ceiling's reflected-seabed
+// term is (tuned against the live ceiling). 0 = the 3.119 look. setup.ini waterbakeunder / waterbakeundergain,
+// harness SET_WATERBAKEUNDER <0|1> [gain x100].
+int   gg_water_bake_under = 1;
+float gg_water_bake_under_gain = 1.0f;
+float gg_water_bake_under_bed = 0.0f;   // GGMAX 3.120: reflected-seabed colour mix, Underwater Color (0) .. warm seabed (1)
 int   gg_water_bake_depth = 1;
 int   gg_water_bake_lit = 1;
 int   gg_water_bake_view = 0;
@@ -87,6 +95,7 @@ float gg_water_bake_tint = 0.0f;
 
 extern bool gg_no_water;
 extern void GGSetNoWaterLevel( int );
+namespace wi { extern bool gg_underwater_without_ocean; }   // GGMAX 3.120 (wiRenderPath3D.cpp)
 namespace GGTerrain { void GGCustomFrame_Bind( wi::graphics::CommandList cmd ); }
 
 namespace
@@ -98,7 +107,7 @@ namespace
 		// ★ GGMAX 3.35f: (strength, power) for the distance opacity ramp. In the vertex for the
 		// same reason the colour is: there is no spare constant-buffer slot in this pass, and it is
 		// four vertices. Uniform across the quad; the shader wants them per-pixel.
-		XMFLOAT2 fres;
+		XMFLOAT4 fres;   // GGMAX 3.120: z = the under-water ceiling gain, w = its seabed colour mix
 	};
 
 	// Half-size of the plane. The GG world is 200,000 units across, so this reaches past any
@@ -110,6 +119,12 @@ namespace
 	PipelineState g_pso;
 	PipelineState g_psoDepthAlways;      // debug twin, ComparisonFunc::ALWAYS
 	DepthStencilState g_dssAlways;
+	// GGMAX 3.120: the camera is UNDER the water - the plane is an opaque ceiling and WRITES depth (depthBuffer_Main),
+	// so depth-tested draws after it (particles, sprites) are hidden above the water, as with the live ocean. Lens
+	// flares are NOT: they are depth-disabled and occlusion-test texture_depth (the prepass copy), which holds
+	// neither this plane nor the ocean - only the underwater fog dims the sun flare from below.
+	PipelineState     g_psoUnder;
+	DepthStencilState g_dssUnder;
 	RasterizerState   g_rs;
 	DepthStencilState g_dss;
 	BlendState        g_bs;
@@ -123,10 +138,12 @@ namespace
 	uint32_t g_lastColor = 0;
 	float g_lastFresStr = -1.0f;   // GGMAX 3.35f: part of the rebuild test, see UpdateVB
 	float g_lastFresPow = -1.0f;
+	float g_lastUnderGain = -1.0f;   // GGMAX 3.120: part of the rebuild test too
+	float g_lastUnderBed = -1.0f;
 	uint32_t g_updates = 0;    // GGWaterBake_Update calls that got past the switch test
 	uint32_t g_rebuilds = 0;   // vertex buffers actually created
 	uint32_t g_draws = 0;      // draw calls actually issued
-	char g_report[1024] = "";
+	char g_report[2048] = "";
 
 	uint32_t CurrentWaterColor()
 	{
@@ -259,7 +276,7 @@ void GGWaterBake_Init()
 	g_il.elements = {
 		{ "POSITION", 0, Format::R32G32B32_FLOAT, 0, 0,  InputClassification::PER_VERTEX_DATA },
 		{ "COLOR",    0, Format::R8G8B8A8_UNORM,  0, 12, InputClassification::PER_VERTEX_DATA },
-		{ "TEXCOORD", 0, Format::R32G32_FLOAT,    0, 16, InputClassification::PER_VERTEX_DATA }, // GGMAX 3.35f fresnel
+		{ "TEXCOORD", 0, Format::R32G32B32A32_FLOAT, 0, 16, InputClassification::PER_VERTEX_DATA }, // GGMAX 3.35f fresnel + 3.120 gain
 	};
 
 	// ★ PipelineStateDesc stores POINTERS and Wicked's DX12 backend compiles at BIND time, so
@@ -281,12 +298,30 @@ void GGWaterBake_Init()
 	g_dssAlways.depth_func = ComparisonFunc::ALWAYS;
 	desc.dss = &g_dssAlways;
 	device->CreatePipelineState( &desc, &g_psoDepthAlways );
+	// GGMAX 3.120: the under-water twin - opaque output (the shader returns alpha 1) and depth WRITE.
+	g_dssUnder = g_dss;
+	g_dssUnder.depth_write_mask = DepthWriteMask::ALL;
+	desc.dss = &g_dssUnder;
+	device->CreatePipelineState( &desc, &g_psoUnder );
 
 	g_shadersReady = true;
 }
 
+// GGMAX 3.120: the level-has-water test, shared by Update (engine underwater flag) and Draw. It MIRRORS the ocean's
+// own test in M-GridEditB_part3.cpp - see the note in GGWaterBake_Draw.
+static bool GGWaterBake_LevelHasWater()
+{
+	return ( t.game.set.ismapeditormode == 1 ) ? ( t.showeditorwater != 0 ) : ( t.visuals.bWaterEnable != 0 );
+}
+
+// GGMAX 3.120: level reset (visuals_resetvalues) - Update does not run during load frames, so drop the request here.
+void GGWaterBake_ClearUnderwaterRequest() { wi::gg_underwater_without_ocean = false; }
+
 void GGWaterBake_Update()
 {
+	// GGMAX 3.120: re-derived EVERY frame, never latched (a per-level value in a process-global is a known defect
+	// shape here): false unless Water Bake is drawing this frame.
+	wi::gg_underwater_without_ocean = false;
 	if ( !g_initialised ) GGWaterBake_Init();
 
 	static bool s_prev = false;
@@ -306,9 +341,14 @@ void GGWaterBake_Update()
 	if ( !g_shadersReady ) { GGWaterBake_Init(); return; }     // keep retrying while ticked
 
 	g_updates++;
+	// GGMAX 3.120: run the engine underwater postprocess (fog) with the ocean off while the plane stands in for it.
+	wi::gg_underwater_without_ocean = ( gg_water_bake_under != 0 ) && GGWaterBake_LevelHasWater();
 	// Rebuild the four vertices only when the water height or colour actually changed. A level
 	// with static water therefore does no per-frame work at all here.
-	const float height = (float)g.gdefaultwaterheight;
+	// GGMAX 3.120: the scene weather's water height - the value underwaterCS (and the live ocean) uses, so a script
+	// that moves the water (SetWaterHeight) moves the plane and the fog together. Normally g.gdefaultwaterheight.
+	const float height = ( wi::scene::GetScene().weathers.GetCount() > 0 )
+		? wi::scene::GetScene().weather.oceanParameters.waterHeight : (float)g.gdefaultwaterheight;
 	const uint32_t color = CurrentWaterColor();
 	// ⚠ GGMAX 3.35f: the fresnel knobs are part of the vertex data, so they MUST be part of the
 	// rebuild test. Leaving them out is the classic cached-value trap - the knob would reply OK,
@@ -316,15 +356,17 @@ void GGWaterBake_Update()
 	// vertex buffer still held the old one.
 	const float fstr = ( gg_water_bake_fresnel < 0.0f ) ? 0.0f : ( gg_water_bake_fresnel > 1.0f ? 1.0f : gg_water_bake_fresnel );
 	const float fpow = ( gg_water_bake_fresnel_power < 0.1f ) ? 0.1f : ( gg_water_bake_fresnel_power > 16.0f ? 16.0f : gg_water_bake_fresnel_power );
+	const float ugain = ( gg_water_bake_under_gain < 0.0f ) ? 0.0f : ( gg_water_bake_under_gain > 20.0f ? 20.0f : gg_water_bake_under_gain );
+	const float ubed = ( gg_water_bake_under_bed < 0.0f ) ? 0.0f : ( gg_water_bake_under_bed > 1.0f ? 1.0f : gg_water_bake_under_bed );
 	if ( g_vbValid && height == g_lastHeight && color == g_lastColor
-		&& fstr == g_lastFresStr && fpow == g_lastFresPow ) return;
+		&& fstr == g_lastFresStr && fpow == g_lastFresPow && ugain == g_lastUnderGain && ubed == g_lastUnderBed ) return;
 
 	WaterVertex v[4];
 	v[0].pos = XMFLOAT3( -WATER_HALF_SIZE, height, -WATER_HALF_SIZE );
 	v[1].pos = XMFLOAT3(  WATER_HALF_SIZE, height, -WATER_HALF_SIZE );
 	v[2].pos = XMFLOAT3( -WATER_HALF_SIZE, height,  WATER_HALF_SIZE );
 	v[3].pos = XMFLOAT3(  WATER_HALF_SIZE, height,  WATER_HALF_SIZE );
-	for ( int i = 0; i < 4; i++ ) { v[i].color = color; v[i].fres = XMFLOAT2( fstr, fpow ); }
+	for ( int i = 0; i < 4; i++ ) { v[i].color = color; v[i].fres = XMFLOAT4( fstr, fpow, ugain, ubed ); }
 
 	GraphicsDevice* device = GetDevice();
 	GPUBufferDesc vbdesc;
@@ -340,25 +382,51 @@ void GGWaterBake_Update()
 	g_lastHeight = height;
 	g_lastFresStr = fstr;
 	g_lastFresPow = fpow;
+	g_lastUnderGain = ugain;
+	g_lastUnderBed = ubed;
 	g_lastColor = color;
+}
+
+// GGMAX 3.120: shared body - under = draw the opaque ceiling (customDraw_WaterSurface), else the above-water plane.
+static void GGWaterBake_DrawImpl( bool under, CommandList cmd );
+
+void GGWaterBake_DrawUnder( const Frustum* frustum, CommandList cmd )
+{
+	// the engine calls this only while the camera is below the weather's water height; the plane height is the same
+	// value (GGWaterBake_Update), so this test only matters with the under look switched off
+	if ( !gg_water_bake_under || gg_water_bake_debug == 2 ) return;
+	if ( !( wi::scene::GetCamera().Eye.y < g_lastHeight ) ) return;
+	GGWaterBake_DrawImpl( true, cmd );
 }
 
 void GGWaterBake_Draw( const Frustum* frustum, CommandList cmd )
 {
 	gg_water_bake_drawn = 0;
+	// GGMAX 3.120: from below, the ceiling was already drawn in the ocean's slot (GGWaterBake_DrawUnder) - not here,
+	// after the transparent scene. (The debug depth-ALWAYS twin keeps drawing here.)
+	if ( gg_water_bake_under && gg_water_bake_debug != 2 && wi::scene::GetCamera().Eye.y < g_lastHeight )
+	{
+		gg_water_bake_drawn = 1;   // it was drawn this frame, by the hook
+		return;
+	}
+	GGWaterBake_DrawImpl( false, cmd );
+}
+
+static void GGWaterBake_DrawImpl( bool under, CommandList cmd )
+{
 	if ( !gg_water_bake || !g_shadersReady || !g_vbValid ) return;
 	// Nothing to stand in for if the level has no water in the first place. ★ This MIRRORS the
 	// ocean's own test in M-GridEditB_part3.cpp rather than approximating it - the editor branch
 	// reads t.showeditorwater and the game branch reads visuals.bWaterEnable, and getting that
 	// split wrong would either paint a plane across a level that has no water or leave a hole in
 	// one that does. If that test ever changes, this changes with it.
-	const bool bLevelHasWater = ( t.game.set.ismapeditormode == 1 ) ? ( t.showeditorwater != 0 )
-	                                                               : ( t.visuals.bWaterEnable != 0 );
+	const bool bLevelHasWater = GGWaterBake_LevelHasWater();
 	if ( !bLevelHasWater ) return;
 
 	GraphicsDevice* device = GetDevice();
 	device->EventBegin( "GGWaterBake Draw", cmd );
-	device->BindPipelineState( ( gg_water_bake_debug == 2 ) ? &g_psoDepthAlways : &g_pso, cmd );
+	// GGMAX 3.120: from below, the opaque depth-writing ceiling PSO (same test as the shader's branch)
+	device->BindPipelineState( ( gg_water_bake_debug == 2 ) ? &g_psoDepthAlways : ( under ? &g_psoUnder : &g_pso ), cmd );
 	// GGMAX 3.119: the shader reads the FRAME CB (b0: sun, ambient, fog) - light shafts' image draw rebinds slot 0
 	// earlier in this pass, and only a visible transparent's DrawScene restores it before this hook. Re-assert it.
 	wi::renderer::BindCommonResources( cmd );
@@ -384,7 +452,9 @@ const char* GGWaterBake_Report()
 		"  drawn last frame: %d   (updates %u, rebuilds %u, draws %u)\n"
 		"  VERTEX BUFFER   : 0x%08X   <- what the GPU is actually drawing\n"
 		"  ocean           : %s\n"
-		"  water fog 3.119 : depth %d, lit %d, view %d - %s; Water Fog min %.0f max %.0f min amount %.2f (the level's DX11 values)\n",
+		"  water fog 3.119 : depth %d, lit %d, view %d - %s; Water Fog min %.0f max %.0f min amount %.2f (the level's DX11 values)\n"
+		"  underwater 3.120: under %d, ceiling gain %.2f, camera %s the water, engine underwater postprocess %s;\n"
+		"                    Underwater Color %.0f, %.0f, %.0f, Underwater Fog %.0f (density %.5f) - as the live ocean\n",
 		gg_water_bake ? 1 : 0, g_shadersReady ? "ok" : "FAILED", g_shaderAttempts,
 		g_vbValid ? "built" : "not built", g_lastHeight,
 		( gg_water_bake_alpha < 0.0f ) ? ( t.visuals.WaterAlpha_f / 255.0f ) : gg_water_bake_alpha,
@@ -400,7 +470,12 @@ const char* GGWaterBake_Report()
 		gg_no_water ? "OFF (planar reflection pass not recorded)" : "on",
 		gg_water_bake_depth, gg_water_bake_lit, gg_water_bake_view,
 		gg_water_bake_depth ? "DX11 depth/distance opacity (authored A = minimum opacity, 3.35f ramp NOT used)" : "3.35f flat plane (authored A + Fresnel ramp)",
-		t.visuals.WaterFogMinDist, t.visuals.WaterFogMaxDist, t.visuals.WaterFogMinAmount );
+		t.visuals.WaterFogMinDist, t.visuals.WaterFogMaxDist, t.visuals.WaterFogMinAmount,
+		gg_water_bake_under, gg_water_bake_under_gain,
+		( wi::scene::GetCamera().Eye.y < g_lastHeight ) ? "UNDER" : "above",
+		wi::gg_underwater_without_ocean ? "REQUESTED (ocean off)" : "not requested",
+		t.visuals.fUnderwaterColorR, t.visuals.fUnderwaterColorG, t.visuals.fUnderwaterColorB, t.visuals.fUnderwaterFog,
+		t.visuals.fUnderwaterFog * 0.00015f );
 	g_report[sizeof( g_report ) - 1] = 0;
 	return g_report;
 }

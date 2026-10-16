@@ -16322,3 +16322,71 @@ DUMP_BAKE prints the mode and the level's Water Fog values. setup.ini `waterbake
 `tools/harness/water_bake_fog_probe.sh`.
 
 ### LEE-CONFIRMED 3.119, 2026-10-16: "Baked water depth fog confirmed working" - the Water Bake plane opaque with depth and distance from rtLinearDepth (DX11 water fog), Water Fog sliders back, picker alpha = minimum opacity. Game `5bee9345`. Next (Lee, same message): the baked UNDERWATER look - hide the above-water terrain and fog the submerged scene like the live ocean (3.120).
+
+### 3.120 Under the baked water: an opaque surface overhead and the live ocean's underwater fog - 2026-10-16
+
+Lee (Test Game shots under water, baked vs non-baked): "the baked underwater shows the terrain above the water and makes
+no effort to fog out everything under the water. Improve the system to hide the above water terrain with an opaque
+plane, using colours close to the non-bake approach, and also use the same non-bake colour references to create a
+nice fog under the water ... No need for ripples or refraction/reflection on the baked underwater look."
+
+**How the live (non-baked) underwater look is made - two stages.**
+- The ocean surface drawn from below: no under-water branch, but from below everything behind it is "negative depth",
+  so it shows the raw Water Base Color (GG 1.24 sky term) + 0.765 x its planar reflection (the MIRRORED, lit,
+  unfogged seabed - F at grazing for f0 0.02 / roughness 0.1), rippled, opaque.
+- The engine's **underwater post-process** (Postprocess_Underwater / underwaterCS, after TAA, before tonemap): for every
+  pixel whose near point is under the water, path length d = max(min(0.1 x distance behind, distance to the plane),
+  depth below the surface); colour x exp(-d rho ext) then lerp toward the **Underwater Color** by exp(-d rho) - rho =
+  **Underwater Fog** x 0.00015 (GG delta 1.23), ext = (1, 0.1, 0) (red absorbed first: the teal shift). It is ANALYTIC
+  (it intersects the water plane along each ray) and reads GetWeather().ocean, uploaded every frame even with the ocean
+  off. Measured 0.02-0.15 ms.
+- Water Bake turns the ocean OFF (to skip the 4.37 ms planar reflection), and the post-process's ONLY gate is
+  IsOceanEnabled() - so baked water had no underwater fog at all; and GG wrote the Underwater Color / Fog values only
+  when the ocean was on, so they went stale. The baked plane from below was the 3.119 see-through plane.
+
+**What changed.**
+- Engine (WICKED_ENGINE_CHANGES 3.120): `wi::gg_underwater_without_ocean` lets the stock underwater post-process run
+  with the ocean off (margin above the water 12 x zNear for a flat plane, not 200); `wi::gg_underwater_ceiling_exact`
+  makes underwaterCS fog an upward-ray pixel by exactly the distance to the plane - the GG ceiling is not in the depth
+  copy, and the stock min(0.1 x distance behind, plane) let shore terrain ghost through as a lighter band. Stock path
+  bit-identical (both off for the live ocean).
+- Engine hook `customDraw_WaterSurface` (RenderTransparents, the OCEAN's slot - before the transparent scene and the
+  mip chain, own render pass, only while the camera is below the water): the ceiling draws there, so transparents
+  composite over it as they do over the live ocean (review find - see below).
+- Game: GGWaterBake_Update re-derives the flag every frame (on while Water Bake draws on a level with water); the plane
+  from below is OPAQUE and writes depth (its own PSO) - Water Base Color + 0.765 x gain x Underwater Color x
+  sun/ambient as the reflected-seabed stand-in, NOT fogged in the shader (the engine pass fogs it once, like the live
+  underside); Wicked_Update_Visuals writes the underwater values in both branches; the plane follows the scene
+  weather's water height (the value the fog uses). `waterbakeunder=0` / `SET_WATERBAKEUNDER 0` = the 3.119 look.
+
+**Measured** (DESKTOP RX 9060 XT, DX12TESTLEVEL, Terrain Bake on, `tools/harness/water_bake_under_probe.sh`; median
+colour of screen bands; camera 184 below the surface over a deep basin):
+
+| band | live ocean | baked before | **baked 3.120** |
+|---|---|---|---|
+| ceiling top | 0 81 111 | 37 40 47 (sky + mountains) | **0 87 113** |
+| ceiling low | 0 81 107 | 29 20 0 | **0 80 105** |
+| horizon | 46 80 69 | 82 48 27 | **45 79 67** |
+| mid bed | 32 62 67 | 76 45 24 | **32 62 67** |
+| near bed | 28 62 69 | 74 45 23 | **28 62 69** |
+
+- Shallower (74 below, looking up toward the shore): fog and bed identical; the live ceiling overhead is bluer with some
+  red (34 78 107 vs 13 107 127) - its reflection shows the real lit seabed mirrored, which a shader without that pass
+  cannot know. A gain / seabed-colour sweep (`SET_WATERBAKEUNDER 1 <gain> <seabed mix>`) gave no setting better than
+  the default (gain 1.0, mix 0) over both spots; the mix knob stays for tuning.
+- The exact-ceiling term removes the shore ghost band (`SET_UWCEILING 0` shows it); the above-water terrain is gone.
+- Test Game: same - opaque teal ceiling and fog where the mountains showed before.
+- Cost: underwater pass **0.03 ms**; GPU frame within noise (2.954 vs 2.938 ms, interleaved x3); nothing runs above water.
+- Not reproduced (as asked): ripples, refraction, the reflection's detail, seabed caustics.
+
+**Adversarial review (2 reviewers + 6 verifiers, 4 confirmed - 2 distinct - 2 refuted):**
+- the opaque ceiling was first drawn in customDraw_Transparent, AFTER the transparent scene: submerged hair / double-sided
+  foliage (no depth write) seen against the surface were painted over, and depth-writing glass kept the world above
+  inside its footprint. The live ocean draws BEFORE the transparent scene - so the ceiling now does too, through the new
+  engine hook in the ocean's slot (re-measured: identical numbers, Test Game identical). customDraw_Opaque was rejected:
+  the volumetric-cloud upsample later in that pass keys off texture_depth and would paint clouds onto the ceiling;
+- a comment said the ceiling's depth hides lens flares - it does not (flares are depth-disabled and test texture_depth,
+  as with the live ocean; the fog dims them).
+
+Harness: `SET_WATERBAKEUNDER <0|1> [gain x100] [seabed mix x100]`, `SET_UWCEILING <0|1>`; DUMP_BAKE "underwater 3.120"
+line. setup.ini `waterbakeunder`, `waterbakeundergain`. Tools: `water_bake_under_probe.sh` + `water_bake_under_measure.py`.

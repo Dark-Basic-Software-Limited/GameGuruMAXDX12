@@ -147,6 +147,7 @@ void gg_visuals_reset_brutal_switches()
 
 	t.visuals.bTerrainBake      = false;  gg_terrain_bake = false;
 	t.visuals.bWaterBake        = false;  gg_water_bake   = false;
+	{ extern void GGWaterBake_ClearUnderwaterRequest(); GGWaterBake_ClearUnderwaterRequest(); }   // GGMAX 3.120
 	t.visuals.bNoTrees          = false;  if (gg_no_trees)          GGSetNoTreesLevel(0);
 	t.visuals.bNoGrass          = false;  if (gg_no_grass)          GGSetNoGrassLevel(0);
 	t.visuals.bNoAO             = false;  if (gg_no_ao)             GGSetNoAOLevel(0);

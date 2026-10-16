@@ -69,6 +69,9 @@ struct GGCustomFrameData {
 // did; VIEW_ALPHA / VIEW_THICK = debug: opaque grey of the opacity / of thickness over Water Fog Max.
 #define GG_OPT_WATERBAKE_DEPTH      0x100u
 #define GG_OPT_WATERBAKE_LIT        0x200u
+// GGMAX 3.120: the camera is UNDER the baked water -> the plane is an opaque ceiling (the engine underwaterCS,
+// run with the ocean off, fogs it and everything submerged exactly as it does the live ocean)
+#define GG_OPT_WATERBAKE_UNDER      0x400u
 #define GG_OPT_WATERBAKE_VIEW_ALPHA 0x1000u
 #define GG_OPT_WATERBAKE_VIEW_THICK 0x2000u
 #define GG_OPT_WATERBAKE_MASK       0xFF00u
