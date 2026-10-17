@@ -1557,7 +1557,17 @@ void gun_gatherslotorder (void)
 void gun_selectandorload ( void )
 {
 	// Load gun if not selected
-	if ( t.gun[t.gunid].obj == 0 ) 
+	// GGMAX 3.122: ...or if it is in memory but was built for a DIFFERENT Player Start arm set than the
+	// one this game uses (g_guns_loadedArms, G-Gun_part0.cpp). gun_load then rebuilds only what the arm set
+	// changes - its own refresh test decides - and returns at once for a gun whose arms cannot change.
+	bool bArmsOutOfDate = false;
+	if ( t.gun[t.gunid].obj != 0 )
+	{
+		std::map<int, std::string>::const_iterator itArms = g_guns_loadedArms.find(t.gunid);
+		if ( itArms != g_guns_loadedArms.end() && stricmp(itArms->second.c_str(), g_guns_customArms_s.Get()) != 0 )
+			bArmsOutOfDate = true;
+	}
+	if ( t.gun[t.gunid].obj == 0 || bArmsOutOfDate )
 	{
 		gun_load ( );
 	}
@@ -1654,3 +1664,38 @@ void gun_selectandorload ( void )
 	}
 }
 
+
+// GGMAX 3.122: free every sound id one gun holds - main and variations, companions, alt - and zero them,
+// as gun_releaseresources does (gated on the id, not the name, which gun_loaddata may have re-read).
+// Used when gun_load (G-Gun_part3.cpp, same unity build) rebuilds a gun already in memory, before it
+// reloads them under new ids.
+static void gun_freegunsounds(int gunid)
+{
+	if (gunid <= 0 || gunid >= (int)t.gunsound.size()) return;
+	for (int i = 0; i <= 15; i++)
+	{
+		int* pIds[5] = { &t.gunsound[gunid][i].soundid1, &t.gunsound[gunid][i].soundid2,
+			&t.gunsound[gunid][i].soundid3, &t.gunsound[gunid][i].soundid4, &t.gunsound[gunid][i].altsoundid };
+		for (int k = 0; k < 5; k++)
+		{
+			if (k == 4 && i == 2) continue;	// slot 2 has no alt sound (never loaded or released for it)
+			if (*pIds[k] > 0)
+			{
+				if (SoundExist(*pIds[k]) == 1) DeleteSound(*pIds[k]);
+				*pIds[k] = 0;
+			}
+		}
+		if (i <= 3)
+		{
+			for (int c = 0; c < 3; c++)
+			{
+				int& id = t.gunsoundcompanion[gunid][i][c].soundid;
+				if (id > 0)
+				{
+					if (SoundExist(id) == 1) DeleteSound(id);
+					id = 0;
+				}
+			}
+		}
+	}
+}

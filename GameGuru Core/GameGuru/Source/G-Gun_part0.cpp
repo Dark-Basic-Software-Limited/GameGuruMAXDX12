@@ -12,6 +12,8 @@
 #endif
 
 #include "tracers/TracerManager.h"
+#include <map>		// GGMAX 3.122: g_guns_loadedArms
+#include <string>
 
 // GGMAX 3.35i: diagnostic files go beside the EXE, not into whatever the CWD currently is
 // (a file dialog can move it). Defined in Guru-WickedMAX/master_part1.cpp.
@@ -20,6 +22,14 @@ using namespace Tracers;
 
 // global store for weapon shader effect indexes
 cstr g_guns_customArms_s = "";
+// GGMAX 3.122: the Player Start arm set each gun's object was BUILT with (gun_load), by gun id. A gun
+// object outlives the game that loaded it - Test Game after Test Game in one editor session, and level
+// after level in a standalone game - so the choice in g_guns_customArms_s can change under it. Tester
+// report: "the interactive swimming arms are not loading the selected arm set, only default". The
+// swimming arms are added mid-game (swimming.lua -> ChangePlayerWeapon), are never 'present' in a level,
+// so nothing at game start rebuilt them, and gun_selectandorload only loaded a gun with obj == 0: the
+// arms stayed whatever set the session first loaded them with. See gun_selectandorload / gun_load.
+std::map<int, std::string> g_guns_loadedArms;
 int g_weaponbasicshadereffectindex = 0;
 int g_weaponboneshadereffectindex = 0;
 

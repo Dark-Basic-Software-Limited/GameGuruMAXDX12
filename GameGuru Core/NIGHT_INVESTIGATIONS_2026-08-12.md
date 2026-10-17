@@ -16470,3 +16470,87 @@ Harness: `PERTURB_SCENE <1|0>`; `SET_OBJPREVIEW_LIGHT` 9th argument = particle l
 ⚠ Supersedes 3.110's "Lit WPE particles take the level's lighting, as in DX11" - Lee's request overrides that parity choice.
 
 ### LEE-CONFIRMED 3.121, 2026-10-17: "Live preview isolation confirmed working" - the Particle and Object Library live previews no longer change with the level's fog, ambient, sun, sky, wind, Object Detail Distance or Particle Density (per-list frame-CB override + GGObjectPreview_ApplyStudio; studio ambient 0.6). Game `6fddd1d2`, engine `b23777a4`.
+
+### 3.122 Tester report #7: the interactive swimming arms ignore the player's arm set - 2026-10-17
+
+Tester (pre-alpha, via Lee): "The interactive arms are not changing using only default. The interactive swimming arms
+are not loading the selected weapon/armsets of the player, this used to work fine (in DX11)."
+
+**What the feature is** (it had never been touched in this port):
+- **Arm sets** live in `Files/gamecore/hands/<set>/` (arms.dbo + arms_color/normal/surface.dds): Male Light/Dark, Female
+  Light/Dark, Combat Gloves Light/Dark, Low Poly, Fantasy/Knight/Medieval Gauntlets, Fantasy Leather Gloves. The Player
+  Start's **Hands** dropdown picks one ("No Preference" = the weapon's own arms). It only shows when the start weapon is
+  a new-weapon-system gun, and it is stored in the marker's `eleprof.texaltd_s`. At every game start
+  `gun_activategunsfromentities` copies it into `g_guns_customArms_s`.
+- **Interactive arms** = `gamecore/guns/interactive/` - a "gun" that is only a pair of animated arms. The one that ships
+  is `interactive\swimming`. `scriptbank/global/swimming.lua` equips it in slot 11 when the player is under water
+  (`ChangePlayerWeapon` does the work; its `AddPlayerWeapon("interactive\\swimming")` is a no-op - a string where an
+  entity index is expected) and plays wading / breaststroke / freestroke from the gun's own frames.
+- **How a set reaches a gun.** A `resources\hud.dat` weapon (max\Colt, lowpoly, aztec, tools) is REBUILT by
+  `gun_createhud` with the set's arms.dbo and saved as the writable HUD.dbo. A `HUD-ORIG.dbo` weapon (enhanced\*, and the
+  swimming arms) uses the **legacy arm replacement trick** in `gun_load`: the set's arms.dbo goes into a second object
+  (`gunbankextraobjoffset` + slot), textured with the set's arms_color.dds and given the `Legacy<anim>.dbo` animation
+  (swimming: `LegacyInteractiveSwimming.dbo`); the gun's own `LEGACYARMS` limb is hidden; every animation call is
+  mirrored onto the second object (`gun_PlayObject` & co.), and `gun_control` keeps it on the gun. The swimming default
+  arms_color.dds is byte-identical to Male Light's - so "default" looks like Male Light.
+
+**Reproduced** (TESTPRO2 > DX12TESTLEVEL, live-only harness, nothing saved; `tools/harness/arms_swim_probe.sh`,
+`arms_swim_ab.sh`): Player Start arm set via `SET_PLAYERARMS`, swimming.lua attached to an entity via
+`SET_ENTITYSCRIPT`, Test Game, player put under deep water, swimming.lua equips the arms itself, a breaststroke is
+played, `DUMP_GUNARMS` reports every link (LEGACYARMS hidden? second object present, visible, renderable, and the base
+colour texture its material carries). On the FIRST swim of a session the chosen set appears correctly. Then, in the
+same editor session: set `none` -> the second object still carried Female Dark; set `Knight Gauntlets` ->
+`customArms='Knight Gauntlets'` but the arms still Female Dark. **The swimming arms keep whatever set the session first
+built them with** - "not changing, only default" when the first swim was with No Preference.
+
+**Root cause.** Gun objects outlive the game that loaded them: leaving Test Game only HIDES guns (`gun_freeguns`); they
+are deleted only by `gun_releaseresources`, called only from `gridedit_clear_map` (new / load level). The same holds
+level after level in a standalone game. Guns 'present' in a level are re-run through `gun_load` at each game start
+(`gun_loadonlypresent`), where hudcustom.txt can force a rebuild - but the swimming arms are added mid-game and are never
+present, and `gun_selectandorload` called `gun_load` only when `obj == 0`. So nothing ever rebuilt them. Separately,
+"No Preference" after a set could never force a rebuild at all (the hudcustom.txt test only runs for a non-empty
+choice), so set -> none kept the set even for present guns. **None of this is a DX12 code change**: the whole gun / Lua /
+editor path is identical to DX11 (four readers, function-by-function diff); DX11 has the same latent behaviour, so the
+tester's "worked in DX11" was most likely a fresh session or a level load there. Not verified by running DX11.
+
+**Fix** (G-Gun_part0/2/3.cpp):
+- `g_guns_loadedArms` - the arm set each gun object was BUILT with.
+- `gun_selectandorload` also calls `gun_load` when the gun is in memory but its recorded set differs from this game's.
+- `gun_load` forces a rebuild of a HUD-ORIG weapon in memory whose recorded set differs (both ways, including
+  set -> No Preference); records the set on the early return and after a build.
+- set -> No Preference reuses the gun object `loadgun` holds, whose `LEGACYARMS` an earlier build hid: its mesh
+  visible flag is restored (only the flag - `preparegun` has just hidden the object, and DX12 `ShowLimb` would make the
+  limb renderable on its own; `ShowObject` applies it).
+- a rebuild of an already-loaded gun keeps its stored ammo (`gun_loaddata` zeroes `storeammo/storeclipammo`) and frees its
+  old sounds before reloading them (review); the map is cleared in `gun_releaseresources`.
+
+**Measured after the fix** (DESKTOP RX 9060 XT; final exe `47ec86e9`):
+- One editor session, swimming arms: Female Dark -> Knight Gauntlets -> none -> Female Dark - every step follows,
+  state (`DUMP_GUNARMS built=` = choice, second-object texture = the set, none = LEGACYARMS visible + no second
+  object) and pixels (dark arms / armoured gauntlets / light default arms / dark arms).
+- Tester's set-up (Player Start with a starting weapon): `enhanced\AK` cycling Female Dark -> none -> Knight Gauntlets
+  across Test Games - the AK's arms follow (none = the AK's own fingerless gloves) and so do the swimming arms;
+  `max\Colt` (hud.dat) with Knight Gauntlets then Female Dark - follows.
+- First swim of a fresh session with a set: correct before and after (unchanged).
+
+**Known, NOT changed:** a hud.dat weapon going back to No Preference keeps the last custom arms - its custom build is
+saved as the writable `HUD.dbo` and loading reads the writable copy first (pre-existing, same in DX11). A rebuild with
+no set (`gun_createhud("")`) comes out WHITE (its `resources\base_arms.dbo` references .png textures that do not ship),
+so the only clean revert is deleting that generated cache - left to Lee. Tester-visible: the Colt etc. show the last
+chosen set under No Preference until that writable HUD.dbo is removed.
+
+**Adversarial review** (3 reviewers + 8 verifiers): 1 confirmed, 7 refuted.
+- Confirmed and fixed: a rebuild of a gun already in memory reloads every gun sound under NEW ids (`loadinternalsound` never reuses a slot) and never freed the old ones - each arm-set change orphaned the gun's whole sound set until the process ended. DX11's own set -> set refresh leaked the same way; 3.122 added the none transitions. `gun_freegunsounds` now frees them first (G-Gun_part2.cpp). Measured: the AK's first sound id 16 -> 48 -> 80 across Female Dark -> none -> Female Dark, each old id gone (`RawSoundExist` 0), the new one present; an unchanged set rebuilds nothing (id stays 80).
+- Refuted as pre-existing / unchanged in risk, recorded for Lee: (a) a rebuild re-parses gunspec, so Lua/entity overrides of a CARRIED weapon (damage, clip...) revert when a later standalone level changes the arm set - DX11's rebuild did the same; (b) a third-party HUD-ORIG weapon with gunspec rotx/roty/rotz would get its pivot rotation applied again on each rebuild (the object is reused) - no stock weapon has those fields; (c) the Hands dropdown is hidden when the start weapon is none or legacy, yet a previously chosen set still applies (same in DX11); (d) a later standalone level on No Preference shows HUD-ORIG guns with their own arms while hud.dat weapons keep the custom set - the known hud.dat limitation above.
+- Harness: `SET_ENTITYSCRIPT` now warns when the element is static or empty (its script would never load).
+
+**Files my test runs wrote into the writable area** (`Documents/GameGuruApps/GameGuruMAX/Files/gamecore/guns/`, for Lee to
+remove; none existed before): `max/colt/HUD.dbo` + `hudcustom.txt` (the Colt now loads Female Dark arms under No Preference
+until they are deleted), `aztec/aztecdagger/HUD.dbo` + `hudcustom.txt`, `enhanced/ak/hudcustom.txt`,
+`interactive/swimming/hudcustom.txt`.
+
+Harness (live-only, nothing saved): `SET_PLAYERARMS <set|none>`, `SET_PLAYERWEAPON <gun|none>`,
+`SET_ENTITYSCRIPT <element> [script]`, `DUMP_GUNARMS`. Tools: `arms_probe.sh` (equip via Lua on land),
+`arms_swim_probe.sh` (the real swimming flow), `arms_swim_ab.sh` (several sets in one session),
+`arms_weapon_probe.sh` (start weapon on land -> swim -> back). ⚠ Never judge with Male Light (identical to the
+swimming default) or Combat Gloves Light on an enhanced weapon (identical to its default).

@@ -55,6 +55,7 @@ a new data point, not a regression, until it is compared on the same hardware.
 | Level looks lower quality after a Test Game, or after saving | 3.96 terrain snapshot/restore | read the level's `ggterrain.dat` fields (notes 3.86/3.96 list the LOW/MED signatures) |
 | Post-processing lost when entering Test Game | 3.87 call-site restore (`M-GridEdit_part2.cpp`) | compare `DUMP_POSTFX` in editor vs game |
 | Water reflection shimmer / blur / FPS cost | 3.89–3.91 Water Reflection Size / Blur | ask them to try Size = Auto, Blur = 0 |
+| Player arms wrong set / not changing (weapon or swimming arms) | 3.122 custom arms (`G-Gun_part3.cpp` gun_load, legacy arm trick) | `DUMP_GUNARMS` -> `built=` must equal `customArms`; a hud.dat weapon under No Preference reads the writable HUD.dbo (known, unchanged) |
 | Distant characters frozen, jittering, head/feet out of place | Reduction Scale 3.92/3.93 | `DUMP_ANIMREDUCTION`; ask them to untick Lower Animation |
 | AI idle / "no nav mesh" | 3.100 | `RUN_LUA return RDIsWithinMesh(x,y,z)` at the character's position |
 | Test Game "hang" at 0% CPU | a modal (Lua MessageBox) owns the message pump | [[project-testgame-freeze]] — look for a dialog before a lock |
@@ -89,6 +90,7 @@ a new data point, not a regression, until it is compared on the same hardware.
   `SetFreezePosition(x,y,z)` + `TransportToFreezePosition()` via `RUN_LUA` moves the player - put it 60 u
   above `GetTerrainHeight`, or it falls through.
 - `tools/harness/particle_preview_probe.sh <tag> x0 y0 x1 y1 [neighbour rect]` - with the Particle Library
+- `tools/harness/arms_swim_ab.sh <tag> "<set>" ...` / `arms_weapon_probe.sh <tag> "<gun>" "<set>"` - Player Start arm set / start weapon / the swimming behaviour set LIVE (`SET_PLAYERARMS`, `SET_PLAYERWEAPON`, `SET_ENTITYSCRIPT`), swim, shoot, `DUMP_GUNARMS` (3.122). ⚠ Running them writes hudcustom.txt / HUD.dbo into the writable area.
   open, hover a tile and require five spaced shots to differ (3.110). Works for any live hover preview.
 - Debug views (`SET_TANGENTVIS n`, 0 = off): 2 vertex normal · 3 bumped normal · 1 world tangent ·
   4 handedness · 16 world-position grid · 23 albedo. Exact black in 2/3 = a NaN normal.
@@ -106,4 +108,5 @@ a new data point, not a regression, until it is compared on the same hardware.
 | 4 | 2026-10-11 | Lee | RX 9060 XT | dev build | Level editor > placing a character (Christmas Zombie, TESTPRO2 > testpro2) | for ONE frame as the character is put down its polygons splay out, then it looks fine | no | **fixed, Lee-confirmed** (also: distant characters drew an old pose whenever an object was on the cursor) | 3.107 / `c8e5a62b` (engine `c1f54bd9`) |
 | 5 | 2026-10-11 | Lee | RX 9060 XT | dev build | Test Game > tree shadows (TESTPRO2 > testpro2snow) | backing the camera away from a tree, its shadowing changes and the whole tree pops lighter; tied to Tree Shadow LOD Distance (7000 shows it, 750 moves it closer) | no | **fixed, Lee-confirmed** (options 1 + 3, then 2 as 3.108b - any slider value fades; slider 750..2000, default 2000 as 3.108d: the mesh shadow dissolves with the mesh; honest slider stopping at the preset's reach, "Max") | 3.108 / `81aaba31` + `3bbddd5e` (engine `d1e972a6`) + `81320752` (engine `090ad5c7`) + `013e30d4` (3.108d) |
 | 6 | 2026-10-12 | Lee | RX 9060 XT | dev build | Particle Library (Object Tools > Particles > New Particle) | hovering a particle thumbnail does nothing; DX11 played the effect in it | no | **fixed, Lee-confirmed** (also: opening the Particle Library latched a flag that froze its hover code and killed the Object Library live preview for the session) | 3.110 / `3ca93575` |
+| 7 | 2026-10-17 | pre-alpha tester (via Lee) | - | pre-alpha build | Swimming behaviour + Player Start Hands | "the interactive swimming arms are not loading the selected arm set, only default; worked in DX11" | no | **fixed 3.122** - the arms kept the set the session FIRST built them with (gun objects outlive a game; the mid-game swimming arms were never rebuilt). Same code as DX11 - latent there too. Ask: did they change Hands between Test Games without reloading the level? Which set (Male Light looks identical to the default)? | 3.122 |
 | | | | | | | | | | |

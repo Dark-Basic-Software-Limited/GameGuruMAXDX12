@@ -19,6 +19,7 @@
 #include <vector>
 #include <string>
 #include <algorithm> // std::sort (FIND_OBJECT distance ranking)
+#include <map>       // GGMAX 3.122: DUMP_GUNARMS reads g_guns_loadedArms
 
 // Terrain debug accessor (extern "C" from GGTerrain_part0.cpp)
 extern "C" int GGTerrain_GetDrawDebugInfo(int* drawCount, int* exitReason, int* initFlag, int* drawEn, int* updateEn);
@@ -8220,6 +8221,152 @@ static bool AutoHarness_BulletHoleCommands(const char* cmd, const char* arg, cha
 }
 // deeply") - it is already at the limit, and the error names a line ~2000 further down, so it
 // reads as a problem somewhere else entirely. Every new command goes in a helper from here on.
+// GGMAX 3.122: the custom arms chain ("legacy arm replacement trick", G-Gun_part3.cpp gun_load), link by
+// link - tester report: the interactive swimming arms ignore the arm set chosen on the Player Start marker.
+// Here, not in the else-if chain: one more link there is C1061 (blocks nested too deeply).
+static bool AutoHarness_ArmsCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
+{
+	extern cstr g_guns_customArms_s;
+	extern std::map<int, std::string> g_guns_loadedArms;
+	if (_stricmp(cmd, "SET_PLAYERARMS") == 0)
+	{
+		// SET_PLAYERARMS <arm set folder | none> - the Player Start marker's arm set (eleprof.texaltd_s, what
+		// its hands dropdown writes), set LIVE on every start marker; nothing is saved. Read at the next game
+		// start by gun_activategunsfromentities.
+		cstr want = (arg && arg[0] && _stricmp(arg, "none") != 0) ? cstr((char*)arg) : cstr("");
+		int n = 0; char old[256] = "";
+		for (int e = 1; e <= g.entityelementlist; e++)
+		{
+			const int entid = t.entityelement[e].bankindex;
+			if (entid > 0 && t.entityprofile[entid].ismarker == 1)
+			{
+				if (n == 0) { strncpy(old, t.entityelement[e].eleprof.texaltd_s.Get(), sizeof(old) - 1); old[sizeof(old) - 1] = 0; }
+				t.entityelement[e].eleprof.texaltd_s = want;
+				n++;
+			}
+		}
+		_snprintf(result, resultSize, "OK: SET_PLAYERARMS '%s' on %d start marker(s) (was '%s'); live-only, read at the next game start", want.Get(), n, old);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_PLAYERWEAPON") == 0)
+	{
+		// SET_PLAYERWEAPON <gun path, e.g. enhanced\AK | none> - the Player Start marker's starting weapon
+		// (eleprof.hasweapon_s; G-Entity resolves the index at game start), set LIVE; nothing is saved.
+		cstr want = (arg && arg[0] && _stricmp(arg, "none") != 0) ? cstr((char*)arg) : cstr("");
+		int n = 0; char old[256] = "";
+		for (int e = 1; e <= g.entityelementlist; e++)
+		{
+			const int entid = t.entityelement[e].bankindex;
+			if (entid > 0 && t.entityprofile[entid].ismarker == 1)
+			{
+				if (n == 0) { strncpy(old, t.entityelement[e].eleprof.hasweapon_s.Get(), sizeof(old) - 1); old[sizeof(old) - 1] = 0; }
+				t.entityelement[e].eleprof.hasweapon_s = want;
+				n++;
+			}
+		}
+		_snprintf(result, resultSize, "OK: SET_PLAYERWEAPON '%s' on %d start marker(s) (was '%s'); live-only, read at the next game start", want.Get(), n, old);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_ENTITYSCRIPT") == 0)
+	{
+		// SET_ENTITYSCRIPT <element> <script relative to scriptbank, e.g. global\swimming.lua> - LIVE behaviour
+		// swap on one entity (nothing saved), so a behaviour the level does not carry - the swimming arms -
+		// can run its real flow at the next game start. No script = report the current one.
+		int e = 0; char path[260] = "";
+		const int got = (arg && arg[0]) ? sscanf_s(arg, "%d %259[^\n]", &e, path, (unsigned)sizeof(path)) : 0;
+		if (got < 1 || e < 1 || e > g.entityelementlist)
+			_snprintf(result, resultSize, "ERROR: SET_ENTITYSCRIPT <element 1..%d> [script]", g.entityelementlist);
+		else if (got < 2)
+			_snprintf(result, resultSize, "OK: e%d script '%s'", e, t.entityelement[e].eleprof.aimain_s.Get());
+		else
+		{
+			cstr old = t.entityelement[e].eleprof.aimain_s;
+			t.entityelement[e].eleprof.aimain_s = path;
+			const int bi = t.entityelement[e].bankindex;
+			const bool bLoads = bi > 0 && t.entityelement[e].staticflag == 0;	// lua_scanandloadactivescripts' own test
+			_snprintf(result, resultSize, "OK: e%d script '%s' (was '%s'); live-only, read at the next game start%s", e, path, old.Get(),
+				bLoads ? "" : " - WARNING: static or empty element, its script will NOT load");
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "DUMP_GUNARMS") == 0)
+	{
+		// every loaded gun: its LEGACYARMS limb (hidden when the trick applies) and its secondary arms object
+		// (gunbankextraobjoffset + slot: the chosen arm set's arms.dbo) - existence, visibility, Wicked
+		// renderable state and the base colour texture the material actually carries.
+		wiScene::Scene& sc = wiScene::GetScene();
+		auto texOf = [&](sMesh* m) -> const char* {
+			if (!m) return "-";
+			wiScene::MaterialComponent* mat = sc.materials.GetComponent((wi::ecs::Entity)m->wickedmaterialindex);
+			if (!mat) return "(no mat)";
+			const std::string& nm = mat->textures[wiScene::MaterialComponent::BASECOLORMAP].name;
+			return nm.empty() ? "(none)" : nm.c_str();
+		};
+		int w = _snprintf(result, resultSize, "OK: customArms='%s' gunid=%d gun='%s' currentgunobj=%d markers:",
+			g_guns_customArms_s.Get(), t.gunid, t.gun_s.Get(), t.currentgunobj);
+		for (int e = 1; e <= g.entityelementlist && w > 0 && w < (int)resultSize - 200; e++)
+		{
+			const int entid = t.entityelement[e].bankindex;
+			if (entid > 0 && t.entityprofile[entid].ismarker == 1)
+				w += _snprintf(result + w, resultSize - w, " [e%d '%s']", e, t.entityelement[e].eleprof.texaltd_s.Get());
+		}
+		for (int gid = 1; gid <= g.gunmax && w > 0 && w < (int)resultSize - 600; gid++)
+		{
+			const int obj = t.gun[gid].obj;
+			if (obj <= 0 || ObjectExist(obj) != 1) continue;
+			sObject* p = GetObjectData(obj);
+			int la = -1, laVis = -1, laRend = -1, laObjRend = -1; const char* laTex = "-";
+			for (int f = 0; p && f < p->iFrameCount; f++)
+			{
+				sFrame* fr = p->ppFrameList[f];
+				if (!fr || _stricmp(fr->szName, "LEGACYARMS") != 0) continue;
+				la = f;
+				if (fr->pMesh)
+				{
+					laVis = fr->pMesh->bVisible ? 1 : 0;
+					wiScene::MeshComponent* m = sc.meshes.GetComponent((wi::ecs::Entity)fr->pMesh->wickedmeshindex);
+					laRend = m ? (m->IsRenderable() ? 1 : 0) : -1;
+					laTex = texOf(fr->pMesh);
+				}
+				wiScene::ObjectComponent* oc = sc.objects.GetComponent((wi::ecs::Entity)fr->wickedobjindex);
+				laObjRend = oc ? (oc->IsRenderable() ? 1 : 0) : -1;
+				break;
+			}
+			const int sec = g.gunbankextraobjoffset + (obj - g.gunbankoffset);
+			int sndSlot = -1, sndId = 0;	// the first sound the gun holds - a rebuild must free the old id
+			for (int s = 0; gid < (int)t.gunsound.size() && s <= 15 && sndId == 0; s++)
+				if (t.gunsound[gid][s].soundid1 > 0) { sndSlot = s; sndId = t.gunsound[gid][s].soundid1; }
+			const int secExist = ObjectExist(sec);
+			int secVis = -1, secMeshes = 0, secRend = 0, secFrames = -1; const char* secTex = "-";
+			if (secExist == 1)
+			{
+				sObject* s = GetObjectData(sec);
+				secVis = (s && s->bVisible) ? 1 : 0;
+				secFrames = s ? s->iFrameCount : -1;
+				for (int f = 0; s && f < s->iFrameCount; f++)
+				{
+					sFrame* fr = s->ppFrameList[f];
+					if (!fr || !fr->pMesh) continue;
+					secMeshes++;
+					wiScene::ObjectComponent* oc = sc.objects.GetComponent((wi::ecs::Entity)fr->wickedobjindex);
+					if (oc && oc->IsRenderable()) secRend++;
+					if (secTex[0] == '-') secTex = texOf(fr->pMesh);
+				}
+			}
+			std::map<int, std::string>::const_iterator itB = g_guns_loadedArms.find(gid);
+			w += _snprintf(result + w, resultSize - w, " || gun%d '%s' built='%s' obj=%d vis=%d LEGACYARMS=%d(mesh vis %d rend %d obj rend %d tex '%s') sec=%d exist=%d vis=%d meshes=%d rend=%d frames=%d tex '%s' snd[%d]=%d",
+				gid, t.gun[gid].name_s.Get(), (itB != g_guns_loadedArms.end()) ? itB->second.c_str() : "?", obj, (p && p->bVisible) ? 1 : 0, la, laVis, laRend, laObjRend, laTex,
+				sec, secExist, secVis, secMeshes, secRend, secFrames, secTex, sndSlot, sndId);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	return false;
+}
+
 static bool AutoHarness_SpinCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
 {
 	if (_stricmp(cmd, "MOVE_CAMERA") == 0)
@@ -9146,7 +9293,8 @@ void AutoHarness_CheckForCommand(void)
 		|| AutoHarness_TreeWindCommands(cmd, arg, result, sizeof(result))
 		|| AutoHarness_MouseCommands(cmd, arg, result, sizeof(result))
 		|| AutoHarness_PostFXCommands(cmd, arg, result, sizeof(result))
-		|| AutoHarness_GrassDensityCommands(cmd, arg, result, sizeof(result))) // C1061: share the arm, never add one
+		|| AutoHarness_GrassDensityCommands(cmd, arg, result, sizeof(result))
+		|| AutoHarness_ArmsCommands(cmd, arg, result, sizeof(result))) // C1061: share the arm, never add one
 	{
 		// handled in the helper (see above the dispatch function)
 	}

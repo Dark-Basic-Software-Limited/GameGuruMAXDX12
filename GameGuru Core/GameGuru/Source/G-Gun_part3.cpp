@@ -36,6 +36,17 @@
 		}
 	}
 
+	// GGMAX 3.122: an arm-swap (HUD-ORIG.dbo) weapon already in memory carries the arm set it was BUILT
+	// with in its secondary object. hudcustom.txt cannot tell: it records the last choice written to disk,
+	// not what this object holds - and a choice of 'No Preference' never set bForceRefreshWeapon at all, so
+	// set A -> none kept set A. Rebuild whenever the recorded set differs from this game's (both ways).
+	if (bForceRefreshWeapon == false && t.gun[t.gunid].obj > 0 && FileExist(legacygunfile_s.Get()) == 1)
+	{
+		std::map<int, std::string>::const_iterator itArms = g_guns_loadedArms.find(t.gunid);
+		if (itArms != g_guns_loadedArms.end() && stricmp(itArms->second.c_str(), g_guns_customArms_s.Get()) != 0)
+			bForceRefreshWeapon = true;
+	}
+
 	// do not load gun if already present
 	if (bForceRefreshWeapon == false)
 	{
@@ -44,6 +55,7 @@
 			if (ObjectExist(t.gun[t.gunid].obj) == 1)
 			{
 				// no need to reload
+				g_guns_loadedArms[t.gunid] = g_guns_customArms_s.Get();	// 3.122: nothing to change for this choice
 				return;
 			}
 			else
@@ -53,6 +65,10 @@
 			}
 		}
 	}
+
+	// GGMAX 3.122: rebuilding a gun that is already in memory (an arm set change) - the object id it holds
+	// is reused by loadgun, so this is the last point where obj still says 'it was loaded before'.
+	const bool bRebuildOfLoadedGun = (bForceRefreshWeapon == true && t.gun[t.gunid].obj > 0);
 
 	// the HUD to load
 	t.currentgunfile_s = "gamecore\\";
@@ -191,7 +207,17 @@
 	}
 	if (t.currentgunobj > 0)
 	{
+		// GGMAX 3.122: a rebuild can now happen mid-game (gun_selectandorload, a later level with another
+		// arm set) - keep the ammo the player has stored for this gun, which gun_loaddata zeroes.
+		// (only for a rebuild of a gun already in memory; a first load zeroes as before)
+		const int iKeepStoreAmmo = t.gun[t.gunid].storeammo;
+		const int iKeepStoreClipAmmo = t.gun[t.gunid].storeclipammo;
 		gun_loaddata();
+		if (bRebuildOfLoadedGun == true)
+		{
+			t.gun[t.gunid].storeammo = iKeepStoreAmmo;
+			t.gun[t.gunid].storeclipammo = iKeepStoreClipAmmo;
+		}
 		preparegun(t.gunid, t.currentgunobj);
 	}
 
@@ -258,6 +284,7 @@
 
 	// assign obj to gun ref
 	t.gun[t.gunid].obj=t.currentgunobj;
+	g_guns_loadedArms[t.gunid] = g_guns_customArms_s.Get();	// GGMAX 3.122: the arm set this build used
 	sprintf ( t.szwork , "Load Gun:%s Obj:%i" , t.currentgunfile_s.Get() , t.currentgunobj );
 	timestampactivity(0, t.szwork );
 
@@ -312,6 +339,17 @@
 			{
 				HideLimb(t.currentgunobj, t.c - 1);
 			}
+		}
+		else if (stricmp(t.name_s.Get(), "LEGACYARMS") == NULL)
+		{
+			// GGMAX 3.122: a rebuild back to the artist's own arms (a set -> No Preference) reuses the gun
+			// object loadgun already holds, whose LEGACYARMS an earlier build HID - without this the gun
+			// had no arms at all. Only the mesh flag: preparegun has just hidden the object, and in DX12
+			// ShowLimb would make the limb renderable on its own; ShowObject applies the flag when the gun
+			// is next shown (WickedCall_SetObjectVisible honours pMesh->bVisible).
+			sObject* pArmsObj = GetObjectData(t.currentgunobj);
+			if (pArmsObj && t.c - 1 < pArmsObj->iFrameCount && pArmsObj->ppFrameList[t.c - 1] && pArmsObj->ppFrameList[t.c - 1]->pMesh)
+				pArmsObj->ppFrameList[t.c - 1]->pMesh->bVisible = true;
 		}
 	}
 	g.firemodes[t.gunid][0].settings.flaklimb=t.flaklimb1;
@@ -843,6 +881,11 @@
 	t.gun[t.gunid].secondobj=0;
 
 	//  Load gun sounds and companions
+	// GGMAX 3.122: a rebuild of a gun already in memory reloads every sound below under NEW ids
+	// (loadinternalsound never reuses a slot) - free the ones it holds first, or each arm set change
+	// orphans the gun's whole sound set until the process ends (review find; DX11's set -> set refresh
+	// leaked the same way).
+	if (bRebuildOfLoadedGun == true) gun_freegunsounds(t.gunid);
 	for ( t.p = 0 ; t.p <= 15; t.p++ )
 	{
 		t.tgname_s = t.gunsound[t.gunid][t.p].name_s;
@@ -1159,6 +1202,7 @@ void gun_releaseresources ( void )
 			DeleteObject(iSecObj);
 		}
 	}
+	g_guns_loadedArms.clear();	// GGMAX 3.122: no gun object is left to have been built with anything
 
 	//  reset gunbank
 	for ( t.g = 0; t.g <= g.gunbankmaxlimit; t.g++ )
