@@ -16468,3 +16468,5 @@ Harness: `PERTURB_SCENE <1|0>`; `SET_OBJPREVIEW_LIGHT` 9th argument = particle l
 `studioOwn` (frames the particle + tonemap list bound the studio copy), `cubeAvg`, `plight`; `DUMP_EMITTERS` adds
 `st` (shader type, 3 = lit). Tools: `preview_isolation_probe.sh` + `preview_isolation_measure.py`.
 ⚠ Supersedes 3.110's "Lit WPE particles take the level's lighting, as in DX11" - Lee's request overrides that parity choice.
+
+### LEE-CONFIRMED 3.121, 2026-10-17: "Live preview isolation confirmed working" - the Particle and Object Library live previews no longer change with the level's fog, ambient, sun, sky, wind, Object Detail Distance or Particle Density (per-list frame-CB override + GGObjectPreview_ApplyStudio; studio ambient 0.6). Game `6fddd1d2`, engine `b23777a4`.
