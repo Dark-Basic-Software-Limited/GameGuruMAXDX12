@@ -47,3 +47,4 @@ metadata:
   Hash a stable ENTITY id.
 
 - ★★ **A round trip that reads a value straight after load is not the user round trip** (3.106): the grass palette REWRITES paint_type from its own per-slot flags every frame, and those flags were seeded for 22 of 64 slots - so a correctly loaded selection was cleared the moment the UI opened. My save/reload test passed; the parallel review caught it. Test through the UI that consumes the value.
+- ★★ **A cache whose STORE key differs from its LOOKUP key never hits - and looks like it works** (3.122b loadbrass: stored the .dbo name, looked up the .x name; every load "succeeded" with a fresh object). Found only by a stress test that counted scene objects across N repeats against a no-change control. Count the WORK across repeats, not the result.

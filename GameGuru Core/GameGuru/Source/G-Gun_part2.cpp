@@ -1699,3 +1699,148 @@ static void gun_freegunsounds(int gunid)
 		}
 	}
 }
+
+// GGMAX 3.122b: the custom-arms ("legacy arm replacement trick") pieces of gun_load (G-Gun_part3.cpp, same
+// unity build), shared by a gun's FIRST load and by the ARMS-ONLY refresh of a gun already in memory whose
+// Player Start arm set changed - so the two can never drift apart. The arm set changes nothing else about an
+// arm-swap gun: re-running all of gun_load for it (3.122) re-read gunspec (reverting Lua / entity weapon
+// changes), reloaded its sounds and brass, and re-applied its rotation pivot to the reused object.
+//
+// Build the secondary arms object for gun object iGunObj: delete the old one, then (a set chosen and the gun
+// has HUD-ORIG.dbo) load hands\<set>\arms.dbo textured with the set's arms_color.dds and give it the
+// Legacy<anim>.dbo animation. Returns true when the trick is in use. customArms_s may come back as the
+// fallback set. Uses t.gunid / t.gun_s - the gun being loaded, as in gun_load.
+static bool gun_loadlegacyarms(int iGunObj, cstr& customArms_s, LPSTR pLegacyGunFile)
+{
+	if (iGunObj <= 0) return false;	// (the inline code could LoadObject into object 0 here)
+	const int iGunSecondaryObj = g.gunbankextraobjoffset + (iGunObj - g.gunbankoffset);
+	if (ObjectExist(iGunSecondaryObj) == 1) DeleteObject(iGunSecondaryObj);
+	bool bUsingLegacyArmReplacementTrick = false;
+	if (customArms_s.Len() > 0)
+	{
+		if (FileExist(pLegacyGunFile) == 1)
+		{
+			// load secondary hands 
+			cstr pHands_s = g.fpscrootdir_s + cstr("\\Files\\gamecore\\hands\\") + customArms_s + cstr("\\arms.dbo");
+			if(FileExist(pHands_s.Get())==0)
+			{
+				// player start marker specified hands not exist on this install, so default to legacy ones
+				customArms_s = "Combat Gloves Light";
+				pHands_s = g.fpscrootdir_s + cstr("\\Files\\gamecore\\hands\\") + customArms_s + cstr("\\arms.dbo");
+			}
+			if (FileExist(pHands_s.Get()) == 1)
+			{
+				// load the hands
+				LoadObject(pHands_s.Get(), iGunSecondaryObj);
+
+				// texture these seoncdary arms/hands
+				cstr pCustomArms_s = cstr("gamecore\\hands\\") + customArms_s + cstr("\\arms_color.dds");
+				if (ImageExist(g.weaponstempimageoffset) == 1) DeleteImage(g.weaponstempimageoffset);
+				LoadImage(pCustomArms_s.Get(), g.weaponstempimageoffset);
+				TextureObject(iGunSecondaryObj, g.weaponstempimageoffset);
+
+				// apply correct legacy animations
+				cstr pAbsPathToAnim = g.fpscrootdir_s + cstr("\\Files\\gamecore\\hands\\Animations\\Legacy");
+				char pNoSpacesInGunName[MAX_PATH];
+				strcpy(pNoSpacesInGunName, "");
+				int n2 = 0;
+				LPSTR pGunPathAndName = t.gun_s.Get();
+				for (int n = 0; n < strlen(pGunPathAndName); n++)
+				{
+					if (pGunPathAndName[n] == ' ' || pGunPathAndName[n] == '\\' || pGunPathAndName[n] == '/')
+					{
+					}
+					else
+					{
+						pNoSpacesInGunName[n2++] = pGunPathAndName[n];
+					}
+				}
+				pNoSpacesInGunName[n2] = 0;
+
+				if (t.gun[t.gunid].legacy_animation_s.Len() > 0)
+				{
+					cstr path = pAbsPathToAnim;
+					path += t.gun[t.gunid].legacy_animation_s;
+					path += ".dbo";
+					if (!FileExist(path.Get()))
+					{
+						pAbsPathToAnim += pNoSpacesInGunName;// "EnhancedAK";
+						pAbsPathToAnim += ".dbo";
+					}
+					else
+					{
+						pAbsPathToAnim = path;
+					}
+				}
+				else
+				{
+					pAbsPathToAnim += pNoSpacesInGunName;// "EnhancedAK";
+					pAbsPathToAnim += ".dbo";
+				}
+
+				sObject* pSecondaryObject = GetObjectData(iGunSecondaryObj);
+				if (pSecondaryObject && FileExist(pAbsPathToAnim.Get()))
+				{
+					if (AppendAnimationFromFile(pSecondaryObject, pAbsPathToAnim.Get(), 0) == true)
+					{
+						WickedCall_RefreshObjectAnimations(pSecondaryObject, pSecondaryObject->wickedloaderstateptr);
+					}
+					bUsingLegacyArmReplacementTrick = true;
+				}
+				else
+				{
+					//PE: Anim not there , cant replace arms.
+					if (ObjectExist(iGunSecondaryObj) == 1)
+						DeleteObject(iGunSecondaryObj);
+					bUsingLegacyArmReplacementTrick = false;
+				}
+				if (ObjectExist(iGunSecondaryObj) == 1)
+					HideObject(iGunSecondaryObj);
+			}
+		}
+	}
+	return bUsingLegacyArmReplacementTrick;
+}
+
+// The gun's own LEGACYARMS limb: hidden while the trick supplies the arms, otherwise shown again. A refresh to
+// No Preference reuses the gun object an earlier build hid it on. The mesh flag is what ShowObject honours
+// (WickedCall_SetObjectVisible); DX12 ShowLimb would make the limb renderable even on a hidden gun, so the
+// Wicked limb is only made visible directly when the gun itself is showing.
+static void gun_applylegacyarmslimb(int iGunObj, bool bUsingLegacyArmReplacementTrick)
+{
+	extern void WickedCall_SetLimbVisible(sFrame* pFrame, bool bVisible);
+	if (iGunObj <= 0 || ObjectExist(iGunObj) != 1) return;
+	sObject* pObj = GetObjectData(iGunObj);
+	if (!pObj) return;
+	for (int f = 0; f < pObj->iFrameCount; f++)
+	{
+		sFrame* pFrame = pObj->ppFrameList[f];
+		if (!pFrame || stricmp(pFrame->szName, "LEGACYARMS") != 0) continue;
+		if (bUsingLegacyArmReplacementTrick == true)
+		{
+			HideLimb(iGunObj, f);
+		}
+		else if (pFrame->pMesh && pFrame->pMesh->bVisible == false)
+		{
+			pFrame->pMesh->bVisible = true;
+			if (GetVisible(iGunObj) == 1) WickedCall_SetLimbVisible(pFrame, true);
+		}
+	}
+}
+
+// Attach the secondary arms object the way gun_load attaches the gun: glued to the HUD gun marker, the gun's
+// transparency mode, no Z depth.
+static void gun_attachlegacyarms(int iGunObj)
+{
+	if (iGunObj <= 0) return;
+	const int iGunSecondaryObj = g.gunbankextraobjoffset + (iGunObj - g.gunbankoffset);
+	if (ObjectExist(iGunSecondaryObj) != 1) return;
+	// anim sync did not work as n-core anim system use different read/write values per frame - alas
+	//int iMode = 3; // mode 3 syncs the secondary object to the primary object anim timer with no lag (pass in the animating objID (can be different from obj being glued to)
+	GlueObjectToLimbEx (iGunSecondaryObj, g.hudbankoffset + 2, 0, 0);// t.currentgunobj);
+	if (t.gun[t.gunid].transparency > 2)
+		SetObjectTransparency (iGunSecondaryObj, t.gun[t.gunid].transparency);
+	else
+		SetObjectTransparency (iGunSecondaryObj, 2);
+	DisableObjectZDepth (iGunSecondaryObj);
+}

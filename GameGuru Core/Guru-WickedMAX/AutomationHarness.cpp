@@ -8249,6 +8249,59 @@ static bool AutoHarness_ArmsCommands(const char* cmd, const char* arg, char* res
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "TEST_ARMSLEAK") == 0)
+	{
+		// TEST_ARMSLEAK <arm set> [append 0|1] [refresh 0|1] - the custom-arms secondary object's life, one step at
+		// a time, on a scratch object id: LoadObject(hands\\<set>\\arms.dbo) -> AppendAnimationFromFile
+		// (LegacyInteractiveSwimming) -> WickedCall_RefreshObjectAnimations -> DeleteObject, with the Wicked scene
+		// counts after each. Names the step that leaves entities behind (3.122 stress: +1 object/mesh/material/
+		// armature per arm-set rebuild).
+		extern bool AppendAnimationFromFile(sObject* pObject, LPSTR szFilename, int iFrame);
+		extern void WickedCall_RefreshObjectAnimations(sObject* pObject, void* pstateptr);
+		char set[128] = ""; int doAppend = 1, doRefresh = 1;
+		if (arg && arg[0]) { if (sscanf_s(arg, "%127[^|]|%d|%d", set, (unsigned)sizeof(set), &doAppend, &doRefresh) < 1) set[0] = 0; }
+		const int iTmp = g.gunbankextraobjoffset + 149;
+		wiScene::Scene& sc = wiScene::GetScene();
+		auto snap = [&](char* out, size_t n) {
+			_snprintf(out, n, "obj=%d mesh=%d mat=%d arm=%d xf=%d hier=%d anim=%d", (int)sc.objects.GetCount(), (int)sc.meshes.GetCount(),
+				(int)sc.materials.GetCount(), (int)sc.armatures.GetCount(), (int)sc.transforms.GetCount(), (int)sc.hierarchy.GetCount(), (int)sc.animations.GetCount());
+			out[n - 1] = 0; };
+		if (!set[0] || ObjectExist(iTmp) == 1)
+			_snprintf(result, resultSize, "ERROR: TEST_ARMSLEAK <arm set>|<append 0/1>|<refresh 0/1> (scratch obj %d %s)", iTmp, ObjectExist(iTmp) ? "in use" : "free");
+		else
+		{
+			char s0[160], s1[160], s2[160], s3[160], s4[160];
+			snap(s0, sizeof(s0));
+			cstr arms = g.fpscrootdir_s + cstr("\\Files\\gamecore\\hands\\") + cstr(set) + cstr("\\arms.dbo");
+			LoadObject(arms.Get(), iTmp);
+			sc.Update(0); snap(s1, sizeof(s1));
+			sObject* pO = GetObjectData(iTmp);
+			cstr anim = g.fpscrootdir_s + cstr("\\Files\\gamecore\\hands\\Animations\\LegacyInteractiveSwimming.dbo");
+			bool bApp = false;
+			if (pO && doAppend) bApp = AppendAnimationFromFile(pO, anim.Get(), 0);
+			sc.Update(0); snap(s2, sizeof(s2));
+			if (pO && bApp && doRefresh) WickedCall_RefreshObjectAnimations(pO, pO->wickedloaderstateptr);
+			sc.Update(0); snap(s3, sizeof(s3));
+			if (ObjectExist(iTmp) == 1) DeleteObject(iTmp);
+			sc.Update(0); snap(s4, sizeof(s4));
+			_snprintf(result, resultSize, "OK: TEST_ARMSLEAK '%s' loaded=%d appended=%d | before %s | load %s | append %s | refresh %s | delete %s",
+				set, pO ? 1 : 0, bApp ? 1 : 0, s0, s1, s2, s3, s4);
+		}
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_CUSTOMARMS_LIVE") == 0)
+	{
+		// SET_CUSTOMARMS_LIVE <arm set | none> - writes g_guns_customArms_s itself, mid-game: what the NEXT LEVEL
+		// of a standalone game does at its start (gun_activategunsfromentities), without a level change. Carried
+		// guns then meet a different set on their next selection (gun_selectandorload). Test-only; reverts at the
+		// next game start, which re-reads the Player Start.
+		cstr old = g_guns_customArms_s;
+		g_guns_customArms_s = (arg && arg[0] && _stricmp(arg, "none") != 0) ? cstr((char*)arg) : cstr("");
+		_snprintf(result, resultSize, "OK: SET_CUSTOMARMS_LIVE '%s' (was '%s')", g_guns_customArms_s.Get(), old.Get());
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_PLAYERWEAPON") == 0)
 	{
 		// SET_PLAYERWEAPON <gun path, e.g. enhanced\AK | none> - the Player Start marker's starting weapon
@@ -8305,8 +8358,8 @@ static bool AutoHarness_ArmsCommands(const char* cmd, const char* arg, char* res
 			const std::string& nm = mat->textures[wiScene::MaterialComponent::BASECOLORMAP].name;
 			return nm.empty() ? "(none)" : nm.c_str();
 		};
-		int w = _snprintf(result, resultSize, "OK: customArms='%s' gunid=%d gun='%s' currentgunobj=%d markers:",
-			g_guns_customArms_s.Get(), t.gunid, t.gun_s.Get(), t.currentgunobj);
+		int w = _snprintf(result, resultSize, "OK: customArms='%s' gunid=%d gun='%s' currentgunobj=%d brassbank=%d markers:",
+			g_guns_customArms_s.Get(), t.gunid, t.gun_s.Get(), t.currentgunobj, g.brassbankmax);
 		for (int e = 1; e <= g.entityelementlist && w > 0 && w < (int)resultSize - 200; e++)
 		{
 			const int entid = t.entityelement[e].bankindex;
@@ -8357,9 +8410,10 @@ static bool AutoHarness_ArmsCommands(const char* cmd, const char* arg, char* res
 				}
 			}
 			std::map<int, std::string>::const_iterator itB = g_guns_loadedArms.find(gid);
-			w += _snprintf(result + w, resultSize - w, " || gun%d '%s' built='%s' obj=%d vis=%d LEGACYARMS=%d(mesh vis %d rend %d obj rend %d tex '%s') sec=%d exist=%d vis=%d meshes=%d rend=%d frames=%d tex '%s' snd[%d]=%d",
+			w += _snprintf(result + w, resultSize - w, " || gun%d '%s' built='%s' obj=%d vis=%d LEGACYARMS=%d(mesh vis %d rend %d obj rend %d tex '%s') sec=%d exist=%d vis=%d meshes=%d rend=%d frames=%d tex '%s' snd[%d]=%d brass=%d(exist %d)",
 				gid, t.gun[gid].name_s.Get(), (itB != g_guns_loadedArms.end()) ? itB->second.c_str() : "?", obj, (p && p->bVisible) ? 1 : 0, la, laVis, laRend, laObjRend, laTex,
-				sec, secExist, secVis, secMeshes, secRend, secFrames, secTex, sndSlot, sndId);
+				sec, secExist, secVis, secMeshes, secRend, secFrames, secTex, sndSlot, sndId,
+				g.firemodes[gid][0].settings.brassobjmaster, g.firemodes[gid][0].settings.brassobjmaster > 0 ? ObjectExist(g.firemodes[gid][0].settings.brassobjmaster) : 0);
 		}
 		result[resultSize - 1] = 0;
 		return true;

@@ -16554,3 +16554,65 @@ Harness (live-only, nothing saved): `SET_PLAYERARMS <set|none>`, `SET_PLAYERWEAP
 `arms_swim_probe.sh` (the real swimming flow), `arms_swim_ab.sh` (several sets in one session),
 `arms_weapon_probe.sh` (start weapon on land -> swim -> back). ⚠ Never judge with Male Light (identical to the
 swimming default) or Combat Gloves Light on an enhanced weapon (identical to its default).
+
+### 3.122b The best fix: refresh only the arms, and the brass bank that never cached - 2026-10-17
+
+Lee: "Swimming arms work looks great, before a manual test go deeper to test and make sure you have done the best fix
+you can." Three audits (rebuild side effects, standalone/export/save paths, an arms-only design) + a judge, and new
+stress instruments.
+
+**What a 3.122 rebuild really did.** For an arm-swap (HUD-ORIG) gun the arm set changes exactly two things: the secondary
+arms object and the LEGACYARMS limb. 3.122 re-ran ALL of `gun_load` on the gun object `loadgun` reuses, which also:
+re-read gunspec (`gun_loaddata`) - reverting Lua / entity-property weapon changes on a carried or script-given gun;
+reloaded every gun sound; re-applied a gunspec rotation pivot to the reused object; and re-ran `loadbrass`.
+
+**Measured, old build (21ce87d4 + the 3.122 sound free):**
+- `tools/harness/arms_keepstate_probe.sh`: a script sets the AK's damage to 777, the arm set changes, the AK comes back
+  with damage **40** (gunspec) and new sound ids (312 -> 344 -> 368).
+- `tools/harness/arms_rebuild_stress.sh` (one Test Game; `SET_CUSTOMARMS_LIVE` changes the set mid-game as a standalone
+  game's next level does; swimming arms + AK swapped so both rebuild): set unchanged x12 = flat (no rebuild, no I/O);
+  24 rebuilds = **+24 scene objects / meshes / materials**, +51 GPU resources. Per gun: the swimming arms 0, the AK +2.
+- `TEST_ARMSLEAK` (new): the secondary's own life - LoadObject, AppendAnimationFromFile, RefreshObjectAnimations,
+  DeleteObject - returns every count to where it started. So the leak was not the arms.
+
+**★ The leak: `loadbrass` never cached - in DX11 too.** It looked entries up by the caller's `.x` name but stored the
+`.dbo` name, so every `gun_load` of a brass gun loaded a NEW brass master per fire mode (the AK has two), never freed
+(nothing deletes brass objects; the bank resets only at startup). The bank is 50 object ids (`brassbankoffset` 16250,
+`smokebankoffset` 16300) and `brassbank_s` is Dim'd 100: every level load reloads the guns, so a long session - and much
+faster, arm-set rebuilds - walks brass masters into the smoke bank, then decals. Fixed by keying on the requested name, as
+`loadmuzzle` / `loadsmoke` already do. Brass masters are only an `InstanceObject` source, so one per file is shared safely.
+
+**3.122b (G-Gun_part2/3.cpp):**
+- The first-load custom-arms code is moved verbatim into three helpers - `gun_loadlegacyarms` (build the secondary),
+  `gun_applylegacyarmslimb` (LEGACYARMS hide / restore - mesh flag, Wicked limb only if the gun is showing),
+  `gun_attachlegacyarms` (glue, transparency, no Z) - and the first load calls them at the same points.
+- **Arms-only refresh**: at the top of `gun_load`, an arm-swap gun (HUD-ORIG, no hud.dat) already in memory whose recorded
+  set differs calls only those helpers (+ the new arms' speed/loop), records the set and returns. No gunspec re-read, no
+  sound or brass reload, no second rotation. hud.dat guns keep the full rebuild (their arms are baked into HUD.dbo).
+- `loadbrass` keys on the requested name (above).
+- `gun_loaddata` / `preparegun` run only when the gun object exists (a failed `gun_createhud` left a dead id that
+  `preparegun` dereferenced - now reachable mid-game).
+
+**Measured, 3.122b (final exe `a1706c43`):**
+- keepstate probe: arms Female Dark -> Knight Gauntlets -> none, damage **777 kept**, sound id **16 unchanged**; the AK's
+  own fingerless gloves under none.
+- stress x12 (24 refreshes): objects 1570 / meshes 1186 / materials 971 / GPU resources 5701 - **identical** before,
+  during and after; census MB within 0.4.
+- brass: one bank entry (one distinct brass file), the AK's master object exists, unchanged after firing and after a new
+  game with another set. (Casings in flight are too fast for the harness's screenshots - confirm by eye.)
+- swimming arms one session Female Dark -> Knight Gauntlets -> none -> Female Dark, and enhanced\AK (three sets) +
+  max\Colt as start weapons: state and pixels as 3.122.
+
+**Audit results recorded (not changed):** export / standalone include the interactive swimming gun, every hand set any
+level asks for and `LegacyInteractiveSwimming.dbo` (same as DX11); the swimming behaviour's oxygen-bar image is NOT
+exported (falls back to a dot - unrelated to arms); a gun is never refreshed while it is on screen (gun_change frees it
+first); the swimming arms refresh on the first water entry after a set change (a one-off hitch the size of DX11's first
+swim); a third-party HUD-ORIG + hud.dat weapon with gunspec rotx/roty/rotz still compounds on a hud.dat rebuild (none
+ship); hud.dat + No Preference keeps the last custom set (known, Lee's call); the secondary arms are not in the shot-pick
+exclusion (unverified, both builds).
+
+Harness: `SET_CUSTOMARMS_LIVE <set|none>` (the active set, mid-game), `TEST_ARMSLEAK <set>|<append>|<refresh>`,
+`DUMP_GUNARMS` adds `snd[slot]=id`, `brass=<master>(exist)`, `brassbank=`. Tools: `arms_rebuild_stress.sh`,
+`arms_keepstate_probe.sh`. ⚠ `DUMP_FIRE` writes `Max/firetrace.txt` into the build area (left there for Lee).
+
+**Adversarial review of 3.122b** (2 reviewers + 2 verifiers): no defect in the refresh itself - first load is unchanged by the refactor, the refresh reproduces everything a first load gives the secondary (load, texture, legacy animation, hide, glue, transparency, no Z, speed/loop; the next show animation re-syncs gun and arms), the missing-folder and missing-animation fallbacks behave as a first load, and the brass key fix is safe (masters only feed InstanceObject, are never deleted, per-gun brass settings act on the instances). Two findings: (1) a gun with BOTH hud.dat and HUD-ORIG.dbo (none ship) kept its old secondary under No Preference - now the arms-only path takes that case and a narrowed full rebuild covers it with a set (3.122's result kept); (2) confirmed, pre-existing, unchanged: a hud.dat gun (Colt, lowpoly, aztec, tools) under No Preference keeps the last custom set, in-session and across restarts (the writable HUD.dbo shadows the root one; `gun_createhud("")` builds WHITE arms here) - Lee's call (delete the generated cache, or fix the default-arms build).

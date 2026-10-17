@@ -36,10 +36,36 @@
 		}
 	}
 
-	// GGMAX 3.122: an arm-swap (HUD-ORIG.dbo) weapon already in memory carries the arm set it was BUILT
-	// with in its secondary object. hudcustom.txt cannot tell: it records the last choice written to disk,
-	// not what this object holds - and a choice of 'No Preference' never set bForceRefreshWeapon at all, so
-	// set A -> none kept set A. Rebuild whenever the recorded set differs from this game's (both ways).
+	// GGMAX 3.122b: an arm-swap (HUD-ORIG.dbo, no hud.dat) weapon already in memory carries the arm set it was
+	// BUILT with in its secondary arms object - and that object and the LEGACYARMS limb are ALL an arm set
+	// changes on it. So when the recorded set differs from this game's (either way, No Preference included;
+	// hudcustom.txt cannot see what this object holds), refresh only those, and leave the gun alone: no
+	// gunspec re-read (Lua / entity weapon changes survive), no sound or brass reload, no second rotation of
+	// the reused object. 3.122 re-ran all of gun_load here and did all of those.
+	// (A gun with a hud.dat as well takes this path only for No Preference - with a set, its HUD.dbo must be
+	// rebuilt too, so it falls through to the full rebuild forced below. None ship; this keeps 3.122's result.)
+	if (t.gun[t.gunid].obj > 0 && ObjectExist(t.gun[t.gunid].obj) == 1 && FileExist(legacygunfile_s.Get()) == 1
+		&& (FileExist(pHUDDAT_s.Get()) == 0 || g_guns_customArms_s.Len() == 0))
+	{
+		std::map<int, std::string>::const_iterator itArms = g_guns_loadedArms.find(t.gunid);
+		if (itArms == g_guns_loadedArms.end() || stricmp(itArms->second.c_str(), g_guns_customArms_s.Get()) != 0)
+		{
+			const int iGunObj = t.gun[t.gunid].obj;
+			cstr armsChoice_s = g_guns_customArms_s;
+			const bool bTrick = gun_loadlegacyarms(iGunObj, armsChoice_s, legacygunfile_s.Get());
+			gun_attachlegacyarms(iGunObj);
+			gun_applylegacyarmslimb(iGunObj, bTrick);
+			// the new arms take the speed and loop a first load gives them; the next gun_* animation call
+			// (the show animation that follows this selection) sets gun and arms to the same frame
+			const int iSec = g.gunbankextraobjoffset + (iGunObj - g.gunbankoffset);
+			if (ObjectExist(iSec) == 1) { SetObjectSpeed(iSec, t.genericgunanimspeed_f * 0.75f); LoopObject(iSec); }
+		}
+		g_guns_loadedArms[t.gunid] = g_guns_customArms_s.Get();
+		return;
+	}
+
+	// GGMAX 3.122b: the arm-swap + hud.dat combination with a set chosen (see above) - a full rebuild whenever
+	// its recorded set differs; hudcustom.txt cannot see a set an arms-only refresh removed.
 	if (bForceRefreshWeapon == false && t.gun[t.gunid].obj > 0 && FileExist(legacygunfile_s.Get()) == 1)
 	{
 		std::map<int, std::string>::const_iterator itArms = g_guns_loadedArms.find(t.gunid);
@@ -75,97 +101,8 @@
 	t.currentgunfile_s += g.fpgchuds_s + "\\" + t.gun_s + "\\HUD.dbo";
 	t.currentgunobj = loadgun(t.gunid, t.currentgunfile_s.Get());
 
-	// check if legacy weapon supporting arm swap trick (thanks BOND1!)
-	int iGunSecondaryObj = 0;
-	if (t.currentgunobj > 0)
-	{
-		iGunSecondaryObj = g.gunbankextraobjoffset + (t.currentgunobj - g.gunbankoffset);
-		if (ObjectExist(iGunSecondaryObj) == 1) DeleteObject(iGunSecondaryObj);
-	}
-	bool bUsingLegacyArmReplacementTrick = false;
-	if (customArms_s.Len() > 0)
-	{
-		if (FileExist(legacygunfile_s.Get()) == 1)
-		{
-			// load secondary hands 
-			cstr pHands_s = g.fpscrootdir_s + cstr("\\Files\\gamecore\\hands\\") + customArms_s + cstr("\\arms.dbo");
-			if(FileExist(pHands_s.Get())==0)
-			{
-				// player start marker specified hands not exist on this install, so default to legacy ones
-				customArms_s = "Combat Gloves Light";
-				pHands_s = g.fpscrootdir_s + cstr("\\Files\\gamecore\\hands\\") + customArms_s + cstr("\\arms.dbo");
-			}
-			if (FileExist(pHands_s.Get()) == 1)
-			{
-				// load the hands
-				LoadObject(pHands_s.Get(), iGunSecondaryObj);
-
-				// texture these seoncdary arms/hands
-				cstr pCustomArms_s = cstr("gamecore\\hands\\") + customArms_s + cstr("\\arms_color.dds");
-				if (ImageExist(g.weaponstempimageoffset) == 1) DeleteImage(g.weaponstempimageoffset);
-				LoadImage(pCustomArms_s.Get(), g.weaponstempimageoffset);
-				TextureObject(iGunSecondaryObj, g.weaponstempimageoffset);
-
-				// apply correct legacy animations
-				cstr pAbsPathToAnim = g.fpscrootdir_s + cstr("\\Files\\gamecore\\hands\\Animations\\Legacy");
-				char pNoSpacesInGunName[MAX_PATH];
-				strcpy(pNoSpacesInGunName, "");
-				int n2 = 0;
-				LPSTR pGunPathAndName = t.gun_s.Get();
-				for (int n = 0; n < strlen(pGunPathAndName); n++)
-				{
-					if (pGunPathAndName[n] == ' ' || pGunPathAndName[n] == '\\' || pGunPathAndName[n] == '/')
-					{
-					}
-					else
-					{
-						pNoSpacesInGunName[n2++] = pGunPathAndName[n];
-					}
-				}
-				pNoSpacesInGunName[n2] = 0;
-
-				if (t.gun[t.gunid].legacy_animation_s.Len() > 0)
-				{
-					cstr path = pAbsPathToAnim;
-					path += t.gun[t.gunid].legacy_animation_s;
-					path += ".dbo";
-					if (!FileExist(path.Get()))
-					{
-						pAbsPathToAnim += pNoSpacesInGunName;// "EnhancedAK";
-						pAbsPathToAnim += ".dbo";
-					}
-					else
-					{
-						pAbsPathToAnim = path;
-					}
-				}
-				else
-				{
-					pAbsPathToAnim += pNoSpacesInGunName;// "EnhancedAK";
-					pAbsPathToAnim += ".dbo";
-				}
-
-				sObject* pSecondaryObject = GetObjectData(iGunSecondaryObj);
-				if (pSecondaryObject && FileExist(pAbsPathToAnim.Get()))
-				{
-					if (AppendAnimationFromFile(pSecondaryObject, pAbsPathToAnim.Get(), 0) == true)
-					{
-						WickedCall_RefreshObjectAnimations(pSecondaryObject, pSecondaryObject->wickedloaderstateptr);
-					}
-					bUsingLegacyArmReplacementTrick = true;
-				}
-				else
-				{
-					//PE: Anim not there , cant replace arms.
-					if (ObjectExist(iGunSecondaryObj) == 1)
-						DeleteObject(iGunSecondaryObj);
-					bUsingLegacyArmReplacementTrick = false;
-				}
-				if (ObjectExist(iGunSecondaryObj) == 1)
-					HideObject(iGunSecondaryObj);
-			}
-		}
-	}
+	// check if legacy weapon supporting arm swap trick (thanks BOND1!) - GGMAX 3.122b: gun_loadlegacyarms
+	bool bUsingLegacyArmReplacementTrick = gun_loadlegacyarms(t.currentgunobj, customArms_s, legacygunfile_s.Get());
 
 	// Custom arms system
 	if (t.currentgunobj != 0 && customArms_s.Len() > 0)
@@ -205,9 +142,11 @@
 		WriteString(4, g_guns_customArms_s.Get());
 		CloseFile(4);
 	}
-	if (t.currentgunobj > 0)
+	// (GGMAX 3.122b: and the object must exist - a failed gun_createhud after the DeleteObject above left a dead id,
+	// and preparegun dereferenced it; the ObjectExist test below then drops out cleanly)
+	if (t.currentgunobj > 0 && ObjectExist(t.currentgunobj) == 1)
 	{
-		// GGMAX 3.122: a rebuild can now happen mid-game (gun_selectandorload, a later level with another
+		// GGMAX 3.122: a rebuild of a hud.dat gun in memory (gun_selectandorload, a later level with another
 		// arm set) - keep the ammo the player has stored for this gun, which gun_loaddata zeroes.
 		// (only for a rebuild of a gun already in memory; a first load zeroes as before)
 		const int iKeepStoreAmmo = t.gun[t.gunid].storeammo;
@@ -333,25 +272,8 @@
 				if (t.name_s == tempstring && t.gun[t.gunid].settings.bulletlimbstart + t.p <= g.bulletlimbsmax)  t.bulletlimbs[t.gun[t.gunid].settings.bulletlimbstart + t.p] = t.c - 1;
 			}
 		}
-		if (bUsingLegacyArmReplacementTrick == true)
-		{
-			if (stricmp(t.name_s.Get(), "LEGACYARMS" ) == NULL )
-			{
-				HideLimb(t.currentgunobj, t.c - 1);
-			}
-		}
-		else if (stricmp(t.name_s.Get(), "LEGACYARMS") == NULL)
-		{
-			// GGMAX 3.122: a rebuild back to the artist's own arms (a set -> No Preference) reuses the gun
-			// object loadgun already holds, whose LEGACYARMS an earlier build HID - without this the gun
-			// had no arms at all. Only the mesh flag: preparegun has just hidden the object, and in DX12
-			// ShowLimb would make the limb renderable on its own; ShowObject applies the flag when the gun
-			// is next shown (WickedCall_SetObjectVisible honours pMesh->bVisible).
-			sObject* pArmsObj = GetObjectData(t.currentgunobj);
-			if (pArmsObj && t.c - 1 < pArmsObj->iFrameCount && pArmsObj->ppFrameList[t.c - 1] && pArmsObj->ppFrameList[t.c - 1]->pMesh)
-				pArmsObj->ppFrameList[t.c - 1]->pMesh->bVisible = true;
-		}
 	}
+	gun_applylegacyarmslimb(t.currentgunobj, bUsingLegacyArmReplacementTrick);	// GGMAX 3.122b (G-Gun_part2.cpp)
 	g.firemodes[t.gunid][0].settings.flaklimb=t.flaklimb1;
 	g.firemodes[t.gunid][1].settings.flaklimb=t.flaklimb1;
 
@@ -747,31 +669,20 @@
 	// Glue gun to HUD-Gun-Marker (mode 0 default glue mode)
 	GlueObjectToLimbEx ( t.currentgunobj, g.hudbankoffset+2, 0, 0 );
 
-	// and glue any secondary gun object also
-	if (iGunSecondaryObj > 0)
-	{
-		if (ObjectExist(iGunSecondaryObj) == 1)
-		{
-			// anim sync did not work as n-core anim system use different read/write values per frame - alas
-			//int iMode = 3; // mode 3 syncs the secondary object to the primary object anim timer with no lag (pass in the animating objID (can be different from obj being glued to)
-			GlueObjectToLimbEx (iGunSecondaryObj, g.hudbankoffset + 2, 0, 0);// t.currentgunobj);
-		}
-	}
-
 	//  Setup gun for correct visuals (special transparency for after-shadow setting)
 	if (t.gun[t.gunid].transparency > 2)
 	{
 		SetObjectTransparency (t.currentgunobj, t.gun[t.gunid].transparency);
-		if (iGunSecondaryObj > 0 && ObjectExist(iGunSecondaryObj) == 1) SetObjectTransparency (iGunSecondaryObj, t.gun[t.gunid].transparency);
 	}
 	else
 	{
 		SetObjectTransparency (  t.currentgunobj,2 );
-		if (iGunSecondaryObj > 0 && ObjectExist(iGunSecondaryObj) == 1) SetObjectTransparency (iGunSecondaryObj, 2);
 	}
 
 	DisableObjectZDepth(t.currentgunobj);
-	if (iGunSecondaryObj > 0 && ObjectExist(iGunSecondaryObj) == 1) DisableObjectZDepth (iGunSecondaryObj);
+
+	// and glue any secondary gun object also (GGMAX 3.122b: gun_attachlegacyarms - glue, transparency, no Z)
+	gun_attachlegacyarms(t.currentgunobj);
 
 	//  Setup gun for animation
 	t.currentgunanimspeed_f = (t.genericgunanimspeed_f*0.75);
@@ -1540,7 +1451,13 @@ int loadbrass ( char* tfile_s )
 		{
 			++g.brassbankmax;
 			index=g.brassbankoffset+g.brassbankmax;
-			t.brassbank_s[g.brassbankmax]= cfile;
+			// GGMAX 3.122: key the bank on the name ASKED FOR (as loadmuzzle/loadsmoke do). It stored cfile, the
+			// .dbo name, while every lookup above compares the caller's .x name - so the cache never hit: each
+			// gun_load of a brass gun loaded a fresh master per fire mode, never freed, and from the 26th the
+			// ids ran past the 50-slot brass bank (16250) into the smoke bank (16300). Same in DX11; arm-set
+			// rebuilds (3.122) made it reachable in one session - stress test: +2 objects per enhanced\AK rebuild.
+			// Brass masters are only an InstanceObject source and are never deleted, so sharing one per file is safe.
+			t.brassbank_s[g.brassbankmax]= tfile_s;
 			if ( FileExist(tdbofile_s.Get()) == 1 ) 
 			{
 				strcpy (cfile, tdbofile_s.Get() );
