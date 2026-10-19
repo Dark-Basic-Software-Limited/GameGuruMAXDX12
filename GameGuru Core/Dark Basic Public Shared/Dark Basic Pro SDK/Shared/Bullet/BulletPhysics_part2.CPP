@@ -194,6 +194,7 @@ void ODESetBodyScaling(int iObjectNumber, float fX, float fY, float fZ)
 	//g_dynamicsWorld->updateSingleAabb((btCollisionObject*)pPhyObject->body); resizing live is UNSTABLE
 }
 
+namespace GGTerrain { int GGTerrain_RayCastHeightmapSegment ( float fX, float fY, float fZ, float fToX, float fToY, float fToZ, float* pOut, float* pNorm ); }
 int ODERayTerrain ( float fX, float fY, float fZ, float fToX, float fToY, float fToZ, bool bUpdateDebugObj)
 {
 	// inject tree detection, so can exit early if ray tried to go 'THROUGH' a tree
@@ -202,7 +203,22 @@ int ODERayTerrain ( float fX, float fY, float fZ, float fToX, float fToY, float 
 	{
 		return 1;
 	}
-	return ODERayTerrainEx ( fX, fY, fZ, fToX, fToY, fToZ, COL_TERRAIN, bUpdateDebugObj);
+	int iGround = ODERayTerrainEx ( fX, fY, fZ, fToX, fToY, fToZ, COL_TERRAIN, bUpdateDebugObj);
+	if (iGround == 0)
+	{
+		// the terrain's bodies are made chunk by chunk around the camera as the terrain generates, so a ray under a vehicle
+		// that has outrun them, or just after a teleport, meets no ground; the heightmap answers for the ground then (a
+		// weapon's crosshair ray fell to its full range and aimed rockets 2,600 units under the ground without this)
+		float pOut[3], pNorm[3];
+		if (GGTerrain::GGTerrain_RayCastHeightmapSegment ( fX, fY, fZ, fToX, fToY, fToZ, pOut, pNorm ) == 1)
+		{
+			g_hitObjectNumber = 0;
+			g_hitPointWorld = btVector3 ( pOut[0], pOut[1], pOut[2] );
+			g_hitNormalWorld = btVector3 ( pNorm[0], pNorm[1], pNorm[2] );
+			iGround = 1;
+		}
+	}
+	return iGround;
 }
 
 int ODERayForce ( float fX, float fY, float fZ, float fToX, float fToY, float fToZ, float fForceValue )
