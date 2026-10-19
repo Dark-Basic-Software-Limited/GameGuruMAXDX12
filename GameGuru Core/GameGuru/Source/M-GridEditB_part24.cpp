@@ -355,12 +355,8 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		ImGui::PopItemWidth();
 
 
-		// LOD Multiplier — HIDDEN 2026-07-25: DEAD in DX12. fLODMultiplier is stored/saved but has NO consumer
-		// (full-tree trace: only writes + save/load; the DX11 consumer lived in the closed engine DLL). Wicked
-		// picks LOD by projected SCREEN SIZE, not a global distance multiplier — Scene::ComputeObjectLODForView
-		// does lod = log2(1/maxScreenDim) + object.lod_bias — so this slider can't drive it as-is. Relying on
-		// the DX12/Wicked LOD system for now; re-add only if we introduce a real global lod_bias consumer.
-#if 0
+		// LOD Multiplier: the engine's LOD distance step (wi::scene::gg_lod_step, pushed in MasterRenderer::Update), the
+		// DX11 rule of 200 units a step
 		extern float fLODMultiplier;
 		//ImGui::Text("LOD Multiplier");
 		tab_tab_Column_text("LOD Multiplier", fTabColumnWidth);
@@ -373,7 +369,6 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		}
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Change LOD distance before switching from normal object to LOD");
 		ImGui::PopItemWidth();
-#endif
 
 		extern int g_iUseLODObjects;
 		extern bool bDisableLODLoad;
@@ -384,12 +379,10 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 		if (ImGui::IsItemHovered()) ImGui::SetTooltip("Forces full-detail models by ignoring pre-baked _lod files (debug use, not a performance gain - applies to newly loaded entities only)");
 		(void)g_iUseLODObjects;
 
-		// "* Use Fastest LOD" children — HIDDEN 2026-07-25: ALL DEAD in DX12. bShadowsLowestLOD / bProbesLowestLOD /
-		// bRaycastLowestLOD / bPhysicsLowestLOD / bReflectionsLowestLOD are stored + saved but have ZERO consumers
-		// (verified by full-tree trace; the DX11 consumers lived in the closed engine DLL). Wicked does shadow/
-		// probe/reflection/physics LOD its own way, so these per-category "force lowest LOD" overrides don't map.
-		// The parent "Disable LOD Load" above stays (it's wired). Re-add a child only when a real DX12 consumer exists.
-#if 0
+		// The "* Use Fastest LOD" children: their consumers were GameGuru patches in the old WickedRepo (the mesh draw for
+		// shadows, probes and reflections, the scene pick for rays), and are on this engine now as
+		// wi::renderer::gg_shadow_lowest_lod, gg_probe_lowest_lod, gg_reflection_lowest_lod and
+		// wi::scene::gg_raycast_lowest_lod (pushed in MasterRenderer::Update); physics has its consumer in BulletPhysics.
 		if (g_iUseLODObjects > 0 && !bDisableLODLoad)
 		{
 			extern bool bShadowsLowestLOD;
@@ -445,7 +438,6 @@ bool Graphics_Performance_Settings(float fTabColumnWidth, bool bVisualUpdated)
 			if (ImGui::IsItemHovered()) ImGui::SetTooltip("All reflection rendering is using fastest LOD.");
 			ImGui::PopItemWidth();
 		}
-#endif
 
 		// FSR Mode (FidelityFX Super Resolution)
 		const char* fsr_items_align[] = { "None", "Ultra Quality","Quality", "Balanced", "Performance" };
