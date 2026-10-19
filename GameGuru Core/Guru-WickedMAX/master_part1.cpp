@@ -430,6 +430,9 @@ void GGPerf_TracePumpAccum(unsigned long long us)
 	gg_dbg_pump_us.fetch_add(us, std::memory_order_relaxed);
 }
 
+namespace wi::scene { extern float gg_lod_step; } // the LOD distance step (wiScene.cpp), from the level's LOD Multiplier
+namespace wi::scene { extern int gg_raycast_lowest_lod; } // rays test a mesh with no BVH at its last LOD (wiScene.cpp), Raycast Use Fastest LOD
+
 // Phase 3: Forward declarations for GG custom draw functions (terrain/trees/grass)
 extern "C" void GGTerrain_Draw_Prepass(const wi::primitive::Frustum*, wi::graphics::CommandList);
 extern "C" void GGTerrain_Draw_Prepass_Reflections(const wi::primitive::Frustum*, wi::graphics::CommandList);
@@ -994,6 +997,22 @@ void MasterRenderer::Update(float dt)
 			int rb = t.visuals.iReflectionBlur;
 			if (rb < 0 || rb > 3) rb = 0;   // pre-3.90 levels parse as 0 = off
 			wi::renderer::gg_reflection_blur = rb;
+		}
+
+		// LOD Multiplier -> the engine's LOD distance step (the DX11 rule, 200 units a step), and the "Use Fastest LOD"
+		// flags -> the planar reflection, the rays, the shadows and the probes at the last LOD. The globals are already
+		// kept in step with the visuals (M-GridEditB_part3.cpp), so the quality levels and a saved level set them.
+		{
+			extern float fLODMultiplier;
+			extern bool bReflectionsLowestLOD;
+			extern bool bRaycastLowestLOD;
+			extern bool bShadowsLowestLOD;
+			extern bool bProbesLowestLOD;
+			wi::scene::gg_lod_step = 200.0f * fLODMultiplier;
+			wi::renderer::gg_reflection_lowest_lod = bReflectionsLowestLOD ? 1 : 0;
+			wi::scene::gg_raycast_lowest_lod = bRaycastLowestLOD ? 1 : 0;
+			wi::renderer::gg_shadow_lowest_lod = bShadowsLowestLOD ? 1 : 0;
+			wi::renderer::gg_probe_lowest_lod = bProbesLowestLOD ? 1 : 0;
 		}
 
 		// ★★★ GGMAX 3.34: Super Quick Objects -> which rung of the cut-down opaque shader.
