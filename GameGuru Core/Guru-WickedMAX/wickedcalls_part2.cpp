@@ -942,7 +942,7 @@ void WickedCall_SetObjectPreventAnyApparentOcclusion (sObject* pObject, bool bPr
 				ObjectComponent* object = wiScene::GetScene().objects.GetComponent(pFrame->wickedobjindex);
 				if (object)
 				{
-					//object->SetRenderPreventAnyKindOfCulling(bPreventAnyApparentOcclusion); // REMOVED
+					object->SetApparentCullDisabled(bPreventAnyApparentOcclusion); // the apparent-size cull leaves it in view (ObjectComponent::APPARENT_CULL_DISABLED)
 				}
 			}
 		}
