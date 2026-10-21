@@ -507,6 +507,10 @@ bool WickedCall_SentRay4(float originx, float originy, float originz, float dire
 					if (pHitObject->ppFrameList[iFrame] && pHitObject->ppFrameList[iFrame]->wickedobjindex == hit.entity)
 					{
 						g_iWickedCallRayLimbHit = iFrame;
+						// and for IntersectGetLastHitFrame / IntersectGetLastHitBone
+						extern std::unordered_map<int, sFrame*> lastHitFrame;
+						if (lastHitFrame.size() > 100) lastHitFrame.clear();
+						lastHitFrame[pHitObject->dwObjectNumber] = pHitObject->ppFrameList[iFrame];
 						break;
 					}
 				}
