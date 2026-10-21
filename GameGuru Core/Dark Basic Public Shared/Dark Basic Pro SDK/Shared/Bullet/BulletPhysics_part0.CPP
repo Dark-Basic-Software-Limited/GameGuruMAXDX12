@@ -166,6 +166,8 @@ struct sObjectList
 	float fRaised;
 	btScalar fMass;
 	int iResponseMode;
+	btVector3 vecUnfrozenLinearFactor; // the factors a freeze (ODESetBodyResponse) replaced, put back on unfreeze
+	btVector3 vecUnfrozenAngularFactor;
 };
 std::vector < sObjectList > g_PhyObjectList;
 
