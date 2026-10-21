@@ -2796,6 +2796,14 @@ uint32_t WickedCall_LoadLegacyWPE(const char* filename)
 			}
 		}
 
+		// a .PE sheet's colours were made against its stored values (the DX11 build read the sheets as stored): a colour sheet
+		// stored plain that this engine reads through an sRGB view is put back to them in the particle shader
+		if (const MaterialComponent* sm = scene.materials.GetComponent(Resolve(emEnt[i])))
+		{
+			const wi::Resource& sheet = sm->textures[MaterialComponent::BASECOLORMAP].resource;
+			ec.sheet_stored_values = sheet.IsValid() && sheet.GetTextureSRGBSubresource() >= 0;
+		}
+
 		// GGMAX 2.02: clamp maxParticles - it is a raw uint64 off disk and sizes eleven GPU
 		// buffers plus a synchronous fence-and-recreate. The largest shipped effect requests
 		// 25,000 (downpour/heavy-rain3); 262,144 is ~10x headroom. A corrupt/hostile value
