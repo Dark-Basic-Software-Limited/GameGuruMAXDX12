@@ -1358,10 +1358,12 @@ bool editor_previewmapormultiplayer_loopcode ( int iUseVRTest )
 	return bEndThisLoop;
 }
 
+namespace wi::renderer { void SetParticleScatter(float value); }
 void editor_previewmapormultiplayer_afterloopcode ( int iUseVRTest )
 {
 	// game after loop code
 	game_masterroot_afterloopcode ( iUseVRTest );
+	wi::renderer::SetParticleScatter(0.0f); // a script's particle forward scattering back to off
 
 	t.terrain.skysundirectionx_f = t.terrain.sundirectionx_f;
 	t.terrain.skysundirectiony_f = t.terrain.sundirectiony_f;
