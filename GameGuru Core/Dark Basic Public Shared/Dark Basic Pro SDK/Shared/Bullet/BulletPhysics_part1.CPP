@@ -820,7 +820,7 @@ void CreateMesh ( int iObjectNumber, int isDynamic, int iLimbNumber, int iTerrai
 		pObject = NULL;
 
 	// add physics object details to pbject list
-	ODEAddObject ( iObjectNumber, pObject, body, isDynamic, myMotionState, false, bBouyant, gVertices, gIndices, 1, 1, fFriction, mass );
+	ODEAddObject ( iObjectNumber, pObject, body, isDynamic, myMotionState, false, bBouyant, gVertices, gIndices, 1, 1, fFriction, mass, false ); // placed at the object's origin, not centred
 }
 
 void DeleteallImporters()

@@ -166,6 +166,7 @@ struct sObjectList
 	float fRaised;
 	btScalar fMass;
 	int iResponseMode;
+	bool bCentredOnCollisionBox; // the body sits at the object's collision box centre (box, sphere, cylinder, capsule), not its origin (CreateMesh)
 };
 std::vector < sObjectList > g_PhyObjectList;
 
@@ -177,11 +178,13 @@ void BULLETReceiveCoreDataPtr ( void )
 
 void ODEAddObject ( int iID, sObject* pObject, btRigidBody* body, int iIsDynamic, btDefaultMotionState* myMotionState, 
 	                bool bCapsuleMode = false, bool bBouyant = false, LPVOID pMem1 = NULL, LPVOID pMem2 = NULL,
-	                float fScaled = 1.0f, float fRaised = 1.0f, float fFriction = 90.0f, btScalar fMass = -1.0f )
+	                float fScaled = 1.0f, float fRaised = 1.0f, float fFriction = 90.0f, btScalar fMass = -1.0f,
+	                bool bCentredOnCollisionBox = true )
 {
 	// add object to list
 	sObjectList object;
 	object.iID = iID;
+	object.bCentredOnCollisionBox = bCentredOnCollisionBox;
 
 	object.body = body;
 	if ( iIsDynamic==1 )
@@ -1052,6 +1055,16 @@ void Update(float fTimeStep)
 				float fXOffset = (pObject->collision.vecMin.x * pObject->position.vecScale.x) + (fXSize / 2.0f);
 				float fYOffset = (pObject->collision.vecMin.y * pObject->position.vecScale.y) + (fYSize / 2.0f);
 				float fZOffset = (pObject->collision.vecMin.z * pObject->position.vecScale.z) + (fZSize / 2.0f);
+
+				// a mesh body (CreateMesh: polygon, convex hull, hull decomposition) is built in object space and placed at
+				// the object's origin, not at its collision box centre, so there is no centre to take off; doing so drew it
+				// off its physics by the box centre (a wreck with its origin at the ground sank by half its height)
+				if (!g_PhyObjectList[j].bCentredOnCollisionBox)
+				{
+					fXOffset = 0.0f;
+					fYOffset = 0.0f;
+					fZOffset = 0.0f;
+				}
 
 				if (pObject->pFrame)
 				{
