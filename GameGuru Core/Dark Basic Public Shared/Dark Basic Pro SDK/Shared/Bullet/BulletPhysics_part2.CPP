@@ -7,6 +7,9 @@ void ODESetLinearVelocity ( int iObject, float fX, float fY, float fZ )
 	if ( pPhyObject==NULL ) return;
 	if ( pPhyObject->body==NULL ) return;
 
+	// a frozen body (FreezeEntity) keeps still: its zeroed factors scale forces, not a velocity set directly
+	if ( pPhyObject->iResponseMode > 0 ) return;
+
 	// apply linear velocity
 	physicslock.lock();
 	pPhyObject->body->activate();
@@ -20,6 +23,7 @@ void ODESetLinearVelocityXZWithGravity ( int iObject, float fX, float fZ, float 
 	sObjectList* pPhyObject = ODEFindID ( iObject );
 	if ( pPhyObject==NULL ) return;
 	if ( pPhyObject->body==NULL ) return;
+	if ( pPhyObject->iResponseMode > 0 ) return; // frozen (ODESetLinearVelocity)
 
 	// apply linear velocity for XZ (kinetic but force for gravity)
 	pPhyObject->body->activate();
@@ -64,6 +68,10 @@ void ODESetAngularVelocity (int iObject, float fX, float fY, float fZ)
 	sObjectList* pPhyObject = ODEFindID (iObject);
 	if (pPhyObject == NULL) return;
 	if (pPhyObject->body == NULL) return;
+
+	// a frozen body keeps still (ODESetLinearVelocity): an explosion's random spin turned it about its centre, through
+	// the ground, as its zeroed angular factor let no contact stop it
+	if (pPhyObject->iResponseMode > 0) return;
 
 	// apply linear velocity
 	pPhyObject->body->activate();
@@ -415,6 +423,30 @@ void ODESetBodyResponse ( int iObjectNumber, int iResponseMode )
 	sObjectList* pPhyObject = ODEFindID ( iObjectNumber );
 	if ( pPhyObject )
 	{
+		// a freeze (any mode above 0) also stops the body and zeroes its linear and angular factors, so gravity, hits
+		// and turning cannot move it between steps (zeroing the velocity after each step still let it creep, and mode 2
+		// was never read); unfreezing puts back the factors it had, so a body with locked rotation keeps it
+		if ( pPhyObject->body )
+		{
+			bool bWasFrozen = pPhyObject->iResponseMode > 0;
+			bool bFreeze = iResponseMode > 0;
+			if ( bFreeze && !bWasFrozen )
+			{
+				pPhyObject->vecUnfrozenLinearFactor = pPhyObject->body->getLinearFactor();
+				pPhyObject->vecUnfrozenAngularFactor = pPhyObject->body->getAngularFactor();
+				pPhyObject->body->setLinearFactor ( btVector3 ( 0, 0, 0 ) );
+				pPhyObject->body->setAngularFactor ( btVector3 ( 0, 0, 0 ) );
+				pPhyObject->body->setLinearVelocity ( btVector3 ( 0, 0, 0 ) );
+				pPhyObject->body->setAngularVelocity ( btVector3 ( 0, 0, 0 ) );
+			}
+			if ( !bFreeze && bWasFrozen )
+			{
+				pPhyObject->body->setLinearFactor ( pPhyObject->vecUnfrozenLinearFactor );
+				pPhyObject->body->setAngularFactor ( pPhyObject->vecUnfrozenAngularFactor );
+				pPhyObject->body->activate();
+			}
+		}
+
 		// simply calls setlinearvelocity in physics update each cycle
 		pPhyObject->iResponseMode = iResponseMode;
 	}
