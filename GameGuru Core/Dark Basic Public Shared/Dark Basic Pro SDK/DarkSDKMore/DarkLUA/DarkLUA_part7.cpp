@@ -1307,6 +1307,8 @@ void addFunctions()
 
 	// Lighting
 	lua_register(lua2, "SetExposure", SetExposure);
+	lua_register(lua2, "SetParticleScatter", SetParticleScatter);
+	lua_register(lua2, "GetParticleScatter", GetParticleScatter);
 	lua_register(lua2, "GetExposure", GetExposure);
 
 	lua_register(lua2, "SetLutTo", lua_set_lut);

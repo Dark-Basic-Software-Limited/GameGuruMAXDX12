@@ -35,6 +35,22 @@ int GetSunIntensity(lua_State* L)
 	return 1;
 }
 
+// SetParticleScatter(strength): the sun's forward scattering on lit particles, 0 off (the default), 1 the phase function as
+// it is: a cloud with the sun behind it glows, brightest looking toward the sun through it; back to 0 when a test game ends
+namespace wi::renderer { void SetParticleScatter(float value); float GetParticleScatter(); }
+int SetParticleScatter(lua_State* L)
+{
+	if (LUA_GETTOP(L) < 1) return 0;
+	wi::renderer::SetParticleScatter((float)lua_tonumber(L, 1));
+	return 0;
+}
+// GetParticleScatter(): the strength SetParticleScatter set
+int GetParticleScatter(lua_State* L)
+{
+	lua_pushnumber(L, wi::renderer::GetParticleScatter());
+	return 1;
+}
+
 int SetExposure(lua_State* L)
 {
 	int n = LUA_GETTOP(L);
