@@ -1099,7 +1099,7 @@ void lua_loop_allentities ( void )
 		int thisentid = t.entityelement[t.e].bankindex;
 		// LB210325 - why does "eleprof.spawnatstart==0" allow LUA_main to be called? Not active and not 'spawned at start' meansd no logic until something else spawns it (this caused cloned characters to clone the StartScript they moved into to be their main one, ie attack->patrol then stuck there)
 		// and only allow phyalways to work if spawn at start is not 0 (otherwise the always run logic will apply to entities not spawned in the level)
-		if (thisentid > 0 && (t.entityelement[t.e].active != 0 || t.entityelement[t.e].lua.flagschanged == 2 || (t.entityelement[t.e].eleprof.phyalways != 0 && t.entityelement[t.e].eleprof.spawnatstart != 0)))
+		if (thisentid > 0 && (t.entityelement[t.e].active != 0 || t.entityelement[t.e].lua.flagschanged == 2 || t.entityelement[t.e].lua.flagschanged == 3 || (t.entityelement[t.e].eleprof.phyalways != 0 && t.entityelement[t.e].eleprof.spawnatstart != 0)))
 		{
 			// skip new entities still in spawn activation sequence
 			if (t.entityelement[t.e].lua.flagschanged == 123)
@@ -1204,7 +1204,7 @@ void lua_loop_allentities ( void )
 			// worst. An entity that only got through on phyalways is one that SetEntityAlwaysActive
 			// opted out of the gate - that is what put door.lua top of the list with no door in sight.
 			const bool bInRange   = (t.entityelement[t.e].plrdist < iDistanceForLogicToBeProcessed);
-			const bool bRunsLogic = (bInRange || t.entityelement[t.e].eleprof.phyalways != 0 || t.entityelement[t.e].lua.flagschanged == 2);
+			const bool bRunsLogic = (bInRange || t.entityelement[t.e].eleprof.phyalways != 0 || t.entityelement[t.e].lua.flagschanged == 2 || t.entityelement[t.e].lua.flagschanged == 3);
 			if (gg_logiccost_arm == 1)
 			{
 				gg_logiccost_considered++;
@@ -1357,6 +1357,11 @@ void lua_loop_allentities ( void )
 				{
 					t.entityelement[t.e].lua.flagschanged = 1; // do the update now
 					bSkipLUAScriptEntityRefreshOnly = true;
+				}
+				else if (t.entityelement[t.e].lua.flagschanged == 3)
+				{
+					// a hit changed its health (entity_applydamage): the row now, at any distance, and the script as every frame
+					t.entityelement[t.e].lua.flagschanged = 1;
 				}
 
 				// Update each cycle as entity position, health and GetFrame (  change constantly )
