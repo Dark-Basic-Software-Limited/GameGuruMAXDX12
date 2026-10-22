@@ -1134,10 +1134,15 @@
 					 HideObject(t.entityelement[t.tentitytoselect].attachmentobj);
 					 t.entityelement[t.tentitytoselect].attachmentobj = 0;
 				 }
+				 // its ragdoll goes with it, before the object: left behind, its bodies fall for ever, awake
+				 extern int BPhys_RagdollExist(int ragdollID);
+				 if (BPhys_RagdollExist(t.entityelement[t.tentitytoselect].obj) == 1)
+				 {
+					 t.tphyobj = t.entityelement[t.tentitytoselect].obj; ragdoll_destroy ();
+				 }
 				 entity_deleteentityfrommap();
 				 if (t.entityelement[t.tentitytoselect].ragdollified == 1)
 				 {
-					 //t.tphyobj = t.entityelement[t.tentitytoselect].obj; ragdoll_destroy ();
 					 t.entityelement[t.tentitytoselect].ragdollified = 0;
 				 }
 			 }
@@ -1184,10 +1189,15 @@
 				 HideObject (t.entityelement[t.tentitytoselect].attachmentobj);
 				 t.entityelement[t.tentitytoselect].attachmentobj = 0;
 			 }
+			 // its ragdoll goes with it, before the object: left behind, its bodies fall for ever, awake
+			 extern int BPhys_RagdollExist(int ragdollID);
+			 if (BPhys_RagdollExist(t.entityelement[t.tentitytoselect].obj) == 1)
+			 {
+				 t.tphyobj = t.entityelement[t.tentitytoselect].obj; ragdoll_destroy ();
+			 }
 			 entity_deleteentityfrommap ();
 			 if (t.entityelement[t.tentitytoselect].ragdollified == 1)
 			 {
-				 //t.tphyobj = t.entityelement[t.tentitytoselect].obj; ragdoll_destroy ();
 				 t.entityelement[t.tentitytoselect].ragdollified = 0;
 			 }
 
