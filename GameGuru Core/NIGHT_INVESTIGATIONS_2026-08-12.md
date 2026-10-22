@@ -16712,3 +16712,14 @@ the crafted copy is back in the scratchpad, the writable mapbank holds no Island
 exist (OneDrive may redirect Documents), its size/date (stock is 73,913,735 bytes, md5 1f88a341...), any
 `_automatedbackups\island showdown_*.fpm`, a custom write folder in Preferences; send the file. Renaming it brings
 the stock demo back.
+
+**3.123b `tools/treetypes_scan.py` names the build that last saved a level** (Lee: "add the DX11/DX12 fingerprint").
+DX12 writes per-level `visuals.ini` settings DX11 never writes (absent from DX11 M-Visuals.cpp), and both builds
+rewrite the whole file on every save (DX11 `visuals_save` deletes it first), so the key set belongs to the LAST saver;
+the newest marker present - and the oldest one missing - date the DX12 build: WaterCausticSize 07-19, UnderwaterFog
+07-21, TreeShadowLODDist 07-28, LowVRAM 08-04, TerrainBake / WaterBake / Wateralpha 08-26 (3.25), OcclusionCullDelay /
+SuperQuickLevel 08-28, ReflectionWidth / ReflectionBlur 09-23 (3.89/3.90; so the testers' 09-24 build writes all 11).
+It also prints the whole-file md5 (compare with stock) and reads the invalid tree types: only 38-40 = an old version-2
+tree file relabelled 3; spread wider = damaged data. Checked: Lee's DX12 saves (switch escape copy, DX12TESTLEVEL,
+testpro2) -> DX12, 09-23 or later; testpro2desertlevel2 (saved 09-20) -> "from 08-28, before 09-23"; the stock Island
+Showdown -> DX11; tre_craft copies -> spread 38-63 = damage, `v2sig` -> the old-format signature.

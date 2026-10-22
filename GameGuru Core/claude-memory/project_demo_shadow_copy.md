@@ -25,5 +25,5 @@ was WRONG - corrected in TESTER_TRIAGE §3.
 custom write folder). Before any hub-demo sweep/FPS baseline, check the writable mapbank holds no demo-named .fpm.
 ⚠ Lee's desktop has `switch escape.fpm` there (DX12 save 09-24 01:17, non-stock trees/entities/visuals) - hub
 Switch Escape numbers since 09-24 measured it; reported to Lee 10-22, his to remove.
-Tools: `tools/treetypes_scan.py` (opens the encrypted .fpm, password 'mypassword'), `tools/tre_craft.py`.
+Tools: `tools/treetypes_scan.py` (opens the encrypted .fpm, password 'mypassword'; 3.123b: names the LAST saver from visuals.ini - DX12 writes 11 per-level keys DX11 never does, dated 07-19..09-23 - and reads the bad-type signature), `tools/tre_craft.py`.
 [[project-writable-area]] [[project-trees-phase5]] [[project-measuring-rules]]
