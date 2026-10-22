@@ -1753,6 +1753,9 @@ DARKSDK_DLL int IntersectAllEx ( int iPrimaryStart, int iPrimaryEnd, float fX, f
 			}
 			if (iHitValue != 0 && !bThreadSafe) //PE: Not needed in thread, just ruin the checklist for mainthread.
 			{
+				// 0 - limb struck, not known to the physics ray
+				g_pGlob->checklist[0].valueb = -1;
+
 				// 5 - world space coordinate where the collision struck!
 				g_pGlob->checklist[5].fvaluea = pOutX;
 				g_pGlob->checklist[5].fvalueb = pOutY;
@@ -1858,6 +1861,10 @@ DARKSDK_DLL int IntersectAllEx ( int iPrimaryStart, int iPrimaryEnd, float fX, f
 				}
 				if (iHitValue != 0 && !bThreadSafe)
 				{
+					// 0 - limb struck (read by entity_hasbulletrayhit as the limb hit)
+					extern int g_iWickedCallRayLimbHit;
+					g_pGlob->checklist[0].valueb = (iHitValue > 0) ? g_iWickedCallRayLimbHit : -1;
+
 					// 5 - world space coordinate where the collision struck!
 					g_pGlob->checklist[5].fvaluea = pOutX;
 					g_pGlob->checklist[5].fvalueb = pOutY;
