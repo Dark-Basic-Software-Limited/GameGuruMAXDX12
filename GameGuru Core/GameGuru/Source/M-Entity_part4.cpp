@@ -1282,10 +1282,14 @@ void entity_addentitytomap_core ( void )
 				}
 				UnDim (  t.entityelement );
 				UnDim (  t.entityshadervar );
-				g.entityelementmax +=10;
+				// grow by half (at least 10): each growth copies every element out and back
+				int iOldMax = g.entityelementmax;
+				int iGrowBy = iOldMax / 2;
+				if ( iGrowBy < 10 ) iGrowBy = 10;
+				g.entityelementmax += iGrowBy;
 				Dim (  t.entityelement,g.entityelementmax );
 				Dim2(  t.entityshadervar,g.entityelementmax, g.globalselectedshadermax  );
-				for ( t.e = 1 ; t.e<=  g.entityelementmax-10; t.e++ )
+				for ( t.e = 1 ; t.e<=  iOldMax; t.e++ )
 				{
 					t.entityelement[t.e]=t.storeentityelement[t.e];
 				}
