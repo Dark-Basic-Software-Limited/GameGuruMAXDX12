@@ -1834,6 +1834,7 @@ void Wicked_Update_Visuals(void *voidvisual)
 		master_renderer->setBloomEnabled(visuals->bBloomEnabled);
 		master_renderer->setBloomThreshold(visuals->fsetBloomThreshold);
 		master_renderer->setBloomStrength(visuals->fsetBloomStrength);
+		master_renderer->setBloomBeforeExposure(true); // threshold and cap on the scene's own values, as the DX11 build, so a level blooms the same on both
 		// GGMAX lowvram: SSR off in the 4GB preset — its scratch set (binned_tiles + normals +
 		// roughness + rtSSR + ssrResources) is ~20-25 MB at editor res, and Z Island is the only
 		// hub demo authored with it on. The engine frees everything the frame SSR turns off.
