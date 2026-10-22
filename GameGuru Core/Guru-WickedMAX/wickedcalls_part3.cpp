@@ -3094,6 +3094,20 @@ void GGSetShadowExtrude(int iUnits)
 	wi::renderer::gg_shadow_caster_extrude = (iUnits < 0) ? 0.0f : (float)iUnits;
 }
 
+// GGMAX 3.126: setup.ini `msaoreffar=<units>` -> the engine's MSAO tolerance reference far plane
+// (default 10000 = 254 m; 0 = stock). Live equivalent: harness SET_MSAOREFFAR.
+void GGSetMSAOReferenceFar(int iUnits)
+{
+	wi::renderer::gg_msao_reference_far = (iUnits < 0) ? 0.0f : (float)iUnits;
+}
+
+// GGMAX 3.126b: setup.ini `msaodownsample=<0|1|2>` -> MSAO depth-pyramid pick at depth edges
+// (0 stock, 1 farthest = default, 2 nearest). Live equivalent: harness SET_MSAODOWNSAMPLE.
+void GGSetMSAODownsample(int iMode)
+{
+	if (iMode >= 0 && iMode <= 2) wi::renderer::gg_msao_downsample_mode = (uint32_t)iMode;
+}
+
 // GGMAX 2.52: parallel-for shim for the ImGui DX12 bridge's video YUY2->RGBA convert.
 // Lives here because the bridge cannot include wicked headers without risking include-order
 // conflicts with ImGui/d3d12; wickedcalls already compiles against the full engine.

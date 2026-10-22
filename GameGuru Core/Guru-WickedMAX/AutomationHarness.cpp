@@ -6902,6 +6902,29 @@ static bool AutoHarness_CensusCommands(const char* cmd, const char* arg, char* r
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_MSAOREFFAR") == 0)
+	{
+		// GGMAX 3.126: MSAO edge tolerances as if zFar were <units> when the camera's far is larger
+		// (0 = stock). Live next frame. No argument = report.
+		if (arg && arg[0]) wi::renderer::gg_msao_reference_far = (float)atof(arg);
+		_snprintf(result, resultSize, "OK: SET_MSAOREFFAR - now %.1f (0 = stock MSAO tolerances; camera far %.1f)",
+			wi::renderer::gg_msao_reference_far, wi::scene::GetCamera().zFarP);
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "SET_MSAODOWNSAMPLE") == 0)
+	{
+		// GGMAX 3.126b: MSAO depth-pyramid pick at depth edges - 0 stock, 1 farthest, 2 nearest - and the
+		// relative depth range that counts as an edge. Live next frame. No argument = report.
+		int dsMode = -1; float dsEdge = -1.0f;
+		if (arg && arg[0]) sscanf_s(arg, "%d %f", &dsMode, &dsEdge);
+		if (dsMode >= 0 && dsMode <= 2) wi::renderer::gg_msao_downsample_mode = (uint32_t)dsMode;
+		if (dsEdge >= 0.0f) wi::renderer::gg_msao_downsample_edge = dsEdge;
+		_snprintf(result, resultSize, "OK: SET_MSAODOWNSAMPLE - mode %u (0 stock, 1 farthest, 2 nearest at edges), edge %.3f",
+			wi::renderer::gg_msao_downsample_mode, wi::renderer::gg_msao_downsample_edge);
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_TERRAINSPLATBLEND") == 0)
 	{
 		// GGMAX 3.113: 1 = the terrain compositor AVERAGES GG's splat blend weights (default); 0 = the

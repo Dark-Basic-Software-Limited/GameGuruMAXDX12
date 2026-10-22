@@ -16808,3 +16808,79 @@ ggprecompile.lua (copied once, never refreshed - Common_part2.cpp:810 bFailIfExi
 Game loads (identical md5 today).
 
 ### LEE-CONFIRMED 3.124, 2026-10-22: "Cine Guru error confirmed fixed, works now" - report #9 closed: add-on scripts in the writable area (Cine Guru MAX) load, require and read their files again through the engine Lua hook ggLua_fopenhook -> GG_fopen. Game `3d8b7f03`, engine `940ca136`.
+
+## 3.126 / 3.126b SSAO dark patches on thin railings that swim and pop with the camera - MSAO tuned for a 100 m far plane, and a point-decimated depth pyramid - 2026-10-22
+
+Lee (screenshot, CINEGURUANDSUCHLIKE > CGM_teleport_and_switch glitch): "the SSAO creates those ugly dark patches on the
+railings, that swim constantly when the camera moves; it was not this pronounced in DX11". Then, after 3.126: "much
+better, but in the new camera pose, shift the camera angle Y rotation very slightly and you see large shadow
+distortions" (shots: a dark band across the receding posts appears with a tiny turn) - "DX11 suffered from the same
+issue and the DX12 fix you did made it better so any further improvement is good".
+
+**Not a DX12 difference.** A read-only map of both builds: the Visuals "SSAO" combo is `{Disabled, Enabled}` and Enabled
+is `AO_MSAO` in DX11 and DX12 alike (MiniEngine's multi-scale SSAO); AO Power 1.0 gives the same constants (upstream
+changed what power scales, not its value at 1.0); range/sample count are never set and MSAO ignores them (its radius is
+screen-space, so the 39.37 units/m theory is out); same shaders bar binding syntax, same R8 full-res output, applied
+to indirect light only in both. The editor A/B at Lee's saved pose shows the SAME blotch in DX11 (his DX11 shot), in
+a darker frame (wall 54 vs 68). The barn wall gets NO direct light (SET_TANGENTVIS 17 black) - it is lit by ambient
+only, so AO darkens all of its light.
+
+**Mechanism 1 - the tolerances (3.126).** MSAO's blur and bilateral upsample compare depth normalised by zFar
+against absolute tolerances (upsample: |dz|/zFar vs 1e-7 plus a 1e-3 "noise filter" pseudo-tap of AO 1.0; blur:
+zFar/z deltas against a pixel-sized StepSize), tuned for MiniEngine's ~100 m far plane. GameGuru runs zFar = 500000
+(12.7 km): a railing 1-2 m in front of the wall is inside the noise tolerance, so an unmatched railing pixel took ~98%
+of the WALL's AO and the blur's collinearity test (which squares away the sign) smeared across the posts. Proof by
+lever: the far plane at 4000 instead of 500000 at the same pose removed the patches (AO-buffer dark coverage on the
+railing 77% -> 46%). Fix: `wi::renderer::gg_msao_reference_far` - when zFar > ref, k = zFar/ref and
+kUpsampleTolerance /= k, NoiseFilterStrength *= k, StepSize *= k^2: exactly MSAO at zFar = ref for the blur and
+upsample (reviewers proved it from the shader code and numerically against a native far-4000 run: 0 mismatches),
+without moving the real far plane. The AO term (msaoCS) is a depth ratio and does not depend on zFar.
+
+**Mechanism 2 - the depth pyramid (3.126b).** MSAO builds its coarse levels by POINT decimation: DS2x = the top-left
+texel of each 2x2, DS4x of each 4x4, and so on. A post or gap a few pixels wide is in a coarse level at some camera
+angles and missing at others, and when present the wide-radius coarse AO darkens the wall behind it as if the posts
+were solid - the band that appears with a sub-pixel turn. Fix: `gg_pick_depth` in msao_preparedepthbuffers1/2CS -
+keep the stock texel unless the 2x2's depth range exceeds 10% of its nearest depth (an edge); there take the FARTHEST
+(mode 1). Thin foreground features then thin out of the coarse levels the same way at every angle. DS4x/DS16x pick over
+the thread quad's DS2x/DS8x picks (groupshared g_Pick + one barrier). Smooth blocks keep the stock texel, so planes keep
+their exact half-res twins. Push constant `MSAO_PREPARE {gg_mode, gg_edge}`; mode 0 = stock bit for bit, 2 = nearest
+(measured worse).
+
+**Measured** (harness, editor at Lee's saved poses, exe f2fcfb9d; AO buffer = SET_TANGENTVIS 13):
+- Original pose, railing band dark coverage (<175): stock 90.5% | ref 4000 53.7% (Test Level 74% -> 46%) | 10000 +
+  pick 57.4%. Flat-surface flicker over 6 sub-pixel yaw steps: pixels with std > 4 22% -> 6% (ref 4000).
+- Lee's new pose, circled posts, 20 x 0.05 deg yaw, 16x16 block AO jumps: max 18.9 (stock pick) -> 4.3 (mode 1) /
+  15.9 (mode 2); whole view 14.6 -> 10.0 / 58.6. Mean AO factor 0.684 -> 0.696 (barely lighter overall).
+- Sweep with the pick on (railing dark % | new-pose pop p99/max | far-ground row-stripe index): stock 90.5 | 3.52/6.10
+  | 6.30; pick only 97.3 | 5.32/7.87 | 6.53 (the pick alone is WORSE); 4000 52.2 | 2.77/4.03 | 7.11; **10000 57.4 |
+  2.59/3.89 | 6.71**; 20000 76.2 | 5.06/11.05 | 6.58. Default = 10000 + mode 1.
+- Trade-off (predicted by the review, measured on TESTPRO2 > DX12TESTLEVEL, not saved, md5 63436b4f unchanged): only
+  even pixel rows have an exact half-res twin, so the tighter noise filter lightens every other row of contact AO on
+  grazing ground - faint scanlines in the AO view, from ~20 m at 4000, about half as strong at 10000, barely visible
+  in the shaded frame. AO under grass clumps is somewhat lighter (AO-view mean on the grass field +6%).
+- Same-pose repeats differ by 0.006-0.03 (8-bit levels); every A/B was a same-session toggle (SET_MSAOREFFAR,
+  SET_MSAODOWNSAMPLE).
+
+Reverts: setup.ini `msaoreffar=0` (stock tolerances), `msaodownsample=0` (stock pyramid). Harness SET_MSAOREFFAR
+<units>, SET_MSAODOWNSAMPLE <0|1|2> [edge]. Engine deltas WICKED_ENGINE_CHANGES 3.126 / 3.126b.
+
+Final exe `d52db631`, engine `0d7d74ed`: defaults read back 10000 / mode 1 with no harness overrides, the shots at Lee's pose are clean, Test Level runs.
+
+**Adversarial reviews.** 3.126 (3 reviewers, 4 verifiers): the rescale is exactly MSAO at zFar = ref, proved from
+msao_blurupsampleCS (every upsample weight and the noise term scale by k; CompareDeltas has k^4 on both sides with
+StepSize x k^2) and numerically against a native far-4000 run (0 decision mismatches, max diff 1.5e-13); float range
+safe; only the main camera runs RenderAO; the wiring links. Confirmed trade-off, then measured: the alternate-row
+lightening of grazing-ground AO (only even rows have an exact half-res twin) - which moved the default from 4000 to
+10000. Up close (< 0.78 m) the fp16 tiled depth atlas is denormal at zFar 500000 - a few % of one AO thickness unit,
+there before and after.
+3.126b (3 reviewers, 8 verifiers): no code defect - both added barriers in uniform control flow, g_Pick indexing
+GI+1/+8/+9 inside the group and the right DS2x/DS8x quad, border clamps repeat real texels (no fake edge), mode 0
+bit-exact with stock, atlases get the same value as their level, MSAO_PREPARE 16 bytes on both sides and pushed after
+BindComputeShader with nothing rebinding before Dispatch, sky = 1.0 (picking it at a silhouette leaves the foreground
+pixel to the noise term, i.e. its own AO). Two design trade-offs confirmed, rated low, not measured - known residuals:
+(a) one far texel in a block wins at every level, so a sky pinhole / seam crack / alpha-test speckle can become a
+16x16 'far' texel in DS16x (a ">= 2 of 4 far" rule would resist it - untested); (b) under mode 1 an object is in level
+n only where an aligned n x n block lies wholly inside it, so objects narrower than n drop out of that level and widths
+n..2n-2 depend on alignment - for DS16x that is 16-30 px objects (a thick post or trunk in front of a wall), which stock
+kept at every alignment; thin railings win outright (pop at 0-1 levels instead of up to 4), which is the measured 18.9 ->
+4.3. A true cure for both would be a filtered pyramid or temporal accumulation of the AO.

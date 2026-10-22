@@ -713,6 +713,10 @@ void FPSC_LoadSETUPINI (bool bUseMySystemFolder)
 					t.tryfield_s = "terrainfarreflect"; if (t.field_s == t.tryfield_s) { extern bool gg_terrain_far_reflect; gg_terrain_far_reflect = (t.value1 != 0); }
 					// GGMAX 3.114: fogdx11curve=0 restores the stock engine fog curve. Default 1 = DX11's: haze builds only past the Fog Nearest distance (40000 on a default level), lighter far away than before 3.114.
 					t.tryfield_s = "fogdx11curve"; if (t.field_s == t.tryfield_s) { extern void GGTerrainFar_SetDX11FogCurve(bool on); GGTerrainFar_SetDX11FogCurve(t.value1 != 0); }
+					// GGMAX 3.126: msaoreffar=0 restores stock SSAO (MSAO) edge tolerances - thin railings in front of walls get dark, swimming patches. Default 10000 (254 m).
+					t.tryfield_s = "msaoreffar"; if (t.field_s == t.tryfield_s) { extern void GGSetMSAOReferenceFar(int iUnits); GGSetMSAOReferenceFar(t.value1); }
+					// GGMAX 3.126b: msaodownsample=0 restores stock SSAO depth decimation (thin posts / gaps pop in and out of the coarse AO levels with a sub-pixel turn). Default 1.
+					t.tryfield_s = "msaodownsample"; if (t.field_s == t.tryfield_s) { extern void GGSetMSAODownsample(int iMode); GGSetMSAODownsample((int)t.value1); }
 					t.tryfield_s = "terrainsplatblend"; if (t.field_s == t.tryfield_s) { extern void GGTerrainWicked_SetSplatBlendFlag(bool on); GGTerrainWicked_SetSplatBlendFlag(t.value1 != 0); }
 					t.tryfield_s = "terrainbakeres"; if (t.field_s == t.tryfield_s) { extern int gg_terrain_bake_res; if (t.value1 >= 32 && t.value1 <= 8192) gg_terrain_bake_res = t.value1; }
 					t.tryfield_s = "terrainbakeresnear"; if (t.field_s == t.tryfield_s) { extern int gg_terrain_bake_res_near; if (t.value1 >= 32 && t.value1 <= 8192) gg_terrain_bake_res_near = t.value1; }
