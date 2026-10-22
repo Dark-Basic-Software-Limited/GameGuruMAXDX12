@@ -653,8 +653,9 @@ void game_masterroot_initcode(int iUseVRTest)
 	}
 	g_iActivelyUsingVRNow = iUseVRTest;
 
-	// titlesbank/gamedata.lua writes savegames\gameslotN.dat relative to the Files CWD;
-	// without this folder io.open returns nil and every checkpoint save throws a LUA ERROR
+	// GGMAX 3.124: Lua's io.open goes through GG_fopen again (DarkLUA_part7.cpp), which creates savegames\ in
+	// the writable area on the first write, as DX11 did. This install-folder copy is only the fallback for when
+	// that creation fails (a UNC custom write folder, Controlled Folder Access): GG_fopen then opens the install path
 	if ( PathExist("savegames") == 0 ) MakeDirectory("savegames");
 
 	//  Load all one-off non-graphics assets

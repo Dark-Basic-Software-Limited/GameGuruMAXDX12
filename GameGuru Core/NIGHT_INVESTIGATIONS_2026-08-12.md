@@ -16723,3 +16723,86 @@ It also prints the whole-file md5 (compare with stock) and reads the invalid tre
 tree file relabelled 3; spread wider = damaged data. Checked: Lee's DX12 saves (switch escape copy, DX12TESTLEVEL,
 testpro2) -> DX12, 09-23 or later; testpro2desertlevel2 (saved 09-20) -> "from 08-28, before 09-23"; the stock Island
 Showdown -> DX11; tre_craft copies -> spread 38-63 = damage, `v2sig` -> the old-format signature.
+
+## 3.124 "LUA ERROR! cannot open scriptbank\Cine Guru MAX\cg_actor.lua" - the engine's Lua never looked in the writable area - 2026-10-22
+
+Lee relayed a screenshot: Test Level on CINEGURUANDSUCHLIKE > CGM_teleport_and_switch glitch shows the modal
+*"LUA ERROR! cannot open scriptbank\Cine Guru MAX\cg_actor.lua: No such file or directory"* over "Loading decal 1 of
+27". Lee: "it IS there and it works fine in DX11."
+
+**Cause.** "Cine Guru MAX" is an add-on pack and lives in the per-user writable area,
+`Documents\GameGuruApps\GameGuruMAX\Files\scriptbank\Cine Guru MAX\` (20 .lua files plus the .txt scene files they
+read); the install Files\scriptbank has no such folder. The entity-script loader checks the file with `FileExist`
+(M-LUA.cpp:125 -> GG_FileExists -> GG_GetRealPath, writable area first) - that passes - and then calls `LoadLua` ->
+`luaL_dofile` with the RELATIVE name. DX11 compiled its own Lua 5.2 (`DarkLUA\lua`) with every open-by-name patched
+to `GG_fopen`: lauxlib.c:643 (luaL_loadfilex = every LoadLua, dofile, loadfile), liolib.c:222/234 (opencheck =
+io.lines / io.input / io.output with a name, and io.open), loadlib.c:334 (readable = require's searchpath). The DX12
+port dropped that Lua for the engine's Lua 5.4.8 (`WickedEngine\LUA` - the 3.40 atan2 / 3.48 bit32 story), where all
+four are plain `fopen` relative to the CWD, the install Files folder. So the first writable-only script fails with
+errfile's "cannot open %s". Every later step of the pack would have failed the same way: 16 Cine Guru files
+`require "scriptbank\\Cine Guru MAX\\cg_lib"` (writable only), and cg_actor reads its scene with io.open / io.lines
+(on failure it SILENTLY sets the actor's state to 'no file'). A file-by-file sweep of every DX11 GG_fopen /
+GG_GetRealPath call found Lua the only vendored library that lost its redirect.
+
+**Same root cause, not reported yet (sweep):**
+- User-made Behavior Editor behaviours: the editor writes `scriptbank\user\<name>.lua` / `.byc` into the writable
+  area (M-GridEditB_part9.cpp:5962-5964, part2.cpp:1938-1946), so a new behaviour failed at Test Level with the same
+  box, and re-saving a stock behaviour's .byc was silently ignored (masterinterpreter.lua:2896 opens it with io.open).
+- Lua-written saves: titlesbank/gamedata.lua writes `savegames\gameslotN.dat` with io.open "w". DX11 put them in
+  Documents (GG_fopen creates in the writable area); DX12 wrote them into the install Files\savegames (failing on a
+  read-only install), while C++ Load Game reads through GG_fopen, writable area first.
+
+**3.124:**
+- Engine (WICKED_ENGINE_CHANGES 3.124, engine `940ca136`): `ggLua_fopenhook` (lauxlib.h/.c, NULL default = stock
+  fopen) and `ggLua_fopen()`; the four DX11 sites call it. The binary-chunk reopen (`freopen(filename, "rb")`, the
+  relative name again) becomes fclose + hook "rb" while the hook is set. That goes beyond DX11, which left it plain,
+  and it is reached by every standalone exported with `exportassets=0` (the default: EncryptAllFiles precompiles every
+  .lua to bytecode); in a standalone the writable area is the exe folder, so it resolves to the same file.
+- Game: `GGLua_InstallCompatShim` (DarkLUA_part7.cpp; runs before the first script of every Lua state) sets
+  `ggLua_fopenhook = GG_fopen`. Reads look in the writable area (custom write folder, then Documents), then the
+  install copy; writes land in the writable area - exactly DX11.
+- M-Game_part2.cpp: the 08-05 workaround `MakeDirectory("savegames")` relative to the CWD stays, comment corrected:
+  GG_GetRealPath now creates savegames\ in the writable area on the first write, and the install copy is only the
+  fallback for when that creation fails (a UNC custom write folder, Controlled Folder Access - GG_fopen then opens
+  the install path).
+
+**Measured:**
+- Before (exe `7fe2f8e0`): harness OPEN_PROJECT CINEGURUANDSUCHLIKE -> CLICK_NODE -> CLICK test_level: the exact box
+  (screenshot), the harness unresponsive, process CPU flat (108.6 -> 110.4 s over 220 s).
+- After (exe `b4169ca8`; every check below re-run on the final `67a296c4`): `STATE: game` for 100 s, CPU climbing, no dialog. RUN_LUA in the live
+  game: cg_lib is in package.loaded; io.open / io.lines of the writable-only action1.txt = 470 bytes / 10 lines;
+  dofile / loadfile of writable-only scripts work; a missing file -> nil; the stock scriptbank\utillib.lua still opens
+  (install fallback); the one Cine Guru actor (entity 2, switchexample.txt) reached state 'ready' (its scene file was
+  read). A Lua `io.open(..., "wb")` of a string.dump chunk landed in Documents\...\Files\scriptbank, not the install
+  folder, and `dofile` of it returned 3124 - the binary reopen through the hook (DX11's plain freopen would have
+  failed with "cannot reopen"). That test file was moved to the scratchpad.
+- Not driven: a Behavior Editor behaviour (it would write into Lee's Documents), Export Game with exportassets=0
+  (untested since 08-16; needs a setup.ini change), a real save / load round trip.
+
+**Unchanged on purpose (DX11 parity):** os.remove / os.rename / package.loadlib / C modules stay plain (DX11 never
+patched them; no script uses them). Every Lua open is now writable-area first, so a stale same-name script in
+Documents\...\Files\scriptbank or titlesbank overrides the install one, as in DX11 (none on this machine: the only
+same-name files in Documents are 6 skyspec.txt, which C++ already reads writable-first). Titles themes are still
+listed from the install folder only (DX11 too). Cine Guru's .txt scene files are not collected by Export Game (only
+`require` / `Include` are followed - DX11 too).
+
+**Found in passing, not this change:** the live Wicked terrain materials (GGTerrainWicked.cpp:773-788,
+GGTerrainFar.cpp:276-287) build `<exe>/Files/terraintextures/mat%d/...` paths and never read a custom terrain
+texture folder (DX11's GGTerrain_ReloadTextures did, Documents included); custom grass slots build
+`<exe>/Files/<relpath>`, so a DDS picked from Documents becomes `<exe>/Files/C:\...`. Both fail silently; separate
+items.
+
+**Adversarial review** (3 reviewers, 4 verifiers; plus a read-only sweep of 3 + critic before it): engine C correct
+(errno always from GG_fopen's final fopen; fclose + hook "rb" has freopen's ownership, no double close, stdin
+untouched; the header declarations get C linkage in every includer; no other Lua compiled into the game); the hook is
+set before every Lua file open in every mode (only two lua_State creators, both call the shim first); GG_fopen /
+GG_GetRealPath byte-identical to DX11. Confirmed and fixed: (1) the WICKED_ENGINE_CHANGES row (below) - an upstream
+LUA refresh that replaces liolib.c / loadlib.c but keeps lauxlib.h still LINKS and silently half-reverts this;
+(2) removing the savegames line lost the fallback above - restored. Refuted by measurement: "a too-long Lua path now
+terminates the process (strcat_s overflow in a 260-byte buffer)" - `preprocessor-moreflags.h` redefines MAX_PATH to
+1050, so GG_fopen's buffers are 1050 bytes; a 304-character io.open / dofile in the live game returned nil / false
+with "No such file or directory" and the process lived (same limit as DX11). A length guard written for it was
+removed again. Notes for later: stale pre-3.124 level-state files in an install Files\savegames are only cleaned when
+no Documents copy exists (M-LUA.cpp:320-334 deletes the one path GG_GetRealPath resolves); the Documents-root
+ggprecompile.lua (copied once, never refreshed - Common_part2.cpp:810 bFailIfExists=TRUE) is now the one Export
+Game loads (identical md5 today).

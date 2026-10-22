@@ -24,9 +24,21 @@
 // bit32.band at FILE SCOPE while gameplayercontrol.lua requires it and is added to EVERY level.
 // Only an UNTRACKED hand edit in the deploy tree was masking it. mod/pow/log10/unpack are the
 // rest of what LUA_COMPAT_MATHLIB would have restored, and cost nothing to carry.
+//
+// GGMAX 3.124: DX11's own Lua 5.2 (DarkLUA\lua) opened every file by name through GG_fopen -
+// luaL_loadfilex (every LoadLua, dofile, loadfile), io.open, io.lines/input/output and require's
+// searchpath - so a script that lives only in the writable area (Documents\GameGuruApps\
+// GameGuruMAX\Files, where add-on packs such as "Cine Guru MAX" install) was found. The engine's
+// Lua 5.4.8 used plain fopen relative to the install Files folder: "cannot open scriptbank\Cine
+// Guru MAX\cg_actor.lua: No such file or directory" on Test Level. The engine's Lua now calls
+// ggLua_fopenhook when it is set (WICKED_ENGINE_CHANGES 3.124); setting it here, before any script
+// runs, restores the DX11 lookup - writable area first, then the install copy, and writes ('w'/'a')
+// land in the writable area as they did in DX11.
+extern "C" FILE* GG_fopen( const char* filename, const char* mode );
 static void GGLua_InstallCompatShim(lua_State* L)
 {
 	if (!L) return;
+	ggLua_fopenhook = GG_fopen;
 	// one line: Lua separates statements with whitespace, so no newline escapes are needed
 	const char* shim =
 		"if math then "
