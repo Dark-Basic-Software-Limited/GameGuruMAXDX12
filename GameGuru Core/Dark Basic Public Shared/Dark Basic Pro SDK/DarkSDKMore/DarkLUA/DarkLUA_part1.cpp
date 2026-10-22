@@ -1107,7 +1107,8 @@
 	 for (int i = 0; i < vSpawnList.size(); i++)
 	 {
 		 int iEntityIndex = vSpawnList[i];
-		 if (iEntityIndex > t.storedentityelementlist && iEntityIndex < t.entityelement.size())
+		 // or a clone spawned into a free element inside the level's list (entity_addentitytomap reuses the first free one)
+		 if (iEntityIndex > 0 && iEntityIndex < t.entityelement.size() && (iEntityIndex > t.storedentityelementlist || t.entityelement[iEntityIndex].iWasSpawnedInGame > 0))
 		 {
 			 // was created at run-time, can delete
 			 t.tentitytoselect = iEntityIndex;
@@ -1135,6 +1136,7 @@
 					 t.entityelement[t.tentitytoselect].attachmentobj = 0;
 				 }
 				 entity_deleteentityfrommap();
+				 t.entityelement[t.tentitytoselect].iWasSpawnedInGame = 0;
 				 if (t.entityelement[t.tentitytoselect].ragdollified == 1)
 				 {
 					 //t.tphyobj = t.entityelement[t.tentitytoselect].obj; ragdoll_destroy ();
@@ -1157,7 +1159,8 @@
 	 int iEntityIndex = lua_tonumber(L, 1);
 	 if (iEntityIndex > 0)
 	 {
-		 if (iEntityIndex > t.storedentityelementlist)
+		 // or a clone spawned into a free element inside the level's list (entity_addentitytomap reuses the first free one)
+		 if (iEntityIndex > t.storedentityelementlist || (iEntityIndex < t.entityelement.size() && t.entityelement[iEntityIndex].iWasSpawnedInGame > 0))
 		 {
 			 // was created at run-time, can delete
 			 int storee = t.e;
@@ -1185,6 +1188,7 @@
 				 t.entityelement[t.tentitytoselect].attachmentobj = 0;
 			 }
 			 entity_deleteentityfrommap ();
+			 t.entityelement[t.tentitytoselect].iWasSpawnedInGame = 0;
 			 if (t.entityelement[t.tentitytoselect].ragdollified == 1)
 			 {
 				 //t.tphyobj = t.entityelement[t.tentitytoselect].obj; ragdoll_destroy ();
