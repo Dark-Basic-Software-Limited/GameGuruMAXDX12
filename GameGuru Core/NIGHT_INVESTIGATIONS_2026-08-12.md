@@ -16618,3 +16618,97 @@ Harness: `SET_CUSTOMARMS_LIVE <set|none>` (the active set, mid-game), `TEST_ARMS
 **Adversarial review of 3.122b** (2 reviewers + 2 verifiers): no defect in the refresh itself - first load is unchanged by the refactor, the refresh reproduces everything a first load gives the secondary (load, texture, legacy animation, hide, glue, transparency, no Z, speed/loop; the next show animation re-syncs gun and arms), the missing-folder and missing-animation fallbacks behave as a first load, and the brass key fix is safe (masters only feed InstanceObject, are never deleted, per-gun brass settings act on the instances). Two findings: (1) a gun with BOTH hud.dat and HUD-ORIG.dbo (none ship) kept its old secondary under No Preference - now the arms-only path takes that case and a narrowed full rebuild covers it with a set (3.122's result kept); (2) confirmed, pre-existing, unchanged: a hud.dat gun (Colt, lowpoly, aztec, tools) under No Preference keeps the last custom set, in-session and across restarts (the writable HUD.dbo shadows the root one; `gun_createhud("")` builds WHITE arms here) - Lee's call (delete the generated cache, or fix the default-arms build).
 
 ### LEE-CONFIRMED 3.122 + 3.122b, 2026-10-18: "Swimming arms confirmed working" - tester report #7 closed: the interactive swimming arms (and arm-swap start weapons) follow the Player Start Hands set at every game start; an arm change refreshes only the arms; loadbrass caches. Game `21ce87d4` (3.122) + `1f81e55e` (3.122b).
+
+## 3.123 Tester report #8: "TREE TYPES DROPPED" over the Island Showdown demo - a false warning, and a saved copy shadowing a read-only demo - 2026-10-22
+
+Lee relayed a screenshot: loading Island Showdown from the hub demo storyboard (title "Island Showdown (read only)")
+showed a modal *"TREE TYPES DROPPED: 15015 tree instances use palette types >= 38 (custom tree slots not ported to
+DX12) and will not render"*. Lee and the other testers never see it. Lee: "I suspect the user has saved a modified
+version of this level... even if this was the case, I do not want this error causing users grief."
+
+**The message was ours, and its premise was false.** It came from DX12 commit `72b2de27` (07-17, "Step 0
+instrument-trust"), in `GGTrees_SetData` (GGTrees_part0.cpp), suppressed only under the harness - so no sweep ever
+showed it. Its claim "custom tree slots not ported" rested on an analogy with GRASS (which does have per-level custom
+slots) and on the `numTreeTypes = 64` in DX11's M-TerrainNew.cpp, which is only the size of four UI arrays. In
+fact DX11 has exactly **38 compiled-in tree types** (`TreeMeshes/TreeMeshesLOD0.h` `g_GGTreesLOD0[38]`,
+`GGTreesConstants.hlsli` 38, `GGTrees_GetNumTypes()` 38; the Steam build ships 76 billboard files = 38 x 2); no
+editor path in either build can write a type >= 38 (`SetType` refuses it, every paint loop is bounded by 38), the
+`.tre` stores only a 6-bit id, and **DX11 hides those trees on load SILENTLY** (`GGTrees.cpp:1664`). The forest a
+user saw was identical in both builds; only DX12 added a modal - on every load of such a level, in the editor, in
+Test Game, and in Play Game / standalone games too (the same `GGTrees_SetData`), where a modal behind the game
+window reads as a 0% CPU hang (the 09-16 lesson).
+
+**Why this tester, and not Lee.** A read-only demo is read-only only for its STORYBOARD: `load_storyboard` sets
+`project_readonly` from where `projectbank\<demo>\project.dat` was found, nothing else. The level node is the
+relative path `mapbank\island showdown.fpm`, opened through `GG_fopen` -> `GG_GetRealPath`, which checks the
+writable area **first** (custom write folder, then `Documents\GameGuruApps\GameGuruMAX\Files\mapbank\`) and only
+then the install copy. Level Save has no read-only guard (only the storyboard save checks it) and always writes the
+writable copy - so one Save (or one "Yes" to "save first?") on a demo level shadows that demo from then on, in
+DX12 and in DX11 Steam MAX alike (same exe name, same writable folder, byte-identical `GG_GetRealPath`). Lee has no
+writable `island showdown.fpm`; the stock level is clean everywhere (build area, Steam incl. DLC levels, all of
+Lee's saved levels: 0 visible trees with type >= 38; tools/treetypes_scan.py). So the tester is loading **their
+own saved copy**, and its tree data holds 15015 visible ids no MAX save produces (a load+save in either build writes
+them hidden) - most likely an old version-2 `.tre` relabelled 3 at load (the scale's low bit becomes the type's top
+bit: dropped types only 38-40) or a corrupt one (spread 38-63). Their file decides it.
+
+★ **Correction - 3.101 was wrong.** Its tester note said a tester who edits a demo and reopens it "gets the ORIGINAL
+back". Measured today: with a copy in the writable mapbank, the read-only demo loads THE COPY (below). TESTER_TRIAGE
+§3 corrected. **And Lee's own machine has one:** `Documents\GameGuruApps\GameGuruMAX\Files\mapbank\switch escape.fpm`
+(+ `.lst`, DX12 save 09-24 01:17, during the 3.96/3.101 night) - so "Switch Escape (read only)" on the desktop has
+loaded that copy, not the stock level, since 09-24 (it differs in trees, entities, cfg, ggterrain.dat, visuals.ini;
+terrain fields are the shipped values, not LOW). Every hub-demo Switch Escape sweep / FPS figure since 09-24
+measured it. Left in place for Lee.
+
+**3.123 (GGTrees_part0/1.cpp, GGTrees.h):**
+- `GGTrees_SetData`: the hide stays (DX11 parity); the MessageBox is gone - one `timestampactivity` line ("TREE
+  DATA: N visible tree instances have an invalid type (>= 38) and were hidden, as DX11 does"). The count is kept for
+  the harness (`GGTrees_GetLastLoadInvalidTypeTrees()`), cleared on entry and by `GGTrees_HideAll`. The file's
+  type bits are never copied in, so `pAllTrees` never holds a type >= 38.
+- The tree-paint UNDO (`eUndoSys_Terrain_PaintTree`, a raw memcpy of all 400000 records from the undo memory - the
+  ONE path that bypasses `SetType`) now hides and clears any record whose type is >= 38. `TreeChunk::Update`
+  indexes `g_GGTrees[type]` for every instance, visible or not, with no bound.
+- `GGTrees_GetData` never writes a VISIBLE record with type >= 38, so no DX12 save can produce the tester's file.
+- Not changed: the DX11-original modals in the same function (format older than v2 / newer than v3 /
+  unrecognised) and ENTITY LOAD SKIPPED (fires only for a level newer than DX11's own v342).
+
+**Measured (exe `e2cbcba1`, before the review fixes; re-run on the final exe below):**
+- `tools/tre_craft.py` wrote a ZipCrypto copy of the stock Island Showdown with 15015 visible trees retyped 38..63
+  (the engine applies the password to every entry, so an unencrypted repack would not load). Copied to the writable
+  mapbank: the read-only demo loads it - `GET_TREE_LOADSTATS`: `dropped=15015 saved_visible=52813 saved_badtype=0
+  readonly=1 fpm=C:\Users\leeba\Documents\GameGuruApps\GameGuruMAX\Files\mapbank\island showdown.fpm`; editor and
+  Test Game run, no dialog (the exe no longer contains the string). Copy moved back out (to the scratchpad).
+- Control, no copy: `dropped=0 saved_visible=67828 fpm=D:\DEV\BUILD\...\Max\Files\mapbank\island showdown.fpm`.
+- `TREE_PAINT_TEST` (new) on the stock demo, in memory: spray / UNDO / REDO = 67828 -> 67810 -> 67828 -> 67810; a
+  stroke whose undo snapshot had 200 visible records rewritten to type 45, then UNDO: 67810 -> **67610**,
+  `saved_badtype=0` - the guard hid exactly those 200 and left no invalid type in memory.
+- Not driven: Play Game standalone - its title screen is a Lua sprite screen that TITLE_CLICK cannot press and that
+  recentres the cursor away from MOUSE_AT; the change is in the one shared `GGTrees_SetData`. The old build's modal
+  could not be shown under the harness either (it suppresses modals) - two raw-input attempts at the standalone
+  title failed, so the "before" rests on the code and the binary string.
+
+Harness: `GET_TREE_LOADSTATS` (dropped / saved_visible / saved_badtype / saved_badvisible / readonly / the resolved
+fpm), `TREE_PAINT_TEST <x> <z> <frames> [0 spray|4 spray remove] [inject N]`. Tools: `tools/treetypes_scan.py`
+(.fpm or .tre; now opens the encrypted .fpm), `tools/tre_craft.py`.
+
+**Adversarial review** (3 reviewers, 14 verifiers): the GGTrees changes clean - counter reset covers every SetData
+return, the GetData guard changes nothing for valid data, the undo strip runs before the invisible-list rebuild and
+redo goes through it too, no other path can put a type >= 38 into `pAllTrees` (repopulate/paint bounded, add-undo via
+SetType, the 1.0 converter masks 0x1F), DX11 citation correct. Three findings fixed: (1) the reverse lock -
+GRASS_PAINT_TEST / SCULPT_TEST / PAINT_TEST did not refuse while a TREE_PAINT_TEST stroke held the SHARED undo snapshot
+(`g_pTerrainSnapshot`; a grass map written over a tree snapshot would later be memcpy'd into all 400000 trees) - now
+they refuse on `s_treeTestFrames` / `g_iActiveTreeEvent`; (2) `dropped` kept the previous level's count when a load
+never reaches SetData (no .tre) - now `GGTrees_HideAll`, which every load calls, clears it too; (3) a comment claimed
+re-saving could not clear the condition - one Save of the shadowing copy would have (SetData hides with a valid type,
+GetData saved them hidden); reworded. Refuted with reasons: `saved_badvisible` is 0 by construction (it reports what
+a save writes; `saved_badtype` is the memory check); the fpm path is resolved when the command runs; ENTITY LOAD
+SKIPPED fires only for levels newer than DX11 itself supports.
+
+Final exe `7fe2f8e0`: crafted copy again `dropped=15015 saved_visible=52813` (writable path); a 100-record injection
+stripped by its UNDO (52813 -> 52713, `saved_badtype=0`); during a 3000-frame tree stroke GRASS_PAINT_TEST,
+SCULPT_TEST, PAINT_TEST and a second TREE_PAINT_TEST all refused; stroke 52713 -> 52695, UNDO -> 52713. Nothing saved;
+the crafted copy is back in the scratchpad, the writable mapbank holds no Island Showdown file.
+
+**Ask the tester** (TESTER_TRIAGE #8): does `Documents\GameGuruApps\GameGuruMAX\Files\mapbank\island showdown.fpm`
+exist (OneDrive may redirect Documents), its size/date (stock is 73,913,735 bytes, md5 1f88a341...), any
+`_automatedbackups\island showdown_*.fpm`, a custom write folder in Preferences; send the file. Renaming it brings
+the stock demo back.

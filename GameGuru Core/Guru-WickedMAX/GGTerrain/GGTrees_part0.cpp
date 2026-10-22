@@ -1929,11 +1929,22 @@ int GGTrees_GetData( float* data )
 	{
 		data[ i * 3 + 0 ] = pAllTrees[ i ].x;
 		data[ i * 3 + 1 ] = pAllTrees[ i ].z;
-		dataInt[ i * 3 + 2 ] = pAllTrees[ i ].data;
+		uint32_t d = pAllTrees[ i ].data;
+		// GGMAX 3.123: never SAVE a visible tree with an invalid type (>= numTreeTypes) - the file
+		// tester report #8 loaded held 15015. Nothing in memory should carry one (SetData and the
+		// tree undo strip them), so this only guarantees no DX12 save can ever write that file.
+		if ( ((d >> 11) & 0x3F) >= numTreeTypes ) d &= ~0x1u;
+		dataInt[ i * 3 + 2 ] = d;
 	}
 
 	return 1;
 }
+
+// GGMAX 3.123: how many trees the LAST GGTrees_SetData hid for an invalid type (harness
+// GET_TREE_LOADSTATS). A per-level value: cleared by GGTrees_HideAll (every level load calls it, with or
+// without a .tre) and on SetData entry (every return path).
+static uint32_t g_iLastLoadInvalidTypeTrees = 0;
+uint32_t GGTrees_GetLastLoadInvalidTypeTrees() { return g_iLastLoadInvalidTypeTrees; }
 
 // Using this instead of GGTrees_GetData to allow reuse of g_pTerrainSnapshot.
 int GGTrees_GetSnapshot(uint8_t* data)
@@ -1951,6 +1962,7 @@ int GGTrees_GetSnapshot(uint8_t* data)
 int GGTrees_SetData( float* data )
 {
 	if (!ggtrees_initialised) return 0;
+	g_iLastLoadInvalidTypeTrees = 0;
 	uint32_t* dataInt = (uint32_t*) data;
 	uint32_t version = dataInt[ 0 ];
 	if ( version < 2 ) // can't import from before version 2
@@ -1981,7 +1993,7 @@ int GGTrees_SetData( float* data )
 	}
 	pInvisibleTrees.Clear();
 	
-	uint32_t iDroppedCustomTypeTrees = 0;
+	uint32_t iInvalidTypeTrees = 0;
 	for( uint32_t i = 0; i < numTotalTrees; i++ )
 	{
 		InstanceTree* pInstance = &pAllTrees[ i ];
@@ -2001,9 +2013,10 @@ int GGTrees_SetData( float* data )
 
 			if ( type >= numTreeTypes )
 			{
-				// count only trees the file marked visible — they would have
-				// rendered but for the unported palette type
-				if ( pInstance->IsVisible() ) iDroppedCustomTypeTrees++;
+				// GGMAX 3.123: an invalid type - only types 0-37 exist (DX11 too, there are no
+				// custom tree slots). Hidden exactly as DX11 does; the file's type bits are NOT
+				// copied in, so pAllTrees never holds a type >= numTreeTypes.
+				if ( pInstance->IsVisible() ) iInvalidTypeTrees++;
 				pInstance->SetVisible( 0 );
 			}
 			else
@@ -2075,20 +2088,20 @@ int GGTrees_SetData( float* data )
 #ifdef ONLYLOADWHENUSED
 	last_paint_tree_bitfield = -1;
 #endif
-	// DX12 PORT (instrument-trust): levels saved with custom tree palette slots
-	// carry types >= numTreeTypes (38). This port has no meshes for them, so the
-	// loop above hides those instances — warn loudly instead of silently
-	// thinning the forest vs DX11.
-	if ( iDroppedCustomTypeTrees > 0 )
+	// GGMAX 3.123 (tester report #8): log only - NEVER a modal. This was a MessageBox ("TREE TYPES
+	// DROPPED ... custom tree slots not ported to DX12") on a false premise: DX11 has the same 38
+	// compiled-in types and hides these trees SILENTLY (GGTrees.cpp:1664). It fired on every load of
+	// a level whose file held such data - e.g. a read-only demo shadowed by a saved copy in the user's
+	// writable mapbank (one Save of that level would have written those trees hidden and ended it, but
+	// nothing told the user so, and the text blamed a feature that does not exist) - and in Test Game,
+	// Play Game and standalone games too, where a modal behind the game window reads as a hang.
+	g_iLastLoadInvalidTypeTrees = iInvalidTypeTrees;
+	if ( iInvalidTypeTrees > 0 )
 	{
-		char pDropWarning[256];
-		sprintf_s( pDropWarning, "TREE TYPES DROPPED: %u tree instances use palette types >= %u (custom tree slots not ported to DX12) and will not render",
-			iDroppedCustomTypeTrees, (uint32_t)numTreeTypes );
-		::timestampactivity( 0, pDropWarning );
-		if ( !::g_bAutomationActive )
-		{
-			MessageBoxA( NULL, pDropWarning, "Warning", MB_OK | MB_ICONWARNING );
-		}
+		char pInvalidLog[256];
+		sprintf_s( pInvalidLog, "TREE DATA: %u visible tree instances have an invalid type (>= %u) and were hidden, as DX11 does",
+			iInvalidTypeTrees, (uint32_t)numTreeTypes );
+		::timestampactivity( 0, pInvalidLog );
 	}
 	if ( !GGTrees_UpdateInstances( 1 ) )
 	{
@@ -2882,6 +2895,7 @@ static void GGTrees_UpdateBillboardCB( float camX, float camY, float camZ, Comma
 void GGTrees_HideAll()
 {
 	if (!ggtrees_initialised) return;
+	g_iLastLoadInvalidTypeTrees = 0;   // GGMAX 3.123: the loader calls this on every load, .tre or not
 	pInvisibleTrees.Clear();
 
 	for (uint32_t i = 0; i < numTotalTrees; i++)

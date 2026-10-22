@@ -15,7 +15,7 @@ Six-agent review (memory notes, repo docs, git archaeology, code-vs-notes check,
 
 - **Git cleanup DONE** (except two items below): frosty-ritchie worktree removed; branches `claude/frosty-ritchie-f7efe6`, `claude/determined-chebyshev-bf0892` (origin), `phase4-dx12-init`, `phase5-imgui-dx12` deleted; pruned.
 - **Repo-doc sync DONE** — commit `f6c0f149` (all 10 docs updated per the plan below).
-- **Step 0 instrument-trust DONE** — commit `72b2de27`: .ele version logged on every load + LOUD mismatch warning (MessageBox suppressed when `g_bAutomationActive`); TREE TYPES DROPPED warning in GGTrees_SetData; stale comments fixed. **Verified: TESTPRO1 loads map.ele v341 with its 1 element — the baseline is currently CLEAN**; the tripwire arms the moment DX11 re-saves it as v342. The leftover 5233fb3c perf-panel diagnostic was already gone (c4d81543 removed it).
+- **Step 0 instrument-trust DONE** — commit `72b2de27`: .ele version logged on every load + LOUD mismatch warning (MessageBox suppressed when `g_bAutomationActive`); TREE TYPES DROPPED warning in GGTrees_SetData (⚠ premise FALSE - no custom tree slots exist, DX11 hides bad ids silently; it reached a tester as a modal, removed 3.123 [[project-demo-shadow-copy]]); stale comments fixed. **Verified: TESTPRO1 loads map.ele v341 with its 1 element — the baseline is currently CLEAN**; the tripwire arms the moment DX11 re-saves it as v342. The leftover 5233fb3c perf-panel diagnostic was already gone (c4d81543 removed it).
 
 ## STILL OPEN for user decision
 

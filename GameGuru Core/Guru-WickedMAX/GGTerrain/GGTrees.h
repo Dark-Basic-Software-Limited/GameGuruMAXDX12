@@ -103,6 +103,7 @@ namespace GGTrees
 	int GGTrees_GetData( float* data ); // data must be allocated with GGTrees_GetSculptDataSize() floats, returns 1 on success
 	int GGTrees_SetData( float* data ); // number of floats must be equal to GGTrees_GetSculptDataSize(), returns 1 on success
 	int GGTrees_GetSnapshot(uint8_t* data);
+	uint32_t GGTrees_GetLastLoadInvalidTypeTrees(); // GGMAX 3.123: visible trees the last SetData hid for a type >= 38
 
 	void GGTrees_SetPerformanceMode( uint32_t mode );
 	void GGTrees_Delete_Trees(float pickX, float pickZ, float radius);

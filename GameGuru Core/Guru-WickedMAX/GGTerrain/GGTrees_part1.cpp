@@ -242,6 +242,12 @@ void GGTrees_PerformUndoRedoAction(int type, void* pEventData, int eList)
 		GGTrees::pInvisibleTrees.Clear();
 		for (int i = 0; i < GGTrees::numTotalTrees; i++)
 		{
+			// GGMAX 3.123: the raw copy is the ONE path that can put any bit pattern into pAllTrees
+			// (GGTrees_SetData and InstanceTree::SetType refuse a type >= numTreeTypes). TreeChunk::Update indexes
+			// g_GGTrees[type] for every instance, visible or not, so never let one in: hide it and
+			// clear its type.
+			if ( ((GGTrees::pAllTrees[i].data >> 11) & 0x3F) >= numTreeTypes )
+				GGTrees::pAllTrees[i].data &= ~((0x3Fu << 11) | 0x1u);
 			if ( !GGTrees::pAllTrees[i].IsVisible() )
 				GGTrees::pInvisibleTrees.AddItem(i);
 		}

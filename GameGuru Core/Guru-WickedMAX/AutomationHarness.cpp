@@ -2665,6 +2665,69 @@ static void AutoHarness_GrassPaintTick(void)
 	s_grassTestFrames--;
 }
 
+// GGMAX 3.123: TREE_PAINT_TEST - a synthetic Trees tool SPRAY / SPRAY REMOVE stroke through the shipped
+// GGTrees_Update_Painting (sibling of GRASS_PAINT_TEST), for the tree undo path: eUndoSys_Terrain_PaintTree
+// restores all 400000 records with one raw memcpy, the only way any bit pattern can reach pAllTrees.
+// [inject N] then writes an invalid type (45) into the first N VISIBLE records of the stroke's undo snapshot
+// right after the stroke takes it - what a corrupt snapshot would carry - so the UNDO must strip them
+// (hidden, type cleared): GET_TREE_LOADSTATS saved_badtype reads 0 after it, saved_visible drops by N.
+// Edit mode, paint mode and the stroke mouse state are set ONLY around our own call. In memory only.
+namespace GGTrees { extern GGTreesInternalParams ggtrees_internal_params; }
+extern int ggtrees_initialised;      // GGTrees_part0.cpp (global, not in the header)
+extern int g_iActiveTreeEvent;       // GGTrees_part0.cpp: 1 while a spray stroke's snapshot is held
+extern uint8_t* g_pTerrainSnapshot;  // M-UndoSys-Terrain.cpp: the snapshot buffer terrain, grass and trees share
+static int   s_treeTestFrames = 0, s_treeTestFrame = 0, s_treeTestMode = GGTREES_PAINT_SPRAY, s_treeTestInject = 0;
+static int   s_treeTestInjected = -1;   // -1 = no injection asked, else how many records were rewritten
+static float s_treeTestX = 0.0f, s_treeTestZ = 0.0f;
+static void AutoHarness_TreePaintTick(void)
+{
+	using namespace GGTerrain;
+	if (s_treeTestFrames <= 0) return;
+	if (!AutoHarness_TerrainEditAllowed())
+	{
+		// abandoned mid-stroke: run the release frame so the stroke's undo action is made and
+		// g_iActiveTreeEvent clears (it holds the shared snapshot); with the trees gone just disarm
+		if (s_treeTestFrame == 0) { s_treeTestFrames = 0; return; }
+		if (!::ggtrees_initialised) { ::g_iActiveTreeEvent = 0; s_treeTestFrames = 0; return; }
+		s_treeTestFrames = 1;   // this call becomes the release frame
+	}
+	const int savedEdit = ggterrain_extra_params.edit_mode;
+	const int savedMode = GGTrees::ggtrees_global_params.paint_mode;
+	ggterrain_extra_params.edit_mode = GGTERRAIN_EDIT_TREES;
+	GGTrees::ggtrees_global_params.paint_mode = s_treeTestMode;
+	const bool last = (s_treeTestFrames == 1);
+	GGTrees::ggtrees_internal_params.mouseLeftPressed = (s_treeTestFrame == 0) ? 1 : 0;
+	GGTrees::ggtrees_internal_params.mouseLeftState = last ? 0 : 1;
+	GGTrees::ggtrees_internal_params.mouseLeftReleased = last ? 1 : 0;
+	RAY ray(XMVectorSet(s_treeTestX, 50000.0f, s_treeTestZ, 0.0f), XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));
+	GGTrees::GGTrees_Update_Painting(ray);
+	if (s_treeTestFrame == 0 && s_treeTestInject > 0)
+	{
+		// the first held frame took the snapshot (GGTrees_GetSnapshot: InstanceTree x,y,z,data,id)
+		struct SnapTree { float x, y, z; uint32_t data; uint32_t id; };
+		static_assert(sizeof(SnapTree) == 20, "InstanceTree layout");
+		s_treeTestInjected = 0;
+		if (::g_iActiveTreeEvent && ::g_pTerrainSnapshot)
+		{
+			SnapTree* pSnap = (SnapTree*)::g_pTerrainSnapshot;
+			const uint32_t n = (GGTrees::GGTrees_GetDataSize() - 1) / 3;
+			for (uint32_t i = 0; i < n && s_treeTestInjected < s_treeTestInject; i++)
+			{
+				if ((pSnap[i].data & 1) == 0) continue;
+				pSnap[i].data = (pSnap[i].data & ~(0x3Fu << 11)) | (45u << 11);
+				s_treeTestInjected++;
+			}
+		}
+	}
+	GGTrees::ggtrees_internal_params.mouseLeftPressed = 0;
+	GGTrees::ggtrees_internal_params.mouseLeftState = 0;
+	GGTrees::ggtrees_internal_params.mouseLeftReleased = 0;
+	ggterrain_extra_params.edit_mode = savedEdit;
+	GGTrees::ggtrees_global_params.paint_mode = savedMode;
+	s_treeTestFrame++;
+	s_treeTestFrames--;
+}
+
 // ---------------------------------------------------------------------------
 // VERIFY_MESH / VERIFY_WATCH — GPU mesh-buffer content oracle (reload-corruption hunt).
 //
@@ -3419,7 +3482,7 @@ static bool AutoHarness_GrassDensityCommands(const char* cmd, const char* arg, c
 		if (!AutoHarness_TerrainEditAllowed()) _snprintf(result, resultSize, "ERROR: GRASS_PAINT_TEST needs the level editor with terrain initialised");
 		else if (s_grassTestFrames > 0) _snprintf(result, resultSize, "ERROR: a grass test stroke is already running (%d frames left)", s_grassTestFrames);
 		else if (s_terrainTestFrames > 0) _snprintf(result, resultSize, "ERROR: a terrain test is running (%d frames left)", s_terrainTestFrames);
-		else if (g_iCalculatingChangeBounds != 0) _snprintf(result, resultSize, "ERROR: a terrain/grass stroke is in progress - release the mouse first");
+		else if (g_iCalculatingChangeBounds != 0 || s_treeTestFrames > 0 || ::g_iActiveTreeEvent != 0) _snprintf(result, resultSize, "ERROR: a terrain/grass/tree stroke is in progress - release the mouse first");   // 3.123: a tree stroke holds the shared snapshot too
 		else if (got >= 3 && gf > 0)
 		{
 			s_grassTestX = gx; s_grassTestZ = gz; s_grassTestMatch = gm ? 1 : 0; s_grassTestType = gt ? (uint64_t)gt : 1;
@@ -8221,6 +8284,67 @@ static bool AutoHarness_BulletHoleCommands(const char* cmd, const char* arg, cha
 }
 // deeply") - it is already at the limit, and the error names a line ~2000 further down, so it
 // reads as a problem somewhere else entirely. Every new command goes in a helper from here on.
+// GGMAX 3.123 (tester report #8, 'TREE TYPES DROPPED' over a read-only demo): GET_TREE_LOADSTATS - the
+// tree-type check of the last level load, readable with logs off (testers run producelogfiles=0).
+//   dropped        = visible trees the last GGTrees_SetData hid for a type >= 38
+//   saved_*        = what a Save would write NOW (GGTrees_GetData): visible trees, records of ANY visibility
+//                    with a type >= 38 (must be 0 - pAllTrees never holds one), visible ones among them
+//   readonly / fpm = the storyboard's read-only flag, and the level file resolved the way the loader
+//                    resolves it (GG_GetRealPath: the writable area FIRST) - a saved copy in
+//                    Documents\GameGuruApps\GameGuruMAX\Files\mapbank shadows a read-only demo's level.
+static bool AutoHarness_TreeLoadCommands(const char* cmd, const char* arg, char* result, size_t resultSize)
+{
+	if (_stricmp(cmd, "TREE_PAINT_TEST") == 0)
+	{
+		// TREE_PAINT_TEST <worldX> <worldZ> <frames> [mode 0 spray | 4 spray remove] [inject N] - see
+		// AutoHarness_TreePaintTick. Brush = SET_TERRAINBRUSH, types = the palette (SET_PALETTEBITS tree).
+		// TREE_PAINT_TEST with no arguments reports the last run's injection count.
+		float tx = 0, tz = 0; int tf = 0, tm = GGTREES_PAINT_SPRAY, ti = 0;
+		const int got = (arg && arg[0]) ? sscanf_s(arg, "%f %f %d %d %d", &tx, &tz, &tf, &tm, &ti) : 0;
+		if (got == 0) _snprintf(result, resultSize, "OK: TREE_PAINT_TEST frames_left=%d injected=%d", s_treeTestFrames, s_treeTestInjected);
+		else if (!AutoHarness_TerrainEditAllowed() || !::ggtrees_initialised) _snprintf(result, resultSize, "ERROR: TREE_PAINT_TEST needs the level editor with trees initialised");
+		else if (s_treeTestFrames > 0) _snprintf(result, resultSize, "ERROR: a tree test stroke is already running (%d frames left)", s_treeTestFrames);
+		else if (s_grassTestFrames > 0 || s_terrainTestFrames > 0) _snprintf(result, resultSize, "ERROR: a terrain/grass test is running");
+		else if (g_iCalculatingChangeBounds != 0 || ::g_iActiveTreeEvent != 0) _snprintf(result, resultSize, "ERROR: a terrain/grass/tree stroke is in progress - release the mouse first");
+		else if (tm != GGTREES_PAINT_SPRAY && tm != GGTREES_PAINT_SPRAY_REMOVE) _snprintf(result, resultSize, "ERROR: TREE_PAINT_TEST mode must be 0 (spray) or 4 (spray remove)");
+		else if (got >= 3 && tf > 0)
+		{
+			s_treeTestX = tx; s_treeTestZ = tz; s_treeTestMode = tm; s_treeTestInject = (ti > 0) ? ti : 0;
+			s_treeTestInjected = (ti > 0) ? 0 : -1;
+			s_treeTestFrame = 0; s_treeTestFrames = tf + 1;   // + the release frame
+			_snprintf(result, resultSize, "OK: TREE_PAINT_TEST at (%.0f, %.0f) for %d frames, mode %d, inject %d (brushSize=%.0f)",
+				tx, tz, tf, tm, s_treeTestInject, GGTerrain::ggterrain_global_render_params2.brushSize);
+		}
+		else _snprintf(result, resultSize, "ERROR: TREE_PAINT_TEST needs <worldX> <worldZ> <frames> [mode 0|4] [inject N]");
+		result[resultSize - 1] = 0;
+		return true;
+	}
+	if (_stricmp(cmd, "GET_TREE_LOADSTATS") != 0) return false;
+	const uint32_t nTypes = GGTrees::GGTrees_GetNumTypes();
+	const uint32_t nFloats = GGTrees::GGTrees_GetDataSize();
+	uint32_t vis = 0, badType = 0, badVisible = 0;
+	std::vector<float> buf(nFloats > 0 ? nFloats : 1);
+	const int got = (nFloats > 1) ? GGTrees::GGTrees_GetData(buf.data()) : 0;
+	if (got)
+	{
+		const uint32_t* di = (const uint32_t*)buf.data();
+		const uint32_t n = (nFloats - 1) / 3;
+		for (uint32_t i = 0; i < n; i++)
+		{
+			const uint32_t d = di[1 + i * 3 + 2];
+			const bool bBad = ((d >> 11) & 0x3F) >= nTypes;
+			if (d & 1) vis++;
+			if (bBad) { badType++; if (d & 1) badVisible++; }
+		}
+	}
+	char fpm[MAX_PATH];
+	strncpy(fpm, g.projectfilename_s.Get(), MAX_PATH - 1); fpm[MAX_PATH - 1] = 0;
+	if (fpm[0]) GG_GetRealPath(fpm, 0);
+	_snprintf(result, resultSize, "OK: dropped=%u saved_visible=%u saved_badtype=%u saved_badvisible=%u getdata=%d types=%u readonly=%d fpm=%s",
+		GGTrees::GGTrees_GetLastLoadInvalidTypeTrees(), vis, badType, badVisible, got, nTypes, Storyboard.project_readonly, fpm[0] ? fpm : "(none)");
+	result[resultSize - 1] = 0;
+	return true;
+}
 // GGMAX 3.122: the custom arms chain ("legacy arm replacement trick", G-Gun_part3.cpp gun_load), link by
 // link - tester report: the interactive swimming arms ignore the arm set chosen on the Player Start marker.
 // Here, not in the else-if chain: one more link there is C1061 (blocks nested too deeply).
@@ -8740,6 +8864,7 @@ void AutoHarness_CheckForCommand(void)
 	AutoHarness_SkinWatchTick();
 	AutoHarness_TerrainEditTick();
 	AutoHarness_GrassPaintTick();   // GGMAX 3.118
+	AutoHarness_TreePaintTick();    // GGMAX 3.123
 	AutoHarness_VerifyTick();
 	// Init paths and uptime tracking on first call
 	if (!s_initialized)
@@ -9348,7 +9473,8 @@ void AutoHarness_CheckForCommand(void)
 		|| AutoHarness_MouseCommands(cmd, arg, result, sizeof(result))
 		|| AutoHarness_PostFXCommands(cmd, arg, result, sizeof(result))
 		|| AutoHarness_GrassDensityCommands(cmd, arg, result, sizeof(result))
-		|| AutoHarness_ArmsCommands(cmd, arg, result, sizeof(result))) // C1061: share the arm, never add one
+		|| AutoHarness_ArmsCommands(cmd, arg, result, sizeof(result))
+		|| AutoHarness_TreeLoadCommands(cmd, arg, result, sizeof(result))) // C1061: share the arm, never add one
 	{
 		// handled in the helper (see above the dispatch function)
 	}
@@ -10572,9 +10698,9 @@ void AutoHarness_CheckForCommand(void)
 		{
 			_snprintf(result, sizeof(result), "ERROR: a grass test stroke is running (%d frames left)", s_grassTestFrames);   // GGMAX 3.118
 		}
-		else if (g_iCalculatingChangeBounds != 0)
+		else if (g_iCalculatingChangeBounds != 0 || s_treeTestFrames > 0 || ::g_iActiveTreeEvent != 0)   // 3.123: a tree stroke holds the shared snapshot too
 		{
-			_snprintf(result, sizeof(result), "ERROR: a real terrain stroke is in progress — release the mouse first");
+			_snprintf(result, sizeof(result), "ERROR: a real terrain or tree stroke is in progress — release the mouse first");
 		}
 		else if (got >= 3 && sf > 0)
 		{
@@ -10612,9 +10738,9 @@ void AutoHarness_CheckForCommand(void)
 		{
 			_snprintf(result, sizeof(result), "ERROR: a grass test stroke is running (%d frames left)", s_grassTestFrames);   // GGMAX 3.118
 		}
-		else if (g_iCalculatingChangeBounds != 0)
+		else if (g_iCalculatingChangeBounds != 0 || s_treeTestFrames > 0 || ::g_iActiveTreeEvent != 0)   // 3.123: a tree stroke holds the shared snapshot too
 		{
-			_snprintf(result, sizeof(result), "ERROR: a real terrain stroke is in progress — release the mouse first");
+			_snprintf(result, sizeof(result), "ERROR: a real terrain or tree stroke is in progress — release the mouse first");
 		}
 		else if (got == 4 && pf > 0)
 		{

@@ -5,6 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 63b96d44-9243-46fb-bc37-9eb4d4be60b9
+  modified: 2026-10-22T15:04:12.713Z
 ---
 
 Terrain port Phase 5 is **tree rendering** on the new Wicked terrain, tracked against the DX11 baseline shot of TESTPRO1 `island.fpm` (see [[project-dx11-parity-baseline]]).
@@ -55,7 +56,7 @@ Two impostor-colour fix attempts (30-frame recapture countdown, green baseColor 
 
 - [GGTrees_part2.cpp:28](GameGuru Core/Guru-WickedMAX/GGTerrain/GGTrees_part2.cpp:28) — `GG_TREE_POOL_SIZE = 10000`
 - [GGTrees_part2.cpp GGTrees_WickedUpdate](GameGuru Core/Guru-WickedMAX/GGTerrain/GGTrees_part2.cpp) — nearest-N pick + pool bind
-- [GGTrees_part0.cpp:225](GameGuru Core/Guru-WickedMAX/GGTerrain/GGTrees_part0.cpp:225) — `InstanceTree::GetType()` masks 6 bits (0-63), but `g_GGTrees[]` only has 38 entries. Trees with saved type >= 38 (custom palette slots not yet ported) get silently dropped by our type filter. Documented for future work.
+- [GGTrees_part0.cpp:225](GameGuru Core/Guru-WickedMAX/GGTerrain/GGTrees_part0.cpp:225) — `InstanceTree::GetType()` masks 6 bits (0-63), but `g_GGTrees[]` only has 38 entries. ⚠ CORRECTED 2026-10-22 (3.123): there are NO custom tree palette slots, in DX11 either - 38 compiled-in types (DX11 `g_GGTreesLOD0[38]`; its `numTreeTypes = 64` in M-TerrainNew.cpp only sizes UI arrays). A saved type >= 38 is invalid data; DX11 hides it silently, as we do. The old "custom slots not ported" claim here became a user-facing modal (tester report #8). [[project-demo-shadow-copy]]
 
 ## Stage 4.3: Drop ImpostorComponent + reflection exclusion + green branch tint — DONE 2026-07-13 (commit 2e0ad1ef)
 

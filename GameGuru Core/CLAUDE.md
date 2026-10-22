@@ -13,7 +13,7 @@ Solution file: `GameGuruWickedMAX.sln`
 ## Active Work (as of 2026-07-17)
 
 - **Grass — COMPLETE through Stage B.10** (commit `6cebb745`): Advanced Grass Settings wired, Populate/Clear fixed, per-strand slope/altitude filters, custom palette slots (B.9), DX11-parity sizing and live sliders.
-- **Trees — Phase 5 Stage 4.3 DONE** (commits `18a95978`, `2e0ad1ef`): real trunk/leaf meshes, 10,000-entity `ObjectComponent` pool, nearest-N-to-camera pick per frame. Wicked `ImpostorComponent` is **RETIRED** — its render path ignores `IsNotVisibleInReflections` and baked white. Open tree items: measure DX11 A/B horizon delta, then possibly hand-rolled billboards from GG's authored `*_BB_SF_*_color.dds`; tree types >= 38 unported; wind sway.
+- **Trees — Phase 5 Stage 4.3 DONE** (commits `18a95978`, `2e0ad1ef`): real trunk/leaf meshes, 10,000-entity `ObjectComponent` pool, nearest-N-to-camera pick per frame. Wicked `ImpostorComponent` is **RETIRED** — its render path ignores `IsNotVisibleInReflections` and baked white. Open tree items: measure DX11 A/B horizon delta, then possibly hand-rolled billboards from GG's authored `*_BB_SF_*_color.dds`; wind sway. (Tree types >= 38 do NOT exist - DX11 has the same 38 compiled-in types and hides higher ids silently; notes 3.123.)
 - **Terrain — DX11 colour parity** via CPU-side `ApplyDX11StyleAutoBlend` (commit `42e927b8`).
 - **Next major phase — Performance**: pursue `PERFORMANCE.md` → "Active Performance Targets".
 
