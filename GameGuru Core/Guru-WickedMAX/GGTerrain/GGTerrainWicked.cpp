@@ -1,4 +1,5 @@
 #include "GGTerrain.h"
+#include "CFileC.h"
 #include "GGTerrainWicked.h"
 #include "GGGrass.h"
 #include "GGTrees.h"
@@ -773,6 +774,10 @@ static void SetupTerrainMaterial(wi::scene::Scene& scene, wi::ecs::Entity entity
 	sprintf_s(colorPath, "%s/Files/terraintextures/mat%d/Color.dds", wickedTerrainExeDir.c_str(), folderNum);
 	sprintf_s(normalPath, "%s/Files/terraintextures/mat%d/Normal.dds", wickedTerrainExeDir.c_str(), folderNum);
 	sprintf_s(surfacePath, "%s/Files/terraintextures/mat%d/Surface.dds", wickedTerrainExeDir.c_str(), folderNum);
+	// the writable folder's copy first, as the GameGuru terrain, grass and trees load them
+	GG_GetRealPath(colorPath, 0);
+	GG_GetRealPath(normalPath, 0);
+	GG_GetRealPath(surfacePath, 0);
 
 	MaterialComponent* mat = scene.materials.GetComponent(entity);
 	if (!mat)
@@ -1734,6 +1739,9 @@ static wi::scene::MaterialComponent* BuildGrassMaterial(uint32_t typeIdx)
 			haveNormal = true;
 		}
 	}
+	// the writable folder's copy first, as the GameGuru terrain, grass and trees load them
+	GG_GetRealPath(colorPath, 0);
+	if (haveNormal) GG_GetRealPath(normalPath, 0);
 
 	wi::scene::MaterialComponent& mat = g_grassMaterials[typeIdx];
 	mat = wi::scene::MaterialComponent();
