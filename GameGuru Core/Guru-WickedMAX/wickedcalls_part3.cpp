@@ -451,8 +451,12 @@ static unsigned long long gg_dbg_ray_qpc_us(void)
 	return (unsigned long long)((c.QuadPart * 1000000.0) / (double)f.QuadPart);
 }
 
+// the limb (frame index) of the object the last WickedCall_SentRay4 hit, -1 if none; IntersectAllEx reports it
+int g_iWickedCallRayLimbHit = -1;
+
 bool WickedCall_SentRay4(float originx, float originy, float originz, float directionx, float directiony, float directionz, float fDistanceOfRay, float* pOutX, float* pOutY, float* pOutZ, float* pNormX, float* pNormY, float* pNormZ, DWORD* pdwObjectNumberHit, bool bOpaqueOnly)
 {
+	g_iWickedCallRayLimbHit = -1;
 	// ray cast specifically used by game loop to find accurate position of animating objects (performant?)
 	// GGMAX 2026-07-31 FPS-plummet fix: the ray previously had no TMin/TMax, so a
 	// "120 unit" line-of-sight test actually traversed the ENTIRE island to infinity —
@@ -496,6 +500,21 @@ bool WickedCall_SentRay4(float originx, float originy, float originz, float dire
 		{
 			sObject* pHitObject = m_ObjectManager.FindObjectFromWickedObjectEntityID(hit.entity);
 			if (pHitObject) *pdwObjectNumberHit = pHitObject->dwObjectNumber;
+			if (pHitObject && pHitObject->ppFrameList)
+			{
+				for (int iFrame = 0; iFrame < pHitObject->iFrameCount; iFrame++)
+				{
+					if (pHitObject->ppFrameList[iFrame] && pHitObject->ppFrameList[iFrame]->wickedobjindex == hit.entity)
+					{
+						g_iWickedCallRayLimbHit = iFrame;
+						// and for IntersectGetLastHitFrame / IntersectGetLastHitBone
+						extern std::unordered_map<int, sFrame*> lastHitFrame;
+						if (lastHitFrame.size() > 100) lastHitFrame.clear();
+						lastHitFrame[pHitObject->dwObjectNumber] = pHitObject->ppFrameList[iFrame];
+						break;
+					}
+				}
+			}
 			*pOutX = hit.position.x;
 			*pOutY = hit.position.y;
 			*pOutZ = hit.position.z;
