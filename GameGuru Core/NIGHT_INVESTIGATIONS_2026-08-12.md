@@ -16806,3 +16806,5 @@ removed again. Notes for later: stale pre-3.124 level-state files in an install 
 no Documents copy exists (M-LUA.cpp:320-334 deletes the one path GG_GetRealPath resolves); the Documents-root
 ggprecompile.lua (copied once, never refreshed - Common_part2.cpp:810 bFailIfExists=TRUE) is now the one Export
 Game loads (identical md5 today).
+
+### LEE-CONFIRMED 3.124, 2026-10-22: "Cine Guru error confirmed fixed, works now" - report #9 closed: add-on scripts in the writable area (Cine Guru MAX) load, require and read their files again through the engine Lua hook ggLua_fopenhook -> GG_fopen. Game `3d8b7f03`, engine `940ca136`.

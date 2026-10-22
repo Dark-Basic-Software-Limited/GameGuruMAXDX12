@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 9a28c586-4c13-4447-916e-7fb51301bfa8
-  modified: 2026-10-22T18:15:37.524Z
+  modified: 2026-10-22T18:49:11.607Z
 ---
 
 **DX11 compiled its own Lua 5.2 (`DarkLUA\lua`) with every open-by-name patched to `GG_fopen`** (writable area first,
@@ -14,7 +14,7 @@ in the engine's Lua 5.4.8 (`WickedEngine\LUA`) - plain `fopen` relative to the C
 kept checking `FileExist` (writable-aware), so the check PASSED and the Lua open then FAILED: "LUA ERROR! cannot open
 scriptbank\Cine Guru MAX\cg_actor.lua: No such file or directory" (Lee, 2026-10-22, report #9).
 
-**3.124 fix:** engine `ggLua_fopenhook` (lauxlib.h/.c, NULL = stock) at the 4 DX11 sites + the binary-chunk
+**3.124 fix (Lee-confirmed 2026-10-22):** engine `ggLua_fopenhook` (lauxlib.h/.c, NULL = stock) at the 4 DX11 sites + the binary-chunk
 `freopen` (fclose + hook "rb" - beyond DX11; exported games with `exportassets=0` precompile every .lua and take
 that branch); the game sets it to `GG_fopen` in `GGLua_InstallCompatShim` (DarkLUA_part7.cpp). WICKED_ENGINE_CHANGES
 row 3.124 - **an upstream Lua update silently undoes it** (still links). Lua writes (save games) go back to
