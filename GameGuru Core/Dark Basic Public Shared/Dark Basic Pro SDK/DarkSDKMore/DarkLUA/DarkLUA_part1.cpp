@@ -1134,7 +1134,11 @@
 					 HideObject(t.entityelement[t.tentitytoselect].attachmentobj);
 					 t.entityelement[t.tentitytoselect].attachmentobj = 0;
 				 }
+				 // the frame's own scene update applies the removal (a full Scene::Update for each deleted object; the gun's deletes skip it too)
+				 extern bool bBlockSceneUpdate;
+				 bBlockSceneUpdate = true;
 				 entity_deleteentityfrommap();
+				 bBlockSceneUpdate = false;
 				 if (t.entityelement[t.tentitytoselect].ragdollified == 1)
 				 {
 					 //t.tphyobj = t.entityelement[t.tentitytoselect].obj; ragdoll_destroy ();
@@ -1184,7 +1188,11 @@
 				 HideObject (t.entityelement[t.tentitytoselect].attachmentobj);
 				 t.entityelement[t.tentitytoselect].attachmentobj = 0;
 			 }
+			 // the frame's own scene update applies the removal (a full Scene::Update for each deleted object; the gun's deletes skip it too)
+			 extern bool bBlockSceneUpdate;
+			 bBlockSceneUpdate = true;
 			 entity_deleteentityfrommap ();
+			 bBlockSceneUpdate = false;
 			 if (t.entityelement[t.tentitytoselect].ragdollified == 1)
 			 {
 				 //t.tphyobj = t.entityelement[t.tentitytoselect].obj; ragdoll_destroy ();
