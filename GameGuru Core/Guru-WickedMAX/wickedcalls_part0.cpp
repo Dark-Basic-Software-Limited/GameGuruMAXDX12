@@ -8,6 +8,7 @@
 #include "GGAnimBridge.h"
 #include <vector>
 #include <unordered_map>
+#include <mutex>
 
 #include "..\Dark Basic Pro SDK\Shared\Objects\CObjectManagerWicked.h"
 #include "M-Entity.h"
@@ -575,6 +576,31 @@ bool bUseInstancing = false;
 int iUseMasterObjectID = 0;
 int iCurrentObjectID = 0;
 bool bNextObjectMustBeClone = false;
+// tangents CreateRenderData made (MikkTSpace) for a mesh with none, kept by the mesh's content so clones reuse them;
+// the second mesh with the same content makes them again and must match before later ones take them
+struct sWickedMadeTangents { std::vector<XMFLOAT4> tangents; int iState; }; // 0 made once, 1 matched, -1 differed
+static std::unordered_map<uint64_t, sWickedMadeTangents> g_WickedMadeTangents;
+static std::mutex g_WickedMadeTangentsLock;
+static size_t g_WickedMadeTangentsBytes = 0; // 64 MB at most, then start again
+
+static uint64_t WickedCall_MeshTangentKey(const wiScene::MeshComponent& mesh)
+{
+	uint64_t h = 0xcbf29ce484222325ULL;
+	auto mix = [&h](const void* pData, size_t bytes)
+	{
+		const uint32_t* p = (const uint32_t*)pData;
+		for (size_t i = 0; i < bytes / 4; i++) { h ^= p[i]; h *= 0x100000001b3ULL; }
+		h ^= (uint64_t)bytes; h *= 0x100000001b3ULL;
+	};
+	mix(mesh.vertex_positions.data(), mesh.vertex_positions.size() * sizeof(XMFLOAT3));
+	mix(mesh.vertex_normals.data(), mesh.vertex_normals.size() * sizeof(XMFLOAT3));
+	mix(mesh.vertex_uvset_0.data(), mesh.vertex_uvset_0.size() * sizeof(XMFLOAT2));
+	mix(mesh.indices.data(), mesh.indices.size() * sizeof(uint32_t));
+	for (const auto& subset : mesh.subsets) { mix(&subset.indexOffset, sizeof(uint32_t)); mix(&subset.indexCount, sizeof(uint32_t)); }
+	h ^= h >> 33; h *= 0xff51afd7ed558ccdULL; h ^= h >> 33;
+	return h;
+}
+
 void WickedCall_LoadNode(sFrame* pFrame, Entity parent, Entity root, WickedLoaderState& state)
 {
 	// only if have a frame
@@ -975,8 +1001,51 @@ void WickedCall_LoadNode(sFrame* pFrame, Entity parent, Entity root, WickedLoade
 				bUseFrameMatrix = false;
 			}
 
+			// a mesh with no tangents takes the ones made for the same content before, once they have matched
+			uint64_t uTangentKey = 0;
+			if (mesh.vertex_tangents.empty() && !mesh.vertex_uvset_0.empty() && !mesh.vertex_normals.empty())
+			{
+				uTangentKey = WickedCall_MeshTangentKey(mesh);
+				std::lock_guard<std::mutex> lock(g_WickedMadeTangentsLock);
+				auto it = g_WickedMadeTangents.find(uTangentKey);
+				if (it != g_WickedMadeTangents.end() && it->second.iState == 1 && it->second.tangents.size() == mesh.vertex_positions.size())
+				{
+					mesh.vertex_tangents = it->second.tangents;
+					uTangentKey = 0;
+				}
+			}
+
 			// now create the internals for this mesh
 			mesh.CreateRenderData();
+
+			// the tangents it made: kept the first time, compared the second
+			if (uTangentKey && mesh.vertex_tangents.size() == mesh.vertex_positions.size())
+			{
+				std::lock_guard<std::mutex> lock(g_WickedMadeTangentsLock);
+				auto it = g_WickedMadeTangents.find(uTangentKey);
+				if (it == g_WickedMadeTangents.end())
+				{
+					const size_t bytes = mesh.vertex_tangents.size() * sizeof(XMFLOAT4);
+					if (g_WickedMadeTangentsBytes + bytes > (64ull << 20)) { g_WickedMadeTangents.clear(); g_WickedMadeTangentsBytes = 0; }
+					g_WickedMadeTangents[uTangentKey] = { mesh.vertex_tangents, 0 };
+					g_WickedMadeTangentsBytes += bytes;
+				}
+				else if (it->second.iState == 0)
+				{
+					const bool bSame = it->second.tangents.size() == mesh.vertex_tangents.size()
+						&& memcmp(it->second.tangents.data(), mesh.vertex_tangents.data(), mesh.vertex_tangents.size() * sizeof(XMFLOAT4)) == 0;
+					it->second.iState = bSame ? 1 : -1;
+					if (!bSame)
+					{
+						g_WickedMadeTangentsBytes -= it->second.tangents.size() * sizeof(XMFLOAT4);
+						it->second.tangents = std::vector<XMFLOAT4>();
+						extern void timestampactivity(int i, char* desc_s);
+						char pTanLog[512];
+						sprintf_s(pTanLog, sizeof(pTanLog), "made tangents differ for the same mesh (%s, %d vertices), not reused", pFrame->szName, (int)mesh.vertex_tangents.size());
+						timestampactivity(0, pTanLog);
+					}
+				}
+			}
 		}
 		//#### PE: mesh setup end ####
 	}
