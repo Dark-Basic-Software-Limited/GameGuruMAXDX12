@@ -9386,7 +9386,8 @@ void GGTerrain_InstantEnvProbeRefresh(int iCoolDownIndex)
 		{
 			if (g_iEnvProbeTracking[iRealProbeIndex] > 0)
 			{
-				if (iCoolDownIndex == 0 || iCoolDownIndex == iRealProbeIndex)
+				// index 1 is slot 0 (0 is every slot), so slot 0 is refreshed too
+				if (iCoolDownIndex == 0 || iCoolDownIndex == iRealProbeIndex + 1)
 				{
 					probe->SetDirty();
 					if (iCoolDownIndex != 0)
