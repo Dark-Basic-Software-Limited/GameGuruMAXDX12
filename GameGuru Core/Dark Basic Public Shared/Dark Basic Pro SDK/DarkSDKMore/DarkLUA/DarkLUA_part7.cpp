@@ -74,6 +74,9 @@ static void GGLua_InstallCompatShim(lua_State* L)
 
 void addFunctions()
 {
+	// scripts, io.open and require go through the writable folder redirect, as every other file read does
+	luaL_setfileopener ( GG_fopen );
+
 	// add internal commands
 	addInternalFunctions_nones();
 	addInternalFunctions_integer();
