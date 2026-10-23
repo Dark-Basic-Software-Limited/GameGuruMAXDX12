@@ -1761,11 +1761,8 @@ DARKSDK void SetSoundVolume ( int iID, int iVolume )
 		//wiAudio::SetVolume(sound->volume,&sound->soundinstance);
 	}
 #else
-	float newvolume = (int)( (float) -9600.0f * (float) ( (float) (100.0f - iVolume) / 100.0f));
-
-	if (newvolume < DSBVOLUME_MIN) newvolume = DSBVOLUME_MIN;
-	if (newvolume > DSBVOLUME_MAX) newvolume = DSBVOLUME_MAX;
-
+	// the volume as an amplitude of iVolume/100, as the WICKEDAUDIO path plays it; DirectSound takes hundredths of a decibel
+	float newvolume;
 	if (iVolume <= 0) {
 		newvolume = DSBVOLUME_MIN;
 	}
@@ -1773,9 +1770,11 @@ DARKSDK void SetSoundVolume ( int iID, int iVolume )
 		newvolume = DSBVOLUME_MAX;
 	}
 	else {
-		newvolume *= 0.75; //Get it closer to zero.
+		newvolume = 2000.0f * log10f((float)iVolume / 100.0f);
+		if (newvolume < DSBVOLUME_MIN) newvolume = DSBVOLUME_MIN;
+		if (newvolume > DSBVOLUME_MAX) newvolume = DSBVOLUME_MAX;
 	}
-	m_ptr->pSound->GetBuffer(0)->SetVolume (newvolume);
+	m_ptr->pSound->GetBuffer(0)->SetVolume ((LONG)newvolume);
 #endif
 }
 
