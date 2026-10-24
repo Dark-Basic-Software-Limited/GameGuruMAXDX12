@@ -1255,6 +1255,29 @@ void gridedit_load_map ( void )
 	TDRTrace("[LOADMAP] gridedit_load_map: EXIT");
 }
 
+// a value changed in one of the level's panels (objects, terrain, game and logic settings, weather, waypoints) is a change
+// to the level, whether or not the panel's own code flags it. Dear ImGui marks any widget whose value changes
+// (ActiveIdHasBeenEditedThisFrame); the mark is cleared before a panel is drawn and read after it, and what it held before
+// is put back. Buttons are not edits, so a panel's buttons still flag their own changes
+static bool g_bEditedBeforeLevelPanel = false;
+void gridedit_levelpanel_begin ( void )
+{
+	ImGuiContext& imgui = *GImGui;
+	g_bEditedBeforeLevelPanel = imgui.ActiveIdHasBeenEditedThisFrame;
+	imgui.ActiveIdHasBeenEditedThisFrame = false;
+}
+
+void gridedit_levelpanel_end ( void )
+{
+	ImGuiContext& imgui = *GImGui;
+	if ( imgui.ActiveIdHasBeenEditedThisFrame && t.game.gameisexe == 0 )
+	{
+		g.projectmodified = 1;
+		gridedit_changemodifiedflag ( );
+	}
+	imgui.ActiveIdHasBeenEditedThisFrame |= g_bEditedBeforeLevelPanel;
+}
+
 void gridedit_changemodifiedflag ( void )
 {
 	// project flag changed, update window Text (  )

@@ -20,6 +20,7 @@
 #endif
 
 #include "..\..\GameGuru\Imgui\imnodes.h"
+#include "..\Imgui\imgui_internal.h"
 int grideleprof_uniqui_id = 35000;
 #define MAXTEXTINPUT 1024
 float g_Storyboard_header_height = 150.0f;
