@@ -20,7 +20,7 @@ pyramid keeps the top-left texel of every 2x2 - thin posts/gaps pop in and out o
 only the pair helps. Trade-off: alternate-row lightening of distant grazing-ground AO (only even rows have an exact
 half-res twin); 10000 halves it vs 4000. Reverts: setup.ini `msaoreffar=0`, `msaodownsample=0`.
 
-**Why:** Lee's railing report 2026-10-22; "it was better in DX11" was false for the AO texture - the far-plane lever
+**Why:** Lee's railing report 2026-10-22 (Lee-confirmed 10-24, "better than DX11"); "it was better in DX11" was false for the AO texture - the far-plane lever
 (RUN_LUA SetCameraPanelDistance 4000) proved the mechanism in one A/B.
 
 **How to apply / measure:** same-session toggles (SET_MSAOREFFAR, SET_MSAODOWNSAMPLE), SET_TANGENTVIS 13 = the AO

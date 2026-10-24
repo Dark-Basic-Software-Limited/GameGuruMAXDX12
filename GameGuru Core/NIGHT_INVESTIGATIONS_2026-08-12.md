@@ -16884,3 +16884,5 @@ n only where an aligned n x n block lies wholly inside it, so objects narrower t
 n..2n-2 depend on alignment - for DS16x that is 16-30 px objects (a thick post or trunk in front of a wall), which stock
 kept at every alignment; thin railings win outright (pop at 0-1 levels instead of up to 4), which is the measured 18.9 ->
 4.3. A true cure for both would be a filtered pyramid or temporal accumulation of the AO.
+
+### LEE-CONFIRMED 3.126 + 3.126b, 2026-10-24: "SSAO is okay now, better than DX11" - the railing patches and the pop-in bands are gone (MSAO tolerances as if zFar = 10000 + farthest-depth pick at depth edges). Engine `0d7d74ed`, game `b80bd446`.
