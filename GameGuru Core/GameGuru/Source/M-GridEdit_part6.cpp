@@ -33,8 +33,8 @@
 	//  Only if within map
 	if (  t.inputsys.mmx >= 0 && t.inputsys.mmy >= 0 && t.inputsys.mmx<t.maxx && t.inputsys.mmy<t.maxy ) 
 	{
-		//  Any click inside 3D area constitues some sort of edit
-		if ( t.inputsys.mclick != 0 ) 
+		//  Any left click inside 3D area constitues some sort of edit (the right and middle buttons fly and pan the camera)
+		if ( (t.inputsys.mclick & 1) != 0 ) 
 		{ 
 			g.projectmodified = 1; 
 			gridedit_changemodifiedflag ( ); 
