@@ -215,6 +215,7 @@ static float    g_grassTier3Chunks = 0.0f;   // 0 = AUTO; explicit value = full-
 static float    g_grassTier2Chunks = 0.0f;   // 0 = AUTO; explicit value = mid-density ring
 namespace wi { extern bool gg_grass_lod; }   // engine strand-LOD opt-in (wiHairParticle.cpp)
 namespace wi { extern int gg_grass_dx11_falloff; extern float gg_grass_dx11_fade_range; }   // GGMAX 3.117 (wiHairParticle.cpp)
+extern bool g_bLightProbeScaleChanged;   // GGMAX 3.127: M-GridEdit_part0.cpp, consumed by lighting_loop (G-Lighting.cpp)
 // GGMAX 3.117: the DX11 grass FAR FIELD. 1 (default) = every strand full size out to the Grass Draw
 // Distance, then DX11's per-blade dissolve to +2500 (engine HAIR_FLAG_GG_DX11_FALLOFF), full density in
 // every chunk that can hold a visible strand, flowers to the same distance as the rest - as DX11 drew
@@ -4288,6 +4289,34 @@ void GGTerrainWicked_Update(const wi::scene::CameraComponent& camera)
 		g_revealHoldFrames = 0;
 	}
 	const bool revealHeld = g_revealHoldFrames > 0;
+
+	// GGMAX 3.127: re-capture the env probes once the chunk ring has (re)built. A probe capture is a
+	// snapshot (non-realtime probes render once per SetDirty), and the load-time probe triggers - the
+	// first editor frame and DX11's "update probe after terrain is done" countdown - are timed against
+	// the LEGACY heights, which DX11 drew into every probe itself. In DX12 the only probe terrain is
+	// these Wicked chunks, which barely exist at either trigger: the global env map came out as sky over
+	// a flat void until a probe marker add/delete happened to re-capture it. Arm on any ring wipe /
+	// restart (the initial-build state); fire once the chunk count has held for 60 frames with no reveal
+	// hold and no in-place regen pending. Same refresh as a probe marker edit (lighting_loop, editor
+	// and game alike).
+	{
+		static bool s_probeRecaptureArmed = false;
+		static int s_probeStableFrames = 0, s_probeLastChunks = -1;
+		const int nChunks = (int)terrain->chunks.size();
+		if (initialBuild) s_probeRecaptureArmed = true;
+		if (s_probeRecaptureArmed)
+		{
+			if (nChunks == s_probeLastChunks && !revealHeld && s_pendingRegenCount == 0) s_probeStableFrames++;
+			else s_probeStableFrames = 0;
+			s_probeLastChunks = nChunks;
+			if (!initialBuild && s_probeStableFrames >= 60)
+			{
+				::g_bLightProbeScaleChanged = true;
+				s_probeRecaptureArmed = false;
+				s_probeStableFrames = 0;
+			}
+		}
+	}
 
 	// Mass in-place regen (terrain parameter change, sculpt reset, full undo restore):
 	// chunks.size() never drops so the initial-build throttles don't engage — detect it

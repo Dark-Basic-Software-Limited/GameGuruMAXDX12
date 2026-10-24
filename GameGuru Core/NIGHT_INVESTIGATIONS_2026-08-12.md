@@ -16886,3 +16886,60 @@ kept at every alignment; thin railings win outright (pop at 0-1 levels instead o
 4.3. A true cure for both would be a filtered pyramid or temporal accumulation of the AO.
 
 ### LEE-CONFIRMED 3.126 + 3.126b, 2026-10-24: "SSAO is okay now, better than DX11" - the railing patches and the pop-in bands are gone (MSAO tolerances as if zFar = 10000 + farthest-depth pick at depth edges). Engine `0d7d74ed`, game `b80bd446`.
+
+## 3.127 Env probes: the global env map had no terrain after a level load, and probes showed a mosaic of wrong terrain tiles - 2026-10-24
+
+Lee (TESTPRO2 > DX12TESTLEVEL, 3 shots): a metallic Bass reflects only sky - its lower half flat blue, no terrain.
+Add a local env probe attached to the fish: terrain appears, "but it looks corrupt with patches showing". Delete the
+probe: the correct global env map is applied.
+
+**Two defects.** (a) The global probe (GGTerrain `globalEnvProbe`, re-armed only when `globalEnvProbePos.y` is zeroed
+by ClearEnvProbeList via `g_bLightProbeScaleChanged`) is captured on the first editor frame and again by DX11's
+"update probe after terrain is done" countdown (M-GridEdit_part0.cpp:1540-1546). Both are timed against the LEGACY
+heights - which is exactly right in DX11, because DX11 drew GG's own clipmap terrain into every probe (WickedRepo
+wiRenderer.cpp:9023 GGTerrain_Draw_EnvProbe, gated on ggterrain.IsValid()). In DX12 that hook is dead twice
+(master_part1.cpp:684 returns when Wicked terrain is active; GGTerrain_Draw_EnvProbe starts with `return;`), so the
+only probe terrain is Wicked terrain chunks - and they barely exist at either trigger (measured: 206-226 of 625 chunks
+at load). Nothing re-captured the global when the ring finished, so it stayed sky over a flat blue void until a probe
+marker add/delete raised `g_bLightProbeScaleChanged` (that is Lee's shot 3). (b) Probe captures render with
+envMapPS, which has no OBJECTSHADER_LAYOUT_COMMON, so objectHF.hlsli defined DISABLE_SVT: every near-ring terrain
+chunk (GG 1.21 ring of 4 = 49 chunks around the camera) sampled its WHOLE 16384x12288 sparse tile atlas squashed onto
+the chunk (texMulAdd 1,1,0,0) - a grid of foreign tiles, packed mips and unmapped tiles. The main view and planar
+reflections use objectPS (SVT on), so only probes showed it - in the global probe too (its -Y face), blurred to
+"terrain-ish" by the time it reached the fish. DX11's probe shader walked the page table to a coarser resident page
+instead. 3.35c already exempted the Super Quick layout from this switch for the same reason.
+
+**3.127:**
+- GGTerrainWicked_Update: armed while the ring is in its initial build (< 60% of the ring - any wipe / restart); once
+  the chunk count has held for 60 frames with no reveal hold and no in-place regen pending, it raises
+  `g_bLightProbeScaleChanged` - the same full refresh a probe marker edit does (global + markers), editor and game alike
+  (lighting_loop) - and disarms.
+- objectHF.hlsli (engine, WICKED_ENGINE_CHANGES 3.127): DISABLE_SVT is not defined for ENVMAPRENDERING pixel shaders,
+  so envMapPS goes through SampleVirtual (residency-map fallback to the coarsest resident mip; ENVMAPRENDERING never
+  gets SVT_FEEDBACK, so probes do not drive residency). envMapVS / vxgi_temporalCS also define ENVMAPRENDERING and are
+  excluded (SampleVirtual uses derivatives).
+
+**Measured** (harness on DX12TESTLEVEL, never saved - md5 d87df580 before and after each run; cubes via DUMP_ENVPROBE
+40000 + texconv + decode_cube.py, face order +X -X +Y -Y +Z -Z):
+- Before (exe d52db631): global cube at load = sky over a blue void on the side faces (one terrain fragment); 25 s
+  later with the ring complete (625/625) STILL the load capture; after REFRESH_ENVPROBE terrain on the side faces but
+  the -Y face is horizontal bands of raw atlas strips. Editor view: the fish's lower half flat blue (= Lee's shot 1).
+- After (exe b9aeb5d9; envMapPS.cso 78496 -> 89384 bytes = the new code compiled): with NO manual refresh, the global
+  cube 25 s after load has terrain on every side face and real ground on -Y (sand, grass, the water channel), no
+  stripes; a test probe (SET_PROBE_TEST) beside the fish captures clean sand, the mountains and the fish itself;
+  editor view of the fish = Lee's shot 3, without touching a probe.
+
+Final exe `b9aeb5d9`, engine `1691ac2d`.
+
+**Adversarial review** (2 reviewers, 2 verifiers): no defect. Shader: only envMapPS defines ENVMAPRENDERING +
+OBJECTSHADER_COMPILE_PS; every material other than Wicked terrain chunks keeps sparse_residencymap_descriptor = -1 and
+the unchanged tex.Sample branch; the probe command list waits on the same frame's UpdateVirtualTexturesGPU, so it reads
+residency and atlas in the same state as the main pass; no feedback. Trigger: arms only on a Generation_Restart or a
+camera jump of ~24+ chunks (ordinary flying never drops the ring below 60%), fires once, reached every frame (the idle
+gate comes after it), linkage fine, chunks are born blended so 60 frames is enough; DX11 never refreshed probes on
+sculpting either. Two findings refuted as defects of this change: (1) PRE-EXISTING, game mode: after any full refresh
+a marker probe's pool slot is captured at its park spot (terrain height + 20000) on the clear frame and re-assigned the
+next frame without a re-capture when the camera x/z did not move (SetDirty is gated on fMovementDelta, GGTerrain_part0
+~9694 - DX11 hid this with a userdata fade-in the port removed); the load-time refreshes already hit it, 3.127 adds no
+new exposure. Candidate follow-up: capture unconditionally on the assignment frame. (2) the s_pendingRegenCount gate
+inherits the existing stranded-invalidation census quirk (invalidated chunks 13-26 rings out), no realistic scenario.

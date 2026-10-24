@@ -10,6 +10,9 @@ metadata:
 
 # Environment probes / base env cube map (task #155, 2.73, 2026-08-16)
 
+## ★★★ 3.127 (2026-10-24): probe TERRAIN - missing at load, mosaic in captures (engine 1691ac2d)
+DX12 probes see terrain ONLY as Wicked chunk objects (customDraw_EnvProbe returns early with Wicked terrain; GGTerrain_Draw_EnvProbe is `return;`) - DX11 drew GG's clipmap into every probe. (a) The load-time probe triggers (first editor frame + "update probe after terrain is done") are timed on LEGACY heights, before the chunk ring exists -> global cube = sky over a blue void until a marker add/delete re-captured it. Fix: GGTerrainWicked_Update raises g_bLightProbeScaleChanged once the ring has held 60 frames after a restart. (b) envMapPS had DISABLE_SVT -> near-ring chunks sampled the whole 16384x12288 tile atlas = mosaic (visible on the GLOBAL -Y face too). Fix: objectHF.hlsli exempts ENVMAPRENDERING PS. ★ Measure with DUMP_ENVPROBE 40000 (census lands in Max\envprobe_dump.txt, not Files\ - move it out) at load / after ring / after REFRESH_ENVPROBE; decode every face. OPEN (pre-existing, game mode): after a full refresh a pool slot can keep its PARK capture (height+20000) when the player has not moved - SetDirty gated on fMovementDelta (GGTerrain_part0 ~9694). [[project-terrain-render-path]]
+
 ## ★★★ #157 "THE CIRCLES" — SOLVED + BASELINE 2026-08-18 (engine 630a245e / game 017c2b43)
 **fp16 overflow in the parallax correction, not the cube.** `EnvironmentReflection_Local`
 (lightingHF.hlsli) computed the ray-exit `Distance` in `half` (min16float = real fp16, max
