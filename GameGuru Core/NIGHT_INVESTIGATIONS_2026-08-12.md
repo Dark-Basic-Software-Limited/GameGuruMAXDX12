@@ -16943,3 +16943,38 @@ next frame without a re-capture when the camera x/z did not move (SetDirty is ga
 ~9694 - DX11 hid this with a userdata fade-in the port removed); the load-time refreshes already hit it, 3.127 adds no
 new exposure. Candidate follow-up: capture unconditionally on the assignment frame. (2) the s_pendingRegenCount gate
 inherits the existing stranded-invalidation census quirk (invalidated chunks 13-26 rings out), no realistic scenario.
+
+### 3.127b In game, marker probes held an aerial view from the park spot for the whole session - 2026-10-24
+
+Lee: "yes, fix the game-mode pool slot quirk too" (found by the 3.127 review). GGTerrain_EnvProbeWork's placed-probe
+system, game mode: `fMovementDelta = (|dx|+|dz|)/20` of the camera eye - exactly 0 when the camera did not move. After
+any full refresh (ClearEnvProbeList via g_bLightProbeScaleChanged: Test Level start, a probe marker add/delete, the
+3.127 ring trigger) frame A parks and SetDirty's every slot (the `globalEnvProbePos.y == 0` nudge forces the delta to 1),
+frame B re-assigns the slots to their markers and clears the update flag - and the SetDirty was gated on
+`fMovementDelta > 0`. A still camera never captured at the marker, and nothing re-dirties a tracked slot afterwards
+(walking does not: the refresh needs the update flag), so every marker probe showed the cube shot at the park spot
+(terrain height + 20000, an aerial view) for the WHOLE session. DX11 hid it: its update flag stayed up while
+probe->userdata faded the slot in by movement, so an idle player saw the slot at zero influence and the capture came
+with the first step; the port removed userdata and kept the gate.
+
+**Instrument first** (two decode-only attempts had misread the park cube - black sky over a checker floor - as "the
+room"): `SET_PROBETRACE <frames> [1]` traces the 8 slots per frame to probetrace.txt (written next to the exe - move it
+out); `1` also raises only the marker-edit refresh. Switch Escape (Lee's writable copy, never saved, md5 658da035
+unchanged), Test Level, camera pinned with RUN_LUA SetCameraOverride(3): frame A "PARK dirtied=1" x8, frame B
+"ASSIGN/REFRESH dirtied=0 ... moveDelta=0.000" for the 5 marker slots, then never again.
+
+**Fix:** the gate is `fMovementDelta > 0 || the slot is assigned` (tracking > 0 on a frame its update flag was up):
+assignment and refresh frames capture moving or not; ordinary frames (update flag down) are untouched; editor mode
+was already delta 1. Measured (exe d9903ede): trace "ASSIGN/REFRESH dirtied=1" at moveDelta 0.000; slot 0's cube at Test Level
+start and after a refresh = the warehouse around the marker (walls, crates, roller door) instead of the aerial park view.
+
+**Adversarial review** (2 reviewers, 3 verifiers): no defect in the fix. The refresh flag is only set on frames the
+slot's update flag was up and both branches clear it that frame, so a tracked slot with the flag down never dirties -
+no per-frame captures. Only a new assignment, the bUpdateProbes consumer and ClearEnvProbeList raise the flag;
+bUpdateProbes callers are sky changes, level end, legacy LOD regenerate and editor UI - never per frame (light on/off in
+game uses GGTerrain_InstantEnvProbeRefresh, not this path). Editor unchanged (delta is 1 there); standalone is game mode,
+so it is covered. Side benefit: vertical-only movement (lifts, falls; the slot sort is 3D, the delta X/Z) used to
+re-assign slots without a capture too. Polished after the review: the gate's input renamed from a trace-sounding name
+(`iSlotTracked` - stripping the trace later cannot silently take the fix with it), the trace opens wherever it logs (it
+missed the ClearEnvProbeList of the refresh it raises itself) and a failed open ends the trace instead of retrying every
+frame. Re-verified on exe d9903ede: "ClearEnvProbeList" logged, 5/5 marker slots "ASSIGN/REFRESH dirtied=1".

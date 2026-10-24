@@ -189,6 +189,11 @@ char gg_ddsSliceRefusedWhat[ 200 ] = { 0 };   // the first refusal: file, slice,
 extern uint32_t gg_terrain_bake_shading;
 extern int gg_water_bake_depth, gg_water_bake_lit, gg_water_bake_view;   // GGMAX 3.119 (GGWaterBake.cpp)
 extern int gg_water_bake_under;   // GGMAX 3.120 (GGWaterBake.cpp)
+extern FILE* GGDiagFopen(const char* name, const char* mode);
+// GGMAX 3.127b: harness SET_PROBETRACE <frames> - per-frame trace of the 8 pool probe slots (tracking, update
+// flag, branch taken, capture requested, position) to probetrace.txt. 0 = off.
+int gg_probe_trace_frames = 0;
+static FILE* gg_probe_trace_file = nullptr;
 
 namespace GGTerrain
 {
@@ -9374,6 +9379,8 @@ void GGTerrain_ClearEnvProbeList(void)
 
 	// a good time to refresh global in case of env changes!
 	globalEnvProbePos.y = 0;
+	if (gg_probe_trace_frames > 0 && !gg_probe_trace_file) gg_probe_trace_file = GGDiagFopen("probetrace.txt", "w");
+	if (gg_probe_trace_file) fprintf(gg_probe_trace_file, "ClearEnvProbeList\n");
 }
 void GGTerrain_InstantEnvProbeRefresh(int iCoolDownIndex)
 {
@@ -9504,6 +9511,10 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 		}
 		g_vLastPos.x = playerX;
 		g_vLastPos.z = playerZ;
+		if (gg_probe_trace_frames > 0 && !gg_probe_trace_file) gg_probe_trace_file = GGDiagFopen("probetrace.txt", "w");
+		if (!gg_probe_trace_file) gg_probe_trace_frames = 0; // a failed open ends the trace instead of retrying every frame
+		if (gg_probe_trace_file) fprintf(gg_probe_trace_file, "frame moveDelta=%.3f globalY=%.0f list=%d cam=(%.3f,%.3f)\n",
+			fMovementDelta, globalEnvProbePos.y, (int)g_envProbeList.size(), playerX, playerZ);
 
 		// Use g_envProbeList to coordinate best use of the LOCALENVPROBECOUNT (8) probes reserved for this
 		for (int p = 0; p < g_envProbeList.size(); p++)
@@ -9601,6 +9612,9 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 			{
 				// the virtual probe index
 				bool bRefreshProbeFromUpdatesAndPlayerMovement = false;
+				const int iSlotTracked = g_iEnvProbeTracking[iRealProbeIndex]; // the 3.127b gate below reads it - not trace-only
+				const int traceUpd = g_bEnvProbeTrackingUpdate[iRealProbeIndex] ? 1 : 0;
+				int traceDirtied = 0;
 				if (g_bEnvProbeTrackingUpdate[iRealProbeIndex] == true)
 				{
 					if (g_iEnvProbeTracking[iRealProbeIndex] > 0)
@@ -9691,13 +9705,26 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 					}
 					bRefreshProbeFromUpdatesAndPlayerMovement = true;
 				}
-				if (bRefreshProbeFromUpdatesAndPlayerMovement == true && fMovementDelta > 0.0f)
+				// GGMAX 3.127b: a slot just (re)assigned to a probe - or told to refresh - captures NOW, moving or not.
+				// DX11 kept the update flag up while probe->userdata faded the slot in by player movement, so an idle
+				// player saw it at zero influence and the capture came with the first step. The port removed userdata
+				// and clears the flag on the assignment frame, so this movement gate skipped the ONLY capture: in game,
+				// after every full refresh (Test Level start, a marker edit, the 3.127 ring trigger) a still player's
+				// marker slots sat at their markers holding the cube shot at the park spot (terrain height + 20000).
+				// SET_PROBETRACE showed it: PARK dirtied=1, then ASSIGN dirtied=0 at moveDelta 0.000.
+				if (bRefreshProbeFromUpdatesAndPlayerMovement == true && (fMovementDelta > 0.0f || iSlotTracked > 0))
 				{
 					probe->SetDirty();
+					traceDirtied = 1;
 					bRefreshProbeFromUpdatesAndPlayerMovement = false;
 				}
+				if (gg_probe_trace_file && (iSlotTracked > 0 || traceUpd))
+					fprintf(gg_probe_trace_file, "  slot %d track=%d upd=%d -> %s dirtied=%d pos=(%.0f,%.0f,%.0f) range=%.0f\n", iRealProbeIndex,
+						iSlotTracked, traceUpd, traceUpd ? (iSlotTracked > 0 ? "ASSIGN/REFRESH" : "PARK") : "-", traceDirtied,
+						localEnvProbePos[iRealProbeIndex].x, localEnvProbePos[iRealProbeIndex].y, localEnvProbePos[iRealProbeIndex].z, probe->range);
 			}
 		}
+		if (gg_probe_trace_file && --gg_probe_trace_frames <= 0) { fclose(gg_probe_trace_file); gg_probe_trace_file = nullptr; gg_probe_trace_frames = 0; }
 	}
 	else
 	{
@@ -9857,6 +9884,7 @@ void GGTerrain_EnvProbeWork (float playerX, float playerY, float playerZ)
 	// update global probe and local env probe when flagged
 	if (ggterrain_extra_params.bUpdateProbes)
 	{
+		if (gg_probe_trace_file) fprintf(gg_probe_trace_file, "bUpdateProbes consumed (all 8 slots SetDirty, unassigned parked)\n");
 		// also clear all real probes so can be updated
 		for (int scan = 0; scan < LOCALENVPROBECOUNT; scan++)
 		{

@@ -4529,6 +4529,22 @@ static bool AutoHarness_EnvProbeCommands(const char* cmd, const char* arg, char*
 		result[resultSize - 1] = 0;
 		return true;
 	}
+	if (_stricmp(cmd, "SET_PROBETRACE") == 0)
+	{
+		// GGMAX 3.127b: SET_PROBETRACE <frames> [1] - trace the 8 pool probe slots for <frames> frames of the
+		// placed-probe system to probetrace.txt (diagnostic path). Second arg 1 also raises ONLY the marker-edit
+		// refresh (g_bLightProbeScaleChanged) - what a probe marker add/delete and the 3.127 ring trigger do;
+		// REFRESH_ENVPROBE raises that AND bUpdateProbes.
+		extern int gg_probe_trace_frames;
+		int ptFrames = 0, ptRefresh = 0;
+		if (arg) sscanf_s(arg, "%d %d", &ptFrames, &ptRefresh);
+		gg_probe_trace_frames = ptFrames > 0 ? ptFrames : 0;
+		if (ptRefresh == 1) { extern bool g_bLightProbeScaleChanged; g_bLightProbeScaleChanged = true; }
+		_snprintf(result, resultSize, "OK: SET_PROBETRACE %d frames%s -> probetrace.txt", gg_probe_trace_frames,
+			ptRefresh == 1 ? " + marker-edit refresh (g_bLightProbeScaleChanged)" : "");
+		result[resultSize - 1] = 0;
+		return true;
+	}
 	if (_stricmp(cmd, "SET_DEBUGPROBES") == 0)
 	{
 		// SET_DEBUGPROBES <0|1> — (2.74b, #155 ball-visualizer hunt) force the engine's debug
