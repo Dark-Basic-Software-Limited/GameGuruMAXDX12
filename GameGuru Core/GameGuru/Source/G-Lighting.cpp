@@ -334,7 +334,7 @@ void lighting_loop(void)
 	if (g_fGlobalGammaFadeIn < g_fGlobalGammaFadeInDest)
 	{
 		g_fGlobalGammaFadeIn += 0.05f;
-		if (g_fGlobalGammaFadeIn > g_fGlobalGammaFadeIn)
+		if (g_fGlobalGammaFadeIn > g_fGlobalGammaFadeInDest)
 		{
 			g_fGlobalGammaFadeIn = g_fGlobalGammaFadeInDest;
 		}
