@@ -16978,3 +16978,5 @@ re-assign slots without a capture too. Polished after the review: the gate's inp
 (`iSlotTracked` - stripping the trace later cannot silently take the fix with it), the trace opens wherever it logs (it
 missed the ClearEnvProbeList of the refresh it raises itself) and a failed open ends the trace instead of retrying every
 frame. Re-verified on exe d9903ede: "ClearEnvProbeList" logged, 5/5 marker slots "ASSIGN/REFRESH dirtied=1".
+
+### LEE-CONFIRMED 3.127 + 3.127b, 2026-10-24: "env probes confirmed working" - the global env map has terrain after load, probes show clean terrain, marker probes capture at their markers in game. One remaining issue reported with it: with Terrain Bake ticked, Test Level re-captures the global probe without terrain (3.128). Engine `1691ac2d`, game `84b025f8` + `6787cc9e`.
