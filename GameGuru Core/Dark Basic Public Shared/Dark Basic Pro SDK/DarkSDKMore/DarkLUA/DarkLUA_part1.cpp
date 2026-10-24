@@ -1828,7 +1828,15 @@ int AIEntityGoToPosition(lua_State *L)
 	int iObj = lua_tointeger(L, 1);
 	float fGoToX = lua_tonumber(L, 2);
 #ifdef WICKEDENGINE
-	// No subsystem for AI in MAX
+	// No subsystem for AI in MAX: say so once in the log, as the call returns nothing and the entity does not move
+	static bool bWarnedNoAI = false;
+	if ( bWarnedNoAI == false )
+	{
+		bWarnedNoAI = true;
+		char pMsg[256];
+		strcpy ( pMsg, "AIEntityGoToPosition does nothing in MAX (no DarkAI): move with RDFindPath / StartMoveAndRotateToXYZ" );
+		timestampactivity ( 0, pMsg );
+	}
 #else
 	if ( n == 3 )
 	{

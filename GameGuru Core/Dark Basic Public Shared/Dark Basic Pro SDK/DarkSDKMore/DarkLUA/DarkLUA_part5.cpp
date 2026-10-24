@@ -506,7 +506,7 @@ int SetRotationYSlowly ( lua_State *L )
 	entity_lua_rotatetoanglecore ( fDestAngle, 0.0f );
 	t.e = iStoreE;
 	t.v = fStoreV;
-	return 1;
+	return 0; // pushes nothing (returning 1 handed the third argument back)
 }
 
 
